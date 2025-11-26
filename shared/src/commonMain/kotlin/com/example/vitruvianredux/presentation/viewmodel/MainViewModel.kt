@@ -604,6 +604,13 @@ class MainViewModel constructor(
         _currentSetIndex.value = 0
     }
 
+    fun loadRoutineById(routineId: String) {
+        val routine = _routines.value.find { it.id == routineId }
+        if (routine != null) {
+            loadRoutine(routine)
+        }
+    }
+
     fun clearLoadedRoutine() {
         _loadedRoutine.value = null
     }
