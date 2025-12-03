@@ -109,6 +109,8 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version = "3.1.1" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version = "3.1.1" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version = "3.1.1" }
 ktor-client-java = { module = "io.ktor:ktor-client-java", version = "3.1.1" }
+ktor-client-js = { module = "io.ktor:ktor-client-js", version = "3.1.1" }
+sqldelight-web-driver = { module = "app.cash.sqldelight:web-worker-driver", version.ref = "sqldelight" }
 
 # Testing
 junit = { module = "junit:junit", version.ref = "junit" }

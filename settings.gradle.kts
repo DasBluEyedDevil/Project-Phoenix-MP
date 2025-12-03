@@ -20,4 +20,3 @@ rootProject.name = "VitruvianProjectPhoenix"
 
 include(":shared")
 include(":androidApp")
-include(":desktopApp")

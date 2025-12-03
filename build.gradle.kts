@@ -21,8 +21,10 @@ allprojects {
     // Common configuration for all projects
 }
 
-tasks.register("clean", Delete::class) {
-    delete(rootProject.layout.buildDirectory)
+tasks.matching { it.name == "clean" }.configureEach {
+    doLast {
+        delete(rootProject.layout.buildDirectory)
+    }
 }
 
 tasks.withType<app.cash.sqldelight.gradle.VerifyMigrationTask>().configureEach {

@@ -33,13 +33,6 @@ kotlin {
         }
     }
 
-    // Desktop target
-    jvm("desktop") {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-        }
-    }
-    
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -133,35 +126,7 @@ kotlin {
                 implementation(libs.ktor.client.darwin)
             }
         }
-        
-        val desktopMain by getting {
-            dependencies {
-                // Compose Desktop
-                implementation(compose.desktop.currentOs)
 
-                // Coroutines Swing for desktop
-                implementation(libs.kotlinx.coroutines.swing)
-
-                // SQLDelight JVM Driver
-                implementation(libs.sqldelight.sqlite.driver)
-
-                // Ktor Java engine for Desktop
-                implementation(libs.ktor.client.java)
-
-                // JavaFX for video playback
-                val javafxVersion = "21.0.2"
-                val osName = System.getProperty("os.name").lowercase()
-                val platform = when {
-                    osName.contains("win") -> "win"
-                    osName.contains("mac") -> "mac"
-                    else -> "linux"
-                }
-                implementation("org.openjfx:javafx-base:$javafxVersion:$platform")
-                implementation("org.openjfx:javafx-graphics:$javafxVersion:$platform")
-                implementation("org.openjfx:javafx-media:$javafxVersion:$platform")
-                implementation("org.openjfx:javafx-swing:$javafxVersion:$platform")
-            }
-        }
     }
 }
 
