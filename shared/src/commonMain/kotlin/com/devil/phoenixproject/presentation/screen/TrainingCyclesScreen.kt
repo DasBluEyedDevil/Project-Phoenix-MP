@@ -39,6 +39,7 @@ import com.devil.phoenixproject.ui.theme.ThemeMode
 import kotlinx.coroutines.launch
 import com.devil.phoenixproject.presentation.navigation.NavigationRoutes
 import org.koin.compose.koinInject
+import com.devil.phoenixproject.ui.theme.screenBackgroundBrush
 
 /**
  * Training Cycles screen - view and manage rolling workout schedules.
@@ -81,23 +82,7 @@ fun TrainingCyclesScreen(
 
     Logger.d { "TrainingCyclesScreen: ${cycles.size} cycles loaded" }
 
-    val backgroundGradient = if (themeMode == ThemeMode.DARK) {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFF0F172A),
-                Color(0xFF1E1B4B),
-                Color(0xFF172554)
-            )
-        )
-    } else {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFFE0E7FF),
-                Color(0xFFFCE7F3),
-                Color(0xFFDDD6FE)
-            )
-        )
-    }
+    val backgroundGradient = screenBackgroundBrush()
 
     Box(
         modifier = Modifier

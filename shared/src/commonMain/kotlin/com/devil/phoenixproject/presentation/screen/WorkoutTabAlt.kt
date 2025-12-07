@@ -27,6 +27,7 @@ import com.devil.phoenixproject.presentation.components.AutoStopOverlay
 import com.devil.phoenixproject.presentation.components.EnhancedCablePositionBar
 import com.devil.phoenixproject.presentation.components.HapticFeedbackEffect
 import com.devil.phoenixproject.presentation.components.VideoPlayer
+import com.devil.phoenixproject.ui.theme.screenBackgroundBrush
 
 /**
  * Alternative WorkoutTab design - Compact, no-scroll layout
@@ -82,13 +83,7 @@ fun WorkoutTabAlt(
     }
 
     // Gradient backgrounds
-    val isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val lightGradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF8FAFC), Color(0xFFEFF6FF))
-    )
-    val darkGradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFF0F172A), Color(0xFF1E1B4B))
-    )
+    val backgroundGradient = screenBackgroundBrush()
 
     // Load current exercise data
     val currentExercise = loadedRoutine?.exercises?.getOrNull(currentExerciseIndex)
@@ -110,7 +105,7 @@ fun WorkoutTabAlt(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(if (isDarkMode) darkGradient else lightGradient)
+            .background(backgroundGradient)
     ) {
         // --- LAYER 1: CONTENT (No Scroll) ---
         Column(

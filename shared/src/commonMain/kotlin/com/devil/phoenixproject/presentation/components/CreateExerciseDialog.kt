@@ -23,6 +23,7 @@ import com.devil.phoenixproject.domain.model.Exercise
 import com.devil.phoenixproject.domain.model.ExerciseCategory
 import com.devil.phoenixproject.ui.theme.Spacing
 import com.devil.phoenixproject.ui.theme.ThemeMode
+import com.devil.phoenixproject.ui.theme.screenBackgroundBrush
 
 /**
  * Dialog for creating or editing custom exercises.
@@ -59,11 +60,7 @@ fun CreateExerciseDialog(
     var showError by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
-    val backgroundGradient = if (themeMode == ThemeMode.DARK) {
-        Brush.verticalGradient(colors = listOf(Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF172554)))
-    } else {
-        Brush.verticalGradient(colors = listOf(Color(0xFFE0E7FF), Color(0xFFFCE7F3), Color(0xFFDDD6FE)))
-    }
+    val backgroundGradient = screenBackgroundBrush()
 
     val isEditMode = existingExercise != null
 

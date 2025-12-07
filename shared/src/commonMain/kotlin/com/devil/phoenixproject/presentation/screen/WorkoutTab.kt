@@ -38,6 +38,7 @@ import com.devil.phoenixproject.data.repository.ExerciseVideoEntity
 import com.devil.phoenixproject.ui.theme.Spacing
 import kotlinx.coroutines.flow.SharedFlow
 import kotlin.math.roundToInt
+import com.devil.phoenixproject.ui.theme.screenBackgroundBrush
 
 /**
  * WorkoutTab with State Holder Pattern (2025 Material Expressive).
@@ -152,22 +153,8 @@ fun WorkoutTab(
     }
 
 
-    // Gradient backgrounds (light and dark)
-    val isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val lightGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFFF8FAFC), // slate-50
-            Color(0xFFF5F3FF), // purple-50
-            Color(0xFFEFF6FF)  // blue-50
-        )
-    )
-    val darkGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF0F172A), // slate-950
-            Color(0xFF312E81), // purple-950
-            Color(0xFF0F172A)  // slate-900
-        )
-    )
+    // Gradient backgrounds
+    val backgroundGradient = screenBackgroundBrush()
 
     // HUD LAYOUT FOR ACTIVE WORKOUT
     if (workoutState is WorkoutState.Active && connectionState is ConnectionState.Connected) {
@@ -195,7 +182,7 @@ fun WorkoutTab(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(if (isDarkMode) darkGradient else lightGradient)
+            .background(backgroundGradient)
     ) {
         // Show position bars at edges only when workout is active and metric is available
         val showPositionBars = connectionState is ConnectionState.Connected &&

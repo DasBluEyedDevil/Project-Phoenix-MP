@@ -30,6 +30,7 @@ import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
 import com.devil.phoenixproject.ui.theme.Spacing
 import com.devil.phoenixproject.ui.theme.ThemeMode
 import com.devil.phoenixproject.util.KmpUtils
+import com.devil.phoenixproject.ui.theme.screenBackgroundBrush
 
 /**
  * Day of week data for the builder
@@ -100,23 +101,7 @@ fun ProgramBuilderScreen(
         viewModel.updateTopBarTitle(if (isNewProgram) "New Program" else "Edit Program")
     }
 
-    val backgroundGradient = if (themeMode == ThemeMode.DARK) {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFF0F172A), // slate-900
-                Color(0xFF1E1B4B), // indigo-950
-                Color(0xFF172554)  // blue-950
-            )
-        )
-    } else {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFFE0E7FF), // indigo-200
-                Color(0xFFFCE7F3), // pink-100
-                Color(0xFFDDD6FE)  // violet-200
-            )
-        )
-    }
+    val backgroundGradient = screenBackgroundBrush()
 
     Box(
         modifier = Modifier

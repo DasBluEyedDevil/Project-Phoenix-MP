@@ -14,6 +14,7 @@ import androidx.navigation.NavController
 import com.devil.phoenixproject.data.repository.ExerciseRepository
 import com.devil.phoenixproject.presentation.navigation.NavigationRoutes
 import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
+import com.devil.phoenixproject.ui.theme.screenBackgroundBrush
 
 /**
  * Daily Routines screen - view and manage pre-built routines.
@@ -39,30 +40,7 @@ fun DailyRoutinesScreen(
         viewModel.updateTopBarTitle("Daily Routines")
     }
 
-    // Determine actual theme (matching Theme.kt logic)
-    val useDarkColors = when (themeMode) {
-        com.devil.phoenixproject.ui.theme.ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        com.devil.phoenixproject.ui.theme.ThemeMode.LIGHT -> false
-        com.devil.phoenixproject.ui.theme.ThemeMode.DARK -> true
-    }
-
-    val backgroundGradient = if (useDarkColors) {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFF0F172A), // slate-900
-                Color(0xFF1E1B4B), // indigo-950
-                Color(0xFF172554)  // blue-950
-            )
-        )
-    } else {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFFE0E7FF), // indigo-200 - soft lavender
-                Color(0xFFFCE7F3), // pink-100 - soft pink
-                Color(0xFFDDD6FE)  // violet-200 - soft violet
-            )
-        )
-    }
+    val backgroundGradient = screenBackgroundBrush()
 
     Box(
         modifier = Modifier

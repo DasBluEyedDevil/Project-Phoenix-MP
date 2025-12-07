@@ -30,6 +30,7 @@ import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
 import com.devil.phoenixproject.ui.theme.Spacing
 import com.devil.phoenixproject.ui.theme.ThemeMode
 import com.devil.phoenixproject.util.KmpUtils
+import com.devil.phoenixproject.ui.theme.screenBackgroundBrush
 
 /**
  * Detail screen for a single exercise.
@@ -73,30 +74,7 @@ fun ExerciseDetailScreen(
     val currentOneRepMax = oneRepMaxData.lastOrNull()?.second
     val previousOneRepMax = if (oneRepMaxData.size >= 2) oneRepMaxData[oneRepMaxData.size - 2].second else null
 
-    // Theme
-    val useDarkColors = when (themeMode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-    }
-
-    val backgroundGradient = if (useDarkColors) {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFF0F172A),
-                Color(0xFF1E1B4B),
-                Color(0xFF172554)
-            )
-        )
-    } else {
-        Brush.verticalGradient(
-            colors = listOf(
-                Color(0xFFE0E7FF),
-                Color(0xFFFCE7F3),
-                Color(0xFFDDD6FE)
-            )
-        )
-    }
+    val backgroundGradient = screenBackgroundBrush()
 
     Box(
         modifier = Modifier
