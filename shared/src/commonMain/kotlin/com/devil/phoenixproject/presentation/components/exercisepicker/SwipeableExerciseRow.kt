@@ -36,9 +36,9 @@ private val THRESHOLD_RATIO = 0.4f // Drag 40% of reveal width to trigger
 /**
  * Exercise row with swipe-to-reveal favorite button.
  *
- * Swipe left to reveal star button. Button stays revealed until:
+ * Swipe RIGHT to reveal star button on the LEFT. Button stays revealed until:
  * - Tapped (toggles favorite)
- * - Swiped back right
+ * - Swiped back left
  * - Another row is revealed (handled by parent via revealedExerciseId)
  */
 @Composable
@@ -57,8 +57,8 @@ fun SwipeableExerciseRow(
     val revealWidthPx = with(density) { REVEAL_WIDTH.toPx() }
     val thresholdPx = revealWidthPx * THRESHOLD_RATIO
 
-    // Target offset: 0 when closed, -revealWidthPx when revealed
-    val targetOffset = if (isRevealed) -revealWidthPx else 0f
+    // Target offset: 0 when closed, +revealWidthPx when revealed (slides right)
+    val targetOffset = if (isRevealed) revealWidthPx else 0f
     val animatedOffset by animateFloatAsState(
         targetValue = targetOffset,
         animationSpec = tween(durationMillis = 200),
@@ -69,10 +69,10 @@ fun SwipeableExerciseRow(
     var dragOffset by remember { mutableFloatStateOf(0f) }
 
     Box(modifier = modifier) {
-        // Background with star button (revealed on left side of row = right side of screen)
+        // Background with star button on LEFT side
         Box(
             modifier = Modifier
-                .align(Alignment.CenterEnd)
+                .align(Alignment.CenterStart)
                 .width(REVEAL_WIDTH)
                 .fillMaxHeight()
                 .background(
@@ -112,7 +112,7 @@ fun SwipeableExerciseRow(
             }
         }
 
-        // Foreground content (slides left to reveal button)
+        // Foreground content (slides RIGHT to reveal button on left)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -123,17 +123,14 @@ fun SwipeableExerciseRow(
                             dragOffset = 0f
                         },
                         onDragEnd = {
-                            // Determine if we should reveal or hide
-                            val totalOffset = (if (isRevealed) -revealWidthPx else 0f) + dragOffset
-
                             if (isRevealed) {
-                                // Currently revealed - close if dragged right past threshold
-                                if (dragOffset > thresholdPx) {
+                                // Currently revealed - close if dragged left past threshold
+                                if (dragOffset < -thresholdPx) {
                                     onRevealChange(false)
                                 }
                             } else {
-                                // Currently closed - open if dragged left past threshold
-                                if (dragOffset < -thresholdPx) {
+                                // Currently closed - open if dragged right past threshold
+                                if (dragOffset > thresholdPx) {
                                     onRevealChange(true)
                                 }
                             }
@@ -144,9 +141,9 @@ fun SwipeableExerciseRow(
                         },
                         onHorizontalDrag = { _, dragAmount ->
                             val newOffset = dragOffset + dragAmount
-                            // Clamp: don't drag right of start, don't drag left past reveal width
-                            val minOffset = if (isRevealed) 0f else -revealWidthPx
-                            val maxOffset = if (isRevealed) revealWidthPx else 0f
+                            // Clamp: don't drag left of start, don't drag right past reveal width
+                            val minOffset = if (isRevealed) -revealWidthPx else 0f
+                            val maxOffset = if (isRevealed) 0f else revealWidthPx
                             dragOffset = newOffset.coerceIn(minOffset, maxOffset)
                         }
                     )
