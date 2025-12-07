@@ -5,87 +5,98 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryPurpleDark,               // Desaturated purple reduces eye strain
-    onPrimary = TextPrimary,                   // White text on purple
-    primaryContainer = PurpleAccentDark,       // Desaturated purple container
-    onPrimaryContainer = TextPrimary,
+    // Primary (Orange)
+    primary = Primary80,
+    onPrimary = Primary20,
+    primaryContainer = PrimaryContainerDark,
+    onPrimaryContainer = OnPrimaryContainerDark,
 
-    secondary = SecondaryPurpleDark,           // Desaturated deeper purple
-    onSecondary = TextPrimary,
-    secondaryContainer = SecondaryPurpleDark,
-    onSecondaryContainer = TextPrimary,
+    // Secondary (Gold)
+    secondary = Secondary80,
+    onSecondary = Secondary20,
+    secondaryContainer = SecondaryContainerDark,
+    onSecondaryContainer = OnSecondaryContainerDark,
 
-    tertiary = TertiaryPurpleDark,             // Soft purple for highlights
-    onTertiary = TextPrimary,
-    tertiaryContainer = TertiaryPurpleDark,
-    onTertiaryContainer = TextPrimary,
+    // Tertiary (Teal - cool accent)
+    tertiary = Tertiary80,
+    onTertiary = Tertiary20,
+    tertiaryContainer = AshBlueLight,
+    onTertiaryContainer = Color.White,
 
-    background = SurfaceContainerDark,         // 2025: Use container as background
-    onBackground = TextPrimary,
+    // Backgrounds & Surfaces (Slate scale)
+    background = SurfaceContainerDark,
+    onBackground = OnSurfaceDark,
 
-    surface = SurfaceContainerDark,            // 2025: Tonal surface
-    onSurface = TextPrimary,
+    surface = SurfaceContainerDark,
+    onSurface = OnSurfaceDark,
     surfaceVariant = SurfaceContainerHighDark,
-    onSurfaceVariant = TextSecondary,
+    onSurfaceVariant = OnSurfaceVariantDark,
 
-    // 2025 Material Design Expressive Surface Container Roles (Dark)
+    // Surface container roles
     surfaceDim = SurfaceDimDark,
-    surfaceBright = SurfaceBrightDark,
-    surfaceContainerLowest = SurfaceContainerLowestDark,
-    surfaceContainerLow = SurfaceContainerLowDark,
-    surfaceContainer = SurfaceContainerDark,           // Main screens
-    surfaceContainerHigh = SurfaceContainerHighDark,   // Cards
-    surfaceContainerHighest = SurfaceContainerHighestDark, // Modals/Dialogs
+    surfaceBright = SurfaceContainerHighestDark,
+    surfaceContainerLowest = Slate950,
+    surfaceContainerLow = Slate900,
+    surfaceContainer = SurfaceContainerDark,
+    surfaceContainerHigh = SurfaceContainerHighDark,
+    surfaceContainerHighest = SurfaceContainerHighestDark,
 
-    error = ErrorRed,
-    onError = TextPrimary,
+    // Status
+    error = SignalError,
+    onError = Color.White,
 
-    outline = TextTertiary,
-    outlineVariant = TextDisabled
+    outline = Slate700,
+    outlineVariant = Slate400
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryBlueLight,              // Teal/cyan for light mode buttons
-    onPrimary = ColorLightSurface,           // White text on teal buttons
-    primaryContainer = TertiaryBlueLight.copy(alpha = 0.2f),  // Light teal container
-    onPrimaryContainer = ColorOnLightBackground,  // Dark text on light container
+    // Primary (Orange)
+    primary = PhoenixOrangeLight,
+    onPrimary = Color.White,
+    primaryContainer = PrimaryContainerLight,
+    onPrimaryContainer = OnPrimaryContainerLight,
 
-    secondary = SecondaryBlueLight,          // Deeper teal for secondary elements
-    onSecondary = ColorLightSurface,         // White text
-    secondaryContainer = TertiaryBlueLight.copy(alpha = 0.15f),
-    onSecondaryContainer = ColorOnLightBackground,  // Dark text
+    // Secondary (Gold)
+    secondary = EmberYellowLight,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFE06F).copy(alpha = 0.3f),
+    onSecondaryContainer = Secondary20,
 
-    tertiary = TertiaryBlueLight,            // Bright cyan for highlights
-    onTertiary = ColorLightSurface,          // White text
-    tertiaryContainer = TertiaryBlueLight.copy(alpha = 0.1f),
-    onTertiaryContainer = ColorOnLightBackground,  // Dark text
+    // Tertiary (Teal)
+    tertiary = AshBlueLight,
+    onTertiary = Color.White,
+    tertiaryContainer = AshBlueDark.copy(alpha = 0.2f),
+    onTertiaryContainer = AshBlueLight,
 
-    background = SurfaceContainerLight,      // 2025: Use container as background
-    onBackground = ColorOnLightBackground,
+    // Backgrounds & Surfaces
+    background = SurfaceContainerLight,
+    onBackground = Slate900,
 
-    surface = SurfaceContainerLight,         // 2025: Tonal surface
-    onSurface = ColorOnLightSurface,
+    surface = Color.White,
+    onSurface = Slate900,
     surfaceVariant = SurfaceContainerHighLight,
-    onSurfaceVariant = ColorOnLightSurfaceVariant,
+    onSurfaceVariant = Slate700,
 
-    // 2025 Material Design Expressive Surface Container Roles (Light)
+    // Surface container roles
     surfaceDim = SurfaceDimLight,
     surfaceBright = SurfaceBrightLight,
     surfaceContainerLowest = SurfaceContainerLowestLight,
     surfaceContainerLow = SurfaceContainerLowLight,
-    surfaceContainer = SurfaceContainerLight,          // Main screens
-    surfaceContainerHigh = SurfaceContainerHighLight,  // Cards
-    surfaceContainerHighest = SurfaceContainerHighestLight, // Modals/Dialogs
+    surfaceContainer = SurfaceContainerLight,
+    surfaceContainerHigh = SurfaceContainerHighLight,
+    surfaceContainerHighest = SurfaceContainerHighestLight,
 
-    error = ErrorRed,
-    onError = ColorLightSurface,            // White text on red error
+    // Status
+    error = SignalError,
+    onError = Color.White,
 
-    outline = ColorOnLightSurfaceVariant.copy(alpha = 0.6f),
-    outlineVariant = ColorOnLightSurfaceVariant.copy(alpha = 0.4f)
+    outline = Slate400,
+    outlineVariant = Slate200
 )
 
 @Composable
