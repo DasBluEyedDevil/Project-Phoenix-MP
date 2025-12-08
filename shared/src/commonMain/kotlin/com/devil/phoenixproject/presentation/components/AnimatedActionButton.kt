@@ -1,8 +1,6 @@
 package com.devil.phoenixproject.presentation.components
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.height
@@ -10,10 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -36,7 +31,7 @@ enum class IconAnimation {
  * @param label Button text
  * @param icon Button icon
  * @param onClick Click handler
- * @param isPrimary If true, uses solid Royal Blue. If false, uses glassmorphic turquoise.
+ * @param isPrimary If true, uses solid Royal Blue. If false, uses solid Muted Purple.
  * @param iconAnimation Type of icon animation to apply
  * @param modifier Modifier for the button
  */
@@ -74,17 +69,6 @@ fun AnimatedActionButton(
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseScale"
-    )
-
-    // Secondary button shimmer
-    val shimmerOffset by infiniteTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerOffset"
     )
 
     // Icon animations
@@ -130,14 +114,10 @@ fun AnimatedActionButton(
     val containerColor = if (isPrimary) {
         HomeButtonColors.PrimaryBlue
     } else {
-        HomeButtonColors.SecondaryTurquoise.copy(alpha = 0.15f)
+        HomeButtonColors.AccentPurple
     }
 
-    val contentColor = if (isPrimary) {
-        Color.White
-    } else {
-        HomeButtonColors.SecondaryMint
-    }
+    val contentColor = Color.White
 
     ExtendedFloatingActionButton(
         onClick = onClick,
@@ -147,34 +127,7 @@ fun AnimatedActionButton(
         modifier = modifier
             .fillMaxWidth()
             .height(52.dp)
-            .scale(scale * pulseScale)
-            .then(
-                if (!isPrimary) {
-                    Modifier
-                        .border(
-                            width = 1.5.dp,
-                            color = HomeButtonColors.SecondaryTurquoise,
-                            shape = MaterialTheme.shapes.large
-                        )
-                        .drawWithContent {
-                            drawContent()
-                            // Shimmer overlay
-                            drawRect(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color.White.copy(alpha = 0.1f),
-                                        Color.Transparent
-                                    ),
-                                    start = Offset(size.width * shimmerOffset, 0f),
-                                    end = Offset(size.width * (shimmerOffset + 0.5f), size.height)
-                                )
-                            )
-                        }
-                } else {
-                    Modifier
-                }
-            ),
+            .scale(scale * pulseScale),
         icon = {
             Icon(
                 imageVector = icon,

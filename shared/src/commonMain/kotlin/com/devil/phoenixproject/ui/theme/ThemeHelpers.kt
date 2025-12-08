@@ -19,9 +19,9 @@ fun screenBackgroundBrush(): Brush {
     val isDark = isSystemInDarkTheme()
     return if (isDark) {
         Brush.verticalGradient(
-            0.0f to Slate900,
-            0.5f to HomeButtonColors.AccentPlum.copy(alpha = 0.3f),
-            1.0f to Slate900
+            0.0f to Slate950,
+            0.5f to HomeButtonColors.AccentPlum.copy(alpha = 0.15f),
+            1.0f to Slate950
         )
     } else {
         Brush.verticalGradient(
