@@ -1,0 +1,68 @@
+Reusing configuration cache.
+> Task :shared:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:preBuild UP-TO-DATE
+> Task :shared:preDebugBuild UP-TO-DATE
+> Task :shared:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :shared:convertXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :shared:generateComposeResClass UP-TO-DATE
+> Task :shared:processDebugNavigationResources UP-TO-DATE
+> Task :shared:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :shared:generateDebugResValues UP-TO-DATE
+> Task :shared:generateCommonMainVitruvianDatabaseInterface UP-TO-DATE
+> Task :shared:copyNonXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :shared:generateDebugResources UP-TO-DATE
+> Task :shared:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :shared:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForAndroidDebug NO-SOURCE
+> Task :shared:packageDebugResources UP-TO-DATE
+> Task :shared:generateResourceAccessorsForAndroidMain NO-SOURCE
+> Task :shared:generateResourceAccessorsForAndroidDebug NO-SOURCE
+> Task :shared:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:generateActualResourceCollectorsForAndroidMain UP-TO-DATE
+> Task :shared:parseDebugLocalResources UP-TO-DATE
+> Task :shared:generateDebugRFile UP-TO-DATE
+
+> Task :shared:compileDebugKotlinAndroid
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:127:1 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:232:13 Unresolved reference 'itemsIndexed'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:232:51 Cannot infer type for implicit value parameter 'it'. Specify it explicitly.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:232:54 Cannot infer type for value parameter 'item'. Specify it explicitly.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:232:67 Unresolved reference 'id'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:232:75 Cannot infer type for value parameter 'index'. Specify it explicitly.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:232:82 Cannot infer type for value parameter 'exercise'. Specify it explicitly.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:234:45 Unresolved reference 'supersetGroupId'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:242:39 Unresolved reference 'ReorderableItem'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:244:36 Unresolved reference 'id'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:245:21 Cannot infer type for value parameter 'isDragging'. Specify it explicitly.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:246:38 @Composable invocations can only happen from the context of a @Composable function
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:248:21 @Composable invocations can only happen from the context of a @Composable function
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:251:47 Unresolved reference 'id'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:264:55 Unresolved reference 'id'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:265:62 Unresolved reference 'id'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:267:62 Unresolved reference 'id'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:275:49 Unresolved reference 'draggableHandle'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:276:49 @Composable invocations can only happen from the context of a @Composable function
+
+> Task :shared:compileDebugKotlinAndroid FAILED
+w: Detected multiple Kotlin daemon sessions at 
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':shared:compileDebugKotlinAndroid'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 18s
+15 actionable tasks: 2 executed, 13 up-to-date
+Configuration cache entry reused.

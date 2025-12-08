@@ -1,0 +1,179 @@
+Reusing configuration cache.
+> Task :shared:preBuild UP-TO-DATE
+> Task :shared:generateComposeResClass UP-TO-DATE
+> Task :shared:convertXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :shared:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :shared:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:preDebugBuild UP-TO-DATE
+> Task :shared:generateCommonMainVitruvianDatabaseInterface UP-TO-DATE
+> Task :shared:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:generateDebugResValues UP-TO-DATE
+> Task :shared:processDebugNavigationResources UP-TO-DATE
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :shared:generateResourceAccessorsForAndroidMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :shared:generateDebugResources UP-TO-DATE
+> Task :shared:prepareComposeResourcesTaskForAndroidDebug NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :shared:generateResourceAccessorsForAndroidDebug NO-SOURCE
+> Task :shared:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:packageDebugResources UP-TO-DATE
+> Task :shared:generateActualResourceCollectorsForAndroidMain UP-TO-DATE
+> Task :shared:parseDebugLocalResources UP-TO-DATE
+> Task :shared:generateDebugRFile UP-TO-DATE
+
+> Task :shared:compileDebugKotlinAndroid
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:2:2 Unresolved reference 'Composable'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:4:20 Unresolved reference 'Routine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:5:23 Unresolved reference 'Routine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:9:29 Unresolved reference 'Row'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:10:44 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:12:49 Unresolved reference 'dp'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:13:57 Unresolved reference 'Arrangement'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:14:53 Unresolved reference 'Alignment'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:16:33 Unresolved reference 'Column'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:16:51 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:17:37 Unresolved reference 'Text'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:18:48 Unresolved reference 'routine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:19:49 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:20:54 Unresolved reference 'FontWeight'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:22:37 Unresolved reference 'Text'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:23:51 Unresolved reference 'routine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:24:49 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:25:49 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:28:33 Unresolved reference 'Icon'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:29:37 Unresolved reference 'Icons'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:31:44 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:35:21 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:21 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:24 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:25 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:33 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:34 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:41 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:42 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:43 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:45 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:36:45 Function declaration must have a name.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:37:25 Unresolved reference 'item'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:38:29 Unresolved reference 'Box'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:39:44 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:41:49 Unresolved reference 'dp'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:42:52 Unresolved reference 'Alignment'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:44:33 Unresolved reference 'Text'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:46:45 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:49:29 Unresolved reference 'Spacer'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:49:47 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:49:66 Unresolved reference 'dp'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:50:29 Unresolved reference 'Button'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:51:43 Unresolved reference 'onCreateRoutine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:52:44 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:52:59 Unresolved reference 'Alignment'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:54:33 Unresolved reference 'Text'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:58:2 Unresolved reference 'Composable'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:60:20 Unresolved reference 'Routine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:61:23 Unresolved reference 'Routine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:65:29 Unresolved reference 'Row'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:66:44 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:68:49 Unresolved reference 'dp'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:69:57 Unresolved reference 'Arrangement'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:70:53 Unresolved reference 'Alignment'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:72:33 Unresolved reference 'Column'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:72:51 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:73:37 Unresolved reference 'Text'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:74:48 Unresolved reference 'routine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:75:49 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:76:54 Unresolved reference 'FontWeight'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:78:37 Unresolved reference 'Text'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:79:51 Unresolved reference 'routine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:80:49 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:81:49 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:84:33 Unresolved reference 'Icon'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:85:37 Unresolved reference 'Icons'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:87:44 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:21 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:24 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:25 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:33 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:34 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:41 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:42 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:43 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:45 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:92:45 Function declaration must have a name.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:93:25 Unresolved reference 'item'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:94:29 Unresolved reference 'Box'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:95:44 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:97:49 Unresolved reference 'dp'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:98:52 Unresolved reference 'Alignment'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:100:33 Unresolved reference 'Text'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:102:45 Unresolved reference 'MaterialTheme'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:105:29 Unresolved reference 'Spacer'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:105:47 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:105:66 Unresolved reference 'dp'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:106:29 Unresolved reference 'Button'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:107:43 Unresolved reference 'onCreateRoutine'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:108:44 Unresolved reference 'Modifier'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:108:59 Unresolved reference 'Alignment'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:110:33 Unresolved reference 'Text'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:114:21 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:115:17 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:116:13 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:117:9 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/components/RoutinePickerDialog.kt:118:5 Syntax error: Expecting a top level declaration.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/CycleEditorScreen.kt:29:57 Unresolved reference 'RoutinePickerDialog'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/CycleEditorScreen.kt:243:9 Cannot access 'fun RoutinePickerDialog(routines: List<Routine>, onSelectRoutine: (Routine) -> Unit, onDismiss: () -> Unit): Unit': it is private in file.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:75:13 Unresolved reference 'fromIndex'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:75:26 Unresolved reference 'list'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:75:42 Unresolved reference 'toIndex'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:75:53 Unresolved reference 'list'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:76:25 Unresolved reference 'list'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:76:39 Unresolved reference 'fromIndex'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:77:13 Unresolved reference 'list'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:77:22 Unresolved reference 'toIndex'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:79:44 Unresolved reference 'list'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:79:62 Cannot infer type for value parameter 'i'. Specify it explicitly.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:79:65 Cannot infer type for value parameter 'ex'. Specify it explicitly.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:79:74 Unresolved reference 'copy'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:88:5 @Composable invocations can only happen from the context of a @Composable function
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:217:21 Unresolved reference 'lazyListState'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:232:39 Unresolved reference 'ReorderableItem'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:233:29 Unresolved reference 'reorderState'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:235:21 Cannot infer type for value parameter 'isDragging'. Specify it explicitly.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:236:38 @Composable invocations can only happen from the context of a @Composable function
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:238:21 Unresolved reference 'DraggableExerciseCard'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:244:53 Unresolved reference 'SupersetState'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:245:65 Unresolved reference 'SupersetState'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:246:48 Unresolved reference 'SupersetState'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:247:46 Unresolved reference 'SupersetState'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:248:37 Unresolved reference 'SupersetState'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:265:49 Unresolved reference 'draggableHandle'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:266:49 @Composable invocations can only happen from the context of a @Composable function
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:284:9 @Composable invocations can only happen from the context of a @Composable function
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:309:13 Unresolved reference 'EditRoutineExerciseDialog'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:315:28 Cannot infer type for value parameter 'updated'. Specify it explicitly.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:382:1 Modifier 'enum' is not applicable to 'local class'.
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:496:2 Syntax error: Expecting '}'.
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+> Task :shared:compileDebugKotlinAndroid FAILED
+Execution failed for task ':shared:compileDebugKotlinAndroid'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+15 actionable tasks: 2 executed, 13 up-to-date
+Configuration cache entry reused.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 5s

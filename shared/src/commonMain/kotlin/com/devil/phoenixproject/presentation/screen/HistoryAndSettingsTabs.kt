@@ -860,32 +860,44 @@ fun SettingsTab(
                 ) {
                     FilterChip(
                         selected = localWeightUnit == WeightUnit.KG,
-                        onClick = { 
+                        onClick = {
                             localWeightUnit = WeightUnit.KG
-                            onWeightUnitChange(WeightUnit.KG) 
+                            onWeightUnitChange(WeightUnit.KG)
                         },
                         label = { Text("kg") },
                         modifier = Modifier.weight(1f),
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primary,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            labelColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = localWeightUnit == WeightUnit.KG,
+                            borderColor = MaterialTheme.colorScheme.outline,
+                            selectedBorderColor = MaterialTheme.colorScheme.primary
                         )
                     )
                     FilterChip(
                         selected = localWeightUnit == WeightUnit.LB,
-                        onClick = { 
+                        onClick = {
                             localWeightUnit = WeightUnit.LB
-                            onWeightUnitChange(WeightUnit.LB) 
+                            onWeightUnitChange(WeightUnit.LB)
                         },
                         label = { Text("lbs") },
                         modifier = Modifier.weight(1f),
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primary,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            labelColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = localWeightUnit == WeightUnit.LB,
+                            borderColor = MaterialTheme.colorScheme.outline,
+                            selectedBorderColor = MaterialTheme.colorScheme.primary
                         )
                     )
                 }
@@ -1289,7 +1301,11 @@ fun SettingsTab(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(20.dp)
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
             ) {
                 Icon(
                     Icons.Default.EmojiEvents,
@@ -1362,18 +1378,22 @@ fun SettingsTab(
                     onClick = onNavigateToConnectionLogs,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp), // Material 3 Expressive: Taller button
-                    shape = RoundedCornerShape(20.dp) // Material 3 Expressive: More rounded
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(
                         Icons.Default.Timeline,
                         contentDescription = "Connection logs",
-                        modifier = Modifier.size(24.dp) // Material 3 Expressive: Larger icon
+                        modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(Spacing.small))
                     Text(
                         "Connection Logs",
-                        style = MaterialTheme.typography.titleLarge, // Material 3 Expressive: Larger text
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -1392,7 +1412,11 @@ fun SettingsTab(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(
                         Icons.Default.Science,
@@ -1660,14 +1684,21 @@ private fun ColorSchemeChip(
                     )
             )
             
-            // Color name
-            Text(
-                text = scheme.name,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-            )
+            // Color name with background for readability
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(4.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            ) {
+                Text(
+                    text = scheme.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+            }
             
             // Selected indicator
             if (isSelected) {

@@ -1,0 +1,47 @@
+Reusing configuration cache.
+> Task :shared:preBuild UP-TO-DATE
+> Task :shared:convertXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :shared:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :shared:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:preDebugBuild UP-TO-DATE
+> Task :shared:generateCommonMainVitruvianDatabaseInterface UP-TO-DATE
+> Task :shared:generateComposeResClass UP-TO-DATE
+> Task :shared:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :shared:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :shared:copyNonXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :shared:generateDebugResValues UP-TO-DATE
+> Task :shared:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForAndroidDebug NO-SOURCE
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:generateResourceAccessorsForAndroidDebug NO-SOURCE
+> Task :shared:processDebugNavigationResources UP-TO-DATE
+> Task :shared:copyNonXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :shared:generateDebugResources UP-TO-DATE
+> Task :shared:generateResourceAccessorsForAndroidMain NO-SOURCE
+> Task :shared:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :shared:packageDebugResources UP-TO-DATE
+> Task :shared:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :shared:generateActualResourceCollectorsForAndroidMain UP-TO-DATE
+> Task :shared:parseDebugLocalResources UP-TO-DATE
+> Task :shared:generateDebugRFile UP-TO-DATE
+
+> Task :shared:compileDebugKotlinAndroid FAILED
+e: file:///C:/Users/dasbl/AndroidStudioProjects/Project-Phoenix-MP/shared/src/commonMain/kotlin/com/devil/phoenixproject/presentation/screen/RoutineEditorScreen.kt:35:30 Unresolved reference 'draggableHandle'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':shared:compileDebugKotlinAndroid'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 4s
+15 actionable tasks: 2 executed, 13 up-to-date
+Configuration cache entry reused.
