@@ -176,11 +176,6 @@ interface BleRepository {
      */
     suspend fun sendStopCommand(): Result<Unit>
 
-    /**
-     * Test official app protocol (for debugging)
-     */
-    suspend fun testOfficialAppProtocol(): Result<Unit>
-
     // Handle detection for auto-start (arms the state machine in WaitingForRest)
     fun enableHandleDetection(enabled: Boolean)
 
@@ -245,7 +240,6 @@ class StubBleRepository : BleRepository {
     override suspend fun startWorkout(params: com.devil.phoenixproject.domain.model.WorkoutParameters) = Result.success(Unit)
     override suspend fun stopWorkout() = Result.success(Unit)
     override suspend fun sendStopCommand() = Result.success(Unit)
-    override suspend fun testOfficialAppProtocol() = Result.success(Unit)
     override fun enableHandleDetection(enabled: Boolean) {}
     override fun resetHandleState() {}
     override fun enableJustLiftWaitingMode() {}

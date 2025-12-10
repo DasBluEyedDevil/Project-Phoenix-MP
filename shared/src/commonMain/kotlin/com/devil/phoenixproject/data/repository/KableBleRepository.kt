@@ -60,7 +60,9 @@ class KableBleRepository : BleRepository {
 
         // Primary Characteristic UUIDs
         private val NUS_TX_UUID = Uuid.parse("6e400002-b5a3-f393-e0a9-e50e24dcca9e")  // Write (RX on device)
-        private val NUS_RX_UUID = Uuid.parse("6e400003-b5a3-f393-e0a9-e50e24dcca9e")  // Notify (commands)
+        // NOTE: Standard NUS RX (6e400003) does NOT exist on Vitruvian devices - they use custom characteristics
+        @Suppress("unused") // Vitruvian doesn't have standard NUS RX
+        private val NUS_RX_UUID = Uuid.parse("6e400003-b5a3-f393-e0a9-e50e24dcca9e")  // Notify (not present on Vitruvian)
         private val MONITOR_UUID = Uuid.parse("90e991a6-c548-44ed-969b-eb541014eae3") // Poll (position/load) - NOT notifiable!
         private val REPS_UUID = Uuid.parse("8308f2a6-0875-4a94-a86f-5c5c5e1b068a")    // Notify (rep events)
 
@@ -79,18 +81,6 @@ class KableBleRepository : BleRepository {
         // Device Information Service (DIS) - standard BLE service for firmware version
         private val DIS_SERVICE_UUID = Uuid.parse("0000180a-0000-1000-8000-00805f9b34fb")
         private val FIRMWARE_REVISION_UUID = Uuid.parse("00002a26-0000-1000-8000-00805f9b34fb")
-
-        // Workout command characteristic UUIDs (official app protocol - fan-out)
-        private val WORKOUT_CMD_UUIDS = listOf(
-            Uuid.parse("6d094aa3-b60d-4916-8a55-8ed73fb9f6a5"),
-            Uuid.parse("6d094aa3-b60d-4916-8a55-8ed73fb9f6a6"),
-            Uuid.parse("6d094aa3-b60d-4916-8a55-8ed73fb9f6a7"),
-            Uuid.parse("6d094aa3-b60d-4916-8a55-8ed73fb9f6a8"),
-            Uuid.parse("6d094aa3-b60d-4916-8a55-8ed73fb9f6a9"),
-            Uuid.parse("6d094aa3-b60d-4916-8a55-8ed73fb9f6aa"),
-            Uuid.parse("6d094aa3-b60d-4916-8a55-8ed73fb9f6ab"),
-            Uuid.parse("6d094aa3-b60d-4916-8a55-8ed73fb9f6ac")
-        )
 
         // Connection settings
         private const val CONNECTION_RETRY_COUNT = 3
@@ -132,6 +122,8 @@ class KableBleRepository : BleRepository {
         service = NUS_SERVICE_UUID,
         characteristic = NUS_TX_UUID
     )
+    // NOTE: rxCharacteristic not used - Vitruvian doesn't have standard NUS RX (6e400003)
+    @Suppress("unused")
     private val rxCharacteristic = characteristicOf(
         service = NUS_SERVICE_UUID,
         characteristic = NUS_RX_UUID
@@ -168,16 +160,6 @@ class KableBleRepository : BleRepository {
         service = DIS_SERVICE_UUID,
         characteristic = FIRMWARE_REVISION_UUID
     )
-
-    // Workout command characteristics (official app protocol - fan-out)
-    // Try each until one works, then cache the working one
-    private val workoutCmdCharacteristics = WORKOUT_CMD_UUIDS.map { uuid ->
-        characteristicOf(service = NUS_SERVICE_UUID, characteristic = uuid)
-    }
-
-    // Cache the working workout command characteristic (discovered at runtime)
-    // null = not yet discovered, use fan-out to find working one
-    private var workingWorkoutCmdCharacteristic: com.juul.kable.Characteristic? = null
 
     // State flows
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
@@ -640,8 +622,9 @@ class KableBleRepository : BleRepository {
 
         // Verify services are discovered and log GATT structure
         try {
-            val services = p.services
-            if (services == null) {
+            // p.services is a StateFlow<List<DiscoveredService>?> - access .value
+            val servicesList = p.services.value
+            if (servicesList == null) {
                 log.w { "⚠️ No services discovered - device may not be fully ready" }
                 logRepo.warning(
                     LogEventType.SERVICE_DISCOVERED,
@@ -650,15 +633,59 @@ class KableBleRepository : BleRepository {
                     connectedDeviceAddress
                 )
             } else {
-                // Log discovered services (Kable returns lazy sequence, convert to string for logging)
-                val servicesStr = services.toString()
-                log.i { "📋 Services discovered: $servicesStr" }
+                // Log detailed GATT structure with characteristic properties
+                log.i { "📋 ========== GATT SERVICE DISCOVERY ==========" }
+                log.i { "📋 Found ${servicesList.size} services" }
+                servicesList.forEach { service ->
+                    log.i { "  SERVICE: ${service.serviceUuid}" }
+                    service.characteristics.forEach { char ->
+                        // Properties.toString() shows the raw property flags value
+                        log.i { "    CHAR: ${char.characteristicUuid} props=${char.properties}" }
+                    }
+                }
+                log.i { "📋 =========================================" }
+
+                // Check specifically for NUS TX characteristic (6e400002)
+                val nusService = servicesList.find {
+                    it.serviceUuid.toString().lowercase().contains("6e400001")
+                }
+                if (nusService != null) {
+                    log.i { "✅ NUS Service found: ${nusService.serviceUuid}" }
+                    val txChar = nusService.characteristics.find {
+                        it.characteristicUuid.toString().lowercase().contains("6e400002")
+                    }
+                    if (txChar != null) {
+                        log.i { "✅ NUS TX (6e400002) found, properties: ${txChar.properties}" }
+                    } else {
+                        log.e { "❌ NUS TX characteristic (6e400002) NOT FOUND in NUS service!" }
+                    }
+                    val rxChar = nusService.characteristics.find {
+                        it.characteristicUuid.toString().lowercase().contains("6e400003")
+                    }
+                    if (rxChar != null) {
+                        log.i { "✅ NUS RX (6e400003) found, properties: ${rxChar.properties}" }
+                    } else {
+                        log.e { "❌ NUS RX characteristic (6e400003) NOT FOUND in NUS service!" }
+                    }
+                } else {
+                    log.w { "⚠️ NUS Service (6e400001) NOT FOUND - checking all services for NUS chars..." }
+                    // Search all services for the TX/RX characteristics
+                    servicesList.forEach { service ->
+                        service.characteristics.forEach { char ->
+                            val uuid = char.characteristicUuid.toString().lowercase()
+                            if (uuid.contains("6e400002") || uuid.contains("6e400003")) {
+                                log.i { "🔍 Found ${char.characteristicUuid} in service ${service.serviceUuid}, props=${char.properties}" }
+                            }
+                        }
+                    }
+                }
+
                 logRepo.info(
                     LogEventType.SERVICE_DISCOVERED,
                     "GATT services discovered",
                     connectedDeviceName,
                     connectedDeviceAddress,
-                    servicesStr.take(200) // Truncate for log storage
+                    "Services: ${servicesList.size}"
                 )
             }
         } catch (e: Exception) {
@@ -772,39 +799,10 @@ class KableBleRepository : BleRepository {
 
         // ===== CORE NOTIFICATIONS =====
 
-        // Observe RX characteristic for command responses
-        scope.launch {
-            try {
-                p.observe(rxCharacteristic)
-                    .catch { e ->
-                        log.e { "RX observation error: ${e.message}" }
-                        logRepo.error(
-                            LogEventType.ERROR,
-                            "RX notification error",
-                            connectedDeviceName,
-                            connectedDeviceAddress,
-                            e.message
-                        )
-                    }
-                    .collect { data ->
-                        logRepo.debug(
-                            LogEventType.NOTIFICATION,
-                            "RX notification received",
-                            details = "Size: ${data.size} bytes"
-                        )
-                        processIncomingData(data)
-                    }
-            } catch (e: Exception) {
-                log.e { "Failed to observe RX: ${e.message}" }
-                logRepo.error(
-                    LogEventType.ERROR,
-                    "Failed to enable RX notifications",
-                    connectedDeviceName,
-                    connectedDeviceAddress,
-                    e.message
-                )
-            }
-        }
+        // NOTE: Standard NUS RX (6e400003) does NOT exist on Vitruvian devices.
+        // The device uses custom characteristics for notifications instead.
+        // Skipping observation of non-existent rxCharacteristic to avoid errors.
+        // Command responses (if any) come through device-specific characteristics.
 
         // Observe REPS characteristic for rep completion events (CRITICAL for rep counting!)
         scope.launch {
@@ -1175,9 +1173,6 @@ class KableBleRepository : BleRepository {
         diagnosticPollingJob?.cancel()
         diagnosticPollingJob = null
 
-        // Clear cached workout command characteristic (will rediscover on next connect)
-        workingWorkoutCmdCharacteristic = null
-
         try {
             peripheral?.disconnect()
         } catch (e: Exception) {
@@ -1224,72 +1219,32 @@ class KableBleRepository : BleRepository {
 
         val commandHex = command.joinToString(" ") { it.toHexString() }
 
-        // STRATEGY: Try workout command characteristics fan-out (matching official app protocol)
-        // 1. If we have a cached working characteristic, use it
-        // 2. Otherwise, try each workout command characteristic until one succeeds
-        // 3. Fall back to NUS TX characteristic as last resort
-
-        // Step 1: Try cached working characteristic if available
-        workingWorkoutCmdCharacteristic?.let { cachedChar ->
-            try {
-                p.write(cachedChar, command, WriteType.WithoutResponse)
-                log.d { "Command sent via cached workout char: ${command.size} bytes" }
-                logRepo.debug(
-                    LogEventType.COMMAND_SENT,
-                    "Command sent (cached workout char)",
-                    connectedDeviceName,
-                    connectedDeviceAddress,
-                    "Size: ${command.size} bytes"
-                )
-                return Result.success(Unit)
-            } catch (e: Exception) {
-                log.w { "Cached workout char failed, will try fan-out: ${e.message}" }
-                workingWorkoutCmdCharacteristic = null  // Clear cache
-            }
-        }
-
-        // Step 2: Try each workout command characteristic (official app fan-out)
-        for ((index, char) in workoutCmdCharacteristics.withIndex()) {
-            try {
-                p.write(char, command, WriteType.WithoutResponse)
-                workingWorkoutCmdCharacteristic = char  // Cache for future use
-                log.i { "✅ Workout command sent via char #$index: ${command.size} bytes" }
-                logRepo.debug(
-                    LogEventType.COMMAND_SENT,
-                    "Command sent (workout char #$index)",
-                    connectedDeviceName,
-                    connectedDeviceAddress,
-                    "Size: ${command.size} bytes"
-                )
-                return Result.success(Unit)
-            } catch (e: Exception) {
-                log.v { "Workout cmd char #$index failed: ${e.message}" }
-                // Continue to next characteristic
-            }
-        }
-
-        // Step 3: Fall back to NUS TX characteristic (original method)
-        log.d { "All workout chars failed, falling back to NUS TX" }
+        // Send to NUS TX - try WithResponse first (device may not advertise WithoutResponse property)
+        // Even though parent repo uses WRITE_TYPE_NO_RESPONSE, Kable requires the property to be advertised
         return try {
-            // Try WriteWithResponse first (some devices don't support WithoutResponse)
+            log.d { "Sending ${command.size}-byte command to NUS TX" }
+            log.d { "Command hex: $commandHex" }
+
+            // Try WriteWithResponse first (more compatible), fall back to WithoutResponse
             try {
                 p.write(txCharacteristic, command, WriteType.WithResponse)
-                log.d { "Command sent via NUS TX (WithResponse): ${command.size} bytes" }
+                log.i { "✅ Command sent via NUS TX (WithResponse): ${command.size} bytes" }
             } catch (e: Exception) {
                 log.d { "WithResponse failed, trying WithoutResponse: ${e.message}" }
                 p.write(txCharacteristic, command, WriteType.WithoutResponse)
-                log.d { "Command sent via NUS TX (WithoutResponse): ${command.size} bytes" }
+                log.i { "✅ Command sent via NUS TX (WithoutResponse): ${command.size} bytes" }
             }
+
             logRepo.debug(
                 LogEventType.COMMAND_SENT,
-                "Command sent (NUS TX fallback)",
+                "Command sent (NUS TX)",
                 connectedDeviceName,
                 connectedDeviceAddress,
-                "Size: ${command.size} bytes, Data: $commandHex"
+                "Size: ${command.size} bytes"
             )
             Result.success(Unit)
         } catch (e: Exception) {
-            log.e { "Failed to send command (all methods): ${e.message}" }
+            log.e { "Failed to send command: ${e.message}" }
             logRepo.error(
                 LogEventType.ERROR,
                 "Failed to send command",
@@ -1366,22 +1321,6 @@ class KableBleRepository : BleRepository {
             sendWorkoutCommand(stopCmd)
         } catch (e: Exception) {
             log.e { "Failed to send stop command: ${e.message}" }
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun testOfficialAppProtocol(): Result<Unit> {
-        log.i { "Testing official app protocol" }
-        return try {
-            // Send a test command to verify protocol compatibility
-            val testCmd = byteArrayOf(0x00, 0x00, 0x00, 0x00)  // No-op/test command
-            val result = sendWorkoutCommand(testCmd)
-            if (result.isSuccess) {
-                log.i { "Official app protocol test successful" }
-            }
-            result
-        } catch (e: Exception) {
-            log.e { "Official app protocol test failed: ${e.message}" }
             Result.failure(e)
         }
     }

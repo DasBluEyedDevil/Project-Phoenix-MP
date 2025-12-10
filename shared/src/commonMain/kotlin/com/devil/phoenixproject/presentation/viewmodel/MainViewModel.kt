@@ -592,23 +592,47 @@ class MainViewModel constructor(
             }
             Logger.d { "Built ${command.size}-byte workout command for ${params.workoutType}" }
 
-            // 2. Send Workout Command (matches parent repo protocol)
-            // Program modes: 96-byte frame (command 0x04) - machine engages on receipt
-            // Echo mode: 32-byte frame (command 0x4E) - machine engages on receipt
+            // 2. Send INIT Command (0x0A) - ensures clean state
+            // Per parent repo protocol: "Sometimes sent before start to ensure clean state"
+            try {
+                val initCommand = BlePacketFactory.createInitCommand()
+                bleRepository.sendWorkoutCommand(initCommand)
+                Logger.i { "INIT command sent (0x0A) - reset machine state" }
+            } catch (e: Exception) {
+                Logger.w(e) { "INIT command failed (non-fatal): ${e.message}" }
+                // Continue anyway - init is optional
+            }
+
+            // 3. Send Configuration Command (0x04 header, 96 bytes)
+            // This sets the workout parameters but does NOT engage the motors
             try {
                 bleRepository.sendWorkoutCommand(command)
-                Logger.d { "Workout command sent: ${command.size} bytes for ${params.workoutType}" }
-
-                // Start active workout polling (matches parent repo: bleManager?.startMonitorPolling())
-                // This transitions from auto-start detection mode to active workout monitoring
-                bleRepository.startActiveWorkoutPolling()
+                Logger.i { "CONFIG command sent (0x04): ${command.size} bytes for ${params.workoutType}" }
+                // Log first 16 bytes for debugging
+                val preview = command.take(16).joinToString(" ") { it.toUByte().toString(16).padStart(2, '0').uppercase() }
+                Logger.d { "Config preview: $preview ..." }
             } catch (e: Exception) {
-                Logger.e(e) { "Failed to send workout command" }
+                Logger.e(e) { "Failed to send config command" }
                 _connectionError.value = "Failed to send command: ${e.message}"
                 return@launch
             }
 
-            // 3. Reset State
+            // 4. Send START Command (0x03) - ENABLES THE MOTORS!
+            // Per parent repo protocol analysis: Config (0x04) sets params, START (0x03) engages
+            try {
+                val startCommand = BlePacketFactory.createStartCommand()
+                bleRepository.sendWorkoutCommand(startCommand)
+                Logger.i { "START command sent (0x03) - motors should engage" }
+
+                // Start active workout polling
+                bleRepository.startActiveWorkoutPolling()
+            } catch (e: Exception) {
+                Logger.e(e) { "Failed to send START command" }
+                _connectionError.value = "Failed to start workout: ${e.message}"
+                return@launch
+            }
+
+            // 5. Reset State
             currentSessionId = KmpUtils.randomUUID()
             _repCount.value = RepCount()
             // For Just Lift mode, preserve position ranges built during handle detection
@@ -626,7 +650,7 @@ class MainViewModel constructor(
                 isAMRAP = params.isAMRAP
             )
 
-            // 4. Countdown (skipped for Just Lift auto-start)
+            // 6. Countdown (skipped for Just Lift auto-start)
             if (!skipCountdown && !isJustLiftMode) {
                 for (i in 5 downTo 1) {
                     _workoutState.value = WorkoutState.Countdown(i)
@@ -634,7 +658,7 @@ class MainViewModel constructor(
                 }
             }
 
-            // 5. Start Monitoring
+            // 7. Start Monitoring
             _workoutState.value = WorkoutState.Active
             workoutStartTime = currentTimeMillis()
             _hapticEvents.emit(HapticEvent.WORKOUT_START)
@@ -1608,11 +1632,15 @@ class MainViewModel constructor(
                 repCounter.reset()
                 resetAutoStopState()
 
+                // CRITICAL: Restart monitor polling to clear machine fault state (red lights)
+                // This must happen immediately after stop to reset the machine
+                bleRepository.restartMonitorPolling()
+
                 // Enable handle detection AND Just Lift waiting mode for next set
                 // This arms the state machine to detect when user grabs handles again
                 enableHandleDetection()
                 bleRepository.enableJustLiftWaitingMode()
-                Logger.d("Just Lift: Enabled waiting mode for next auto-start")
+                Logger.d("Just Lift: Machine reset & armed for next auto-start")
 
                 delay(5000) // Show summary for 5 seconds
 

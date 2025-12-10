@@ -41,19 +41,6 @@ object BleConstants {
         UNKNOWN_AUTH_CHAR_UUID_STRING  // Web apps subscribe to this
     )
 
-    // Official app workout command characteristics (discovered from HCI logs)
-    // These are writable characteristics (props: 4 = WRITE_NO_RESPONSE)
-    val WORKOUT_CMD_CHAR_UUID_STRINGS = listOf(
-        "6d094aa3-b60d-4916-8a55-8ed73fb9f6a5",
-        "6d094aa3-b60d-4916-8a55-8ed73fb9f6a6",
-        "6d094aa3-b60d-4916-8a55-8ed73fb9f6a7",
-        "6d094aa3-b60d-4916-8a55-8ed73fb9f6a8",
-        "6d094aa3-b60d-4916-8a55-8ed73fb9f6a9",
-        "6d094aa3-b60d-4916-8a55-8ed73fb9f6aa",
-        "6d094aa3-b60d-4916-8a55-8ed73fb9f6ab",
-        "6d094aa3-b60d-4916-8a55-8ed73fb9f6ac"
-    )
-
     // Device name pattern for filtering - matches "Vitruvian*" devices
     const val DEVICE_NAME_PREFIX = "Vee"
     const val DEVICE_NAME_PATTERN = "^Vitruvian.*$"
