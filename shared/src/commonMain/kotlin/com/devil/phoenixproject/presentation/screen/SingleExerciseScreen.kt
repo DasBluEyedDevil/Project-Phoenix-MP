@@ -13,6 +13,7 @@ import com.devil.phoenixproject.presentation.components.ConnectionErrorDialog
 import com.devil.phoenixproject.presentation.components.ExercisePickerContent
 import com.devil.phoenixproject.presentation.navigation.NavigationRoutes
 import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -259,22 +260,29 @@ fun SingleExerciseScreen(
                         formatWeight = viewModel::formatWeight,
                         buttonText = "Start Workout",
                         onSave = { configuredExercise ->
+                            Logger.d { "SingleExercise: Start button clicked for ${configuredExercise.exercise.name}" }
                             val tempRoutine = Routine(
                                 id = "${MainViewModel.TEMP_SINGLE_EXERCISE_PREFIX}${generateUUID()}",
                                 name = "Single Exercise: ${configuredExercise.exercise.name}",
                                 exercises = listOf(configuredExercise)
                             )
 
+                            Logger.d { "SingleExercise: Loading temp routine" }
                             viewModel.loadRoutine(tempRoutine)
 
+                            Logger.d { "SingleExercise: Calling ensureConnection" }
                             viewModel.ensureConnection(
                                 onConnected = {
+                                    Logger.d { "SingleExercise: onConnected callback - starting workout" }
                                     viewModel.startWorkout()
+                                    Logger.d { "SingleExercise: Navigating to ActiveWorkout" }
                                     navController.navigate(NavigationRoutes.ActiveWorkout.route) {
                                         popUpTo(NavigationRoutes.Home.route)
                                     }
                                 },
-                                onFailed = { }
+                                onFailed = {
+                                    Logger.e { "SingleExercise: onFailed callback - connection failed" }
+                                }
                             )
 
                             exerciseToConfig = null

@@ -12,6 +12,7 @@ import com.devil.phoenixproject.presentation.components.PRCelebrationDialog
 import org.koin.compose.koinInject
 import com.devil.phoenixproject.data.repository.GamificationRepository
 import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -106,17 +107,21 @@ fun ActiveWorkoutScreen(
     // Watch for workout completion and navigate back
     // For Just Lift, navigate back when state becomes Idle (after auto-reset)
     LaunchedEffect(workoutState, workoutParameters) {
+        Logger.d { "ActiveWorkoutScreen: workoutState=$workoutState, isJustLift=${workoutParameters.isJustLift}" }
         when {
             workoutState is WorkoutState.Completed -> {
+                Logger.d { "ActiveWorkoutScreen: Workout completed, navigating back in 2s" }
                 delay(2000)
                 navController.navigateUp()
             }
             workoutState is WorkoutState.Idle && workoutParameters.isJustLift -> {
                 // Just Lift completed and reset to Idle - navigate back to Just Lift screen
+                Logger.d { "ActiveWorkoutScreen: Just Lift idle, navigating back to JustLiftScreen" }
                 navController.navigateUp()
             }
             workoutState is WorkoutState.Error -> {
                 // Show error for 3 seconds then navigate back
+                Logger.e { "ActiveWorkoutScreen: Error state, navigating back in 3s" }
                 delay(3000)
                 navController.navigateUp()
             }

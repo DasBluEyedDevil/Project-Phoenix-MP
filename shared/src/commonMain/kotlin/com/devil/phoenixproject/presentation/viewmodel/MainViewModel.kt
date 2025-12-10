@@ -527,11 +527,11 @@ class MainViewModel constructor(
     }
 
     fun startWorkout(skipCountdown: Boolean = false, isJustLiftMode: Boolean = false) {
-        val connection = connectionState.value
-        if (connection !is ConnectionState.Connected) {
-            _connectionError.value = "Not connected to device"
-            return
-        }
+        Logger.d { "startWorkout called: skipCountdown=$skipCountdown, isJustLiftMode=$isJustLiftMode" }
+        Logger.d { "startWorkout: loadedRoutine=${_loadedRoutine.value?.name}, params=${_workoutParameters.value}" }
+
+        // NOTE: No connection guard here - caller (ensureConnection) ensures connection
+        // Parent repo doesn't check connection in startWorkout()
 
         viewModelScope.launch {
             val params = _workoutParameters.value
@@ -799,7 +799,9 @@ class MainViewModel constructor(
         connectionJob?.cancel()
         connectionJob = viewModelScope.launch {
             try {
+                Logger.d { "ensureConnection: current state = ${connectionState.value}" }
                 if (connectionState.value is ConnectionState.Connected) {
+                    Logger.d { "ensureConnection: Already connected, calling onConnected()" }
                     onConnected()
                     return@launch
                 }
