@@ -242,22 +242,81 @@ object CycleTemplates {
     /**
      * Push/Pull/Legs 6-day template.
      */
-    fun pushPullLegs(): TrainingCycle {
-        val cycleId = generateUUID()
-        return TrainingCycle(
-            id = cycleId,
+    fun pushPullLegs(): CycleTemplate {
+        val pushA = RoutineTemplate(
+            name = "Push A",
+            exercises = listOf(
+                TemplateExercise("Bench Press", 5, 5, ProgramMode.OldSchool),
+                TemplateExercise("Incline Bench Press", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Shoulder Press", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Lateral Raise", 3, 12, ProgramMode.TUT),
+                TemplateExercise("Tricep Extension", 3, 12, ProgramMode.TUT)
+            )
+        )
+        val pullA = RoutineTemplate(
+            name = "Pull A",
+            exercises = listOf(
+                TemplateExercise("Bent Over Row", 5, 5, ProgramMode.OldSchool),
+                TemplateExercise("Bent Over Row - Reverse Grip", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Face Pull", 3, 15, ProgramMode.TUT),
+                TemplateExercise("Shrug", 3, 12, ProgramMode.OldSchool),
+                TemplateExercise("Bicep Curl", 3, 12, ProgramMode.TUT)
+            )
+        )
+        val legsA = RoutineTemplate(
+            name = "Legs A",
+            exercises = listOf(
+                TemplateExercise("Squat", 5, 5, ProgramMode.OldSchool),
+                TemplateExercise("Romanian Deadlift", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Lunges", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Leg Extension", 3, 12, ProgramMode.TUT),
+                TemplateExercise("Calf Raise", 3, 15, ProgramMode.TUT)
+            )
+        )
+        val pushB = RoutineTemplate(
+            name = "Push B",
+            exercises = listOf(
+                TemplateExercise("Shoulder Press", 5, 5, ProgramMode.OldSchool),
+                TemplateExercise("Bench Press", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Incline Bench Press", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Lateral Raise", 3, 12, ProgramMode.TUT),
+                TemplateExercise("Tricep Extension", 3, 12, ProgramMode.TUT)
+            )
+        )
+        val pullB = RoutineTemplate(
+            name = "Pull B",
+            exercises = listOf(
+                TemplateExercise("Bent Over Row", 5, 5, ProgramMode.OldSchool),
+                TemplateExercise("Upright Row", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Face Pull", 3, 15, ProgramMode.TUT),
+                TemplateExercise("Shrug", 3, 12, ProgramMode.OldSchool),
+                TemplateExercise("Hammer Curl", 3, 12, ProgramMode.TUT)
+            )
+        )
+        val legsB = RoutineTemplate(
+            name = "Legs B",
+            exercises = listOf(
+                TemplateExercise("Deadlift", 5, 5, ProgramMode.OldSchool),
+                TemplateExercise("Front Squat", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Bulgarian Split Squat", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Leg Curl", 3, 12, ProgramMode.TUT),
+                TemplateExercise("Calf Raise", 3, 15, ProgramMode.TUT)
+            )
+        )
+
+        return CycleTemplate(
+            id = "template_ppl",
             name = "Push/Pull/Legs",
-            description = "6-day split focusing on push, pull, and legs movements",
+            description = "6-day split focusing on push, pull, and leg movements. Ideal for intermediate lifters seeking muscle growth.",
             days = listOf(
-                CycleDay.create(cycleId = cycleId, dayNumber = 1, name = "Push"),
-                CycleDay.create(cycleId = cycleId, dayNumber = 2, name = "Pull"),
-                CycleDay.create(cycleId = cycleId, dayNumber = 3, name = "Legs"),
-                CycleDay.create(cycleId = cycleId, dayNumber = 4, name = "Push"),
-                CycleDay.create(cycleId = cycleId, dayNumber = 5, name = "Pull"),
-                CycleDay.create(cycleId = cycleId, dayNumber = 6, name = "Legs")
+                CycleDayTemplate.training(1, "Push A", pushA),
+                CycleDayTemplate.training(2, "Pull A", pullA),
+                CycleDayTemplate.training(3, "Legs A", legsA),
+                CycleDayTemplate.training(4, "Push B", pushB),
+                CycleDayTemplate.training(5, "Pull B", pullB),
+                CycleDayTemplate.training(6, "Legs B", legsB)
             ),
-            createdAt = currentTimeMillis(),
-            isActive = false
+            progressionRule = ProgressionRule.percentage(2.5f)
         )
     }
 
@@ -286,7 +345,8 @@ object CycleTemplates {
      * Get all available templates.
      */
     fun all(): List<CycleTemplate> = listOf(
-        threeDay()
-        // TODO: Convert pushPullLegs() and upperLower() to CycleTemplate
+        threeDay(),
+        pushPullLegs()
+        // TODO: Convert upperLower() to CycleTemplate
     )
 }
