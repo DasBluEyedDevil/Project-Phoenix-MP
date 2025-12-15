@@ -379,11 +379,69 @@ object CycleTemplates {
     }
 
     /**
+     * 5/3/1 (Wendler) 4-day template with percentage-based main lifts.
+     */
+    fun fiveThreeOne(): CycleTemplate {
+        val benchDay = RoutineTemplate(
+            name = "Bench Day",
+            exercises = listOf(
+                TemplateExercise("Bench Press", 3, null, ProgramMode.OldSchool, isPercentageBased = true),
+                TemplateExercise("Incline Bench Press", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Bent Over Row", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Plank", 3, null, ProgramMode.OldSchool)
+            )
+        )
+        val squatDay = RoutineTemplate(
+            name = "Squat Day",
+            exercises = listOf(
+                TemplateExercise("Squat", 3, null, ProgramMode.OldSchool, isPercentageBased = true),
+                TemplateExercise("Shoulder Press", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Face Pull", 3, 15, ProgramMode.TUT),
+                TemplateExercise("Lunges", 3, 10, ProgramMode.OldSchool)
+            )
+        )
+        val pressDay = RoutineTemplate(
+            name = "Press Day",
+            exercises = listOf(
+                TemplateExercise("Shoulder Press", 3, null, ProgramMode.OldSchool, isPercentageBased = true),
+                TemplateExercise("Tricep Extension", 3, 12, ProgramMode.TUT),
+                TemplateExercise("Bent Over Row", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Ab Crunch", 3, 15, ProgramMode.OldSchool)
+            )
+        )
+        val deadliftDay = RoutineTemplate(
+            name = "Deadlift Day",
+            exercises = listOf(
+                TemplateExercise("Deadlift", 3, null, ProgramMode.OldSchool, isPercentageBased = true),
+                TemplateExercise("Incline Bench Press", 3, 10, ProgramMode.OldSchool),
+                TemplateExercise("Shrug", 3, 12, ProgramMode.OldSchool),
+                TemplateExercise("Back Extension", 3, 12, ProgramMode.OldSchool)
+            )
+        )
+
+        return CycleTemplate(
+            id = "template_531",
+            name = "5/3/1 (Wendler)",
+            description = "Strength-focused 4-day program with percentage-based main lifts. Runs in 4-week cycles with progressive weight increases.",
+            days = listOf(
+                CycleDayTemplate.training(1, "Bench", benchDay),
+                CycleDayTemplate.training(2, "Squat", squatDay),
+                CycleDayTemplate.training(3, "Press", pressDay),
+                CycleDayTemplate.training(4, "Deadlift", deadliftDay)
+            ),
+            progressionRule = ProgressionRule.fiveThreeOne(),
+            requiresOneRepMax = true,
+            mainLifts = listOf("Bench Press", "Squat", "Shoulder Press", "Deadlift")
+        )
+    }
+
+    /**
      * Get all available templates.
      */
     fun all(): List<CycleTemplate> = listOf(
         threeDay(),
         pushPullLegs(),
-        upperLower()
+        upperLower(),
+        fiveThreeOne()
     )
 }
