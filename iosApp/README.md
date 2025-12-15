@@ -141,9 +141,61 @@ On iOS, CoreBluetooth automatically requests permission when BLE scanning starts
 
 The app supports background BLE execution via `UIBackgroundModes` with `bluetooth-central` in `Info.plist`. This allows BLE connections to persist when the app is backgrounded, similar to Android's foreground service.
 
+## Beta Preparation
+
+### Quick Setup (Recommended)
+
+Run the automated setup script on macOS:
+
+```bash
+cd iosApp
+chmod +x prepare_ios_beta.sh
+./prepare_ios_beta.sh
+```
+
+This script will:
+1. Build the shared XCFramework
+2. Convert sound files from OGG to CAF (requires ffmpeg)
+3. Generate all app icon sizes
+4. Create launch screen assets
+
+### Manual Setup
+
+If you prefer manual setup, run each script individually:
+
+```bash
+# 1. Build the framework (from project root)
+./gradlew :shared:assembleXCFramework
+
+# 2. Convert sounds (requires ffmpeg: brew install ffmpeg)
+cd iosApp
+./convert_sounds.sh
+
+# 3. Generate app icons
+./generate_icons.sh
+
+# 4. Create launch screen assets
+./setup_launch_assets.sh
+```
+
+### Asset Setup Details
+
+See [SETUP_ASSETS.md](SETUP_ASSETS.md) for detailed asset configuration instructions.
+
+### TestFlight Deployment
+
+1. Open the project in Xcode
+2. Select "Generic iOS Device" or a connected device
+3. Product → Archive
+4. In the Organizer, click "Distribute App"
+5. Choose "App Store Connect" → "Upload"
+6. Complete the upload to TestFlight
+
 ## Development Notes
 
 - The Compose Multiplatform UI is identical across Android, iOS, and Desktop
 - Platform-specific code is in `shared/src/iosMain/`
 - All business logic is shared via the `shared` module
 - The SwiftUI wrapper is minimal - just hosts the Compose view
+- Sound playback uses AVAudioPlayer in `HapticFeedbackEffect.ios.kt`
+- Haptic feedback uses UIImpactFeedbackGenerator and UINotificationFeedbackGenerator

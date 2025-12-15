@@ -1,6 +1,7 @@
 package com.devil.phoenixproject.presentation.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -260,10 +260,7 @@ private fun ExerciseModeCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            ExposedDropdownMenuBox(
-                expanded = showModeDropdown,
-                onExpandedChange = { showModeDropdown = it }
-            ) {
+            Box {
                 OutlinedTextField(
                     value = getProgramModeDisplayName(selectedMode),
                     onValueChange = {},
@@ -275,16 +272,21 @@ private fun ExerciseModeCard(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(type = MenuAnchorType.PrimaryNotEditable),
+                    modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
 
-                ExposedDropdownMenu(
+                // Transparent clickable overlay
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showModeDropdown = true }
+                )
+
+                DropdownMenu(
                     expanded = showModeDropdown,
                     onDismissRequest = { showModeDropdown = false }
                 ) {

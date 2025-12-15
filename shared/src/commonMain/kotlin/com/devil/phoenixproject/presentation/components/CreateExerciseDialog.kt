@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -135,10 +134,7 @@ fun CreateExerciseDialog(
                     )
                     Spacer(modifier = Modifier.height(Spacing.extraSmall))
 
-                    ExposedDropdownMenuBox(
-                        expanded = showMuscleGroupDropdown,
-                        onExpandedChange = { showMuscleGroupDropdown = it }
-                    ) {
+                    Box {
                         OutlinedTextField(
                             value = selectedMuscleGroup.displayName,
                             onValueChange = {},
@@ -150,16 +146,21 @@ fun CreateExerciseDialog(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(type = MenuAnchorType.PrimaryNotEditable),
+                            modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
 
-                        ExposedDropdownMenu(
+                        // Transparent clickable overlay
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { showMuscleGroupDropdown = true }
+                        )
+
+                        DropdownMenu(
                             expanded = showMuscleGroupDropdown,
                             onDismissRequest = { showMuscleGroupDropdown = false }
                         ) {
@@ -202,10 +203,7 @@ fun CreateExerciseDialog(
                     )
                     Spacer(modifier = Modifier.height(Spacing.extraSmall))
 
-                    ExposedDropdownMenuBox(
-                        expanded = showCableConfigDropdown,
-                        onExpandedChange = { showCableConfigDropdown = it }
-                    ) {
+                    Box {
                         OutlinedTextField(
                             value = getCableConfigDisplayName(cableConfig),
                             onValueChange = {},
@@ -217,16 +215,21 @@ fun CreateExerciseDialog(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(type = MenuAnchorType.PrimaryNotEditable),
+                            modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
 
-                        ExposedDropdownMenu(
+                        // Transparent clickable overlay
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { showCableConfigDropdown = true }
+                        )
+
+                        DropdownMenu(
                             expanded = showCableConfigDropdown,
                             onDismissRequest = { showCableConfigDropdown = false }
                         ) {

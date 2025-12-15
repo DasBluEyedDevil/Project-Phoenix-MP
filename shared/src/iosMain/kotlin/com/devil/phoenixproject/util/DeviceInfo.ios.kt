@@ -1,5 +1,8 @@
+@file:OptIn(kotlin.experimental.ExperimentalNativeApi::class)
+
 package com.devil.phoenixproject.util
 
+import kotlin.native.Platform
 import platform.UIKit.UIDevice
 import platform.Foundation.NSBundle
 
@@ -23,7 +26,12 @@ actual object DeviceInfo {
         get() = if (isDebugBuild) "debug" else "release"
 
     actual val isDebugBuild: Boolean
-        get() = false  // iOS release builds - could check for DEBUG preprocessor if needed
+        get() {
+            // Check for debugger attachment or debug-specific environment
+            // In iOS, we can check if assertions are enabled (debug builds enable them)
+            // or check for specific debug environment indicators
+            return Platform.isDebugBinary
+        }
 
     // ==================== iOS Device Info ====================
 
