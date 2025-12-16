@@ -672,6 +672,7 @@ class MainViewModel constructor(
                 _workoutState.value = WorkoutState.Active
                 workoutStartTime = currentTimeMillis()
                 currentSessionId = KmpUtils.randomUUID()
+                collectedMetrics.clear()  // Clear metrics from previous workout
                 _hapticEvents.emit(HapticEvent.WORKOUT_START)
 
                 // Bodyweight timer - auto-complete after duration
@@ -775,6 +776,7 @@ class MainViewModel constructor(
             // 7. Start Monitoring
             _workoutState.value = WorkoutState.Active
             workoutStartTime = currentTimeMillis()
+            collectedMetrics.clear()  // Clear metrics from previous workout
             _hapticEvents.emit(HapticEvent.WORKOUT_START)
 
             // Set initial baseline position for position bars calibration
