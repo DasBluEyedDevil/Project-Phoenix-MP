@@ -571,6 +571,8 @@ class MainViewModel constructor(
             // CRITICAL: In Just Lift/AMRAP modes, we must track positions continuously
             // because no rep events fire to establish min/max ranges.
             // This enables hasMeaningfulRange() to return true for auto-stop detection.
+            // For standard workouts, we rely on rep-based tracking (recordTopPosition/recordBottomPosition)
+            // which uses sliding window averaging for better accuracy (matches parent repo).
             if (params.isJustLift || params.isAMRAP) {
                 repCounter.updatePositionRangesContinuously(metric.positionA, metric.positionB)
             }
@@ -1453,21 +1455,37 @@ class MainViewModel constructor(
 
     /**
      * Get saved Just Lift defaults.
-     * Returns null if no defaults have been saved yet.
+     * Returns default object if none saved. Converts from preferences format to viewmodel format.
      */
-    suspend fun getJustLiftDefaults(): JustLiftDefaults? {
-        // TODO: Implement preferences storage for Just Lift defaults
-        // return preferencesManager.getJustLiftDefaults()
-        return null
+    suspend fun getJustLiftDefaults(): JustLiftDefaults {
+        val prefsDefaults = preferencesManager.getJustLiftDefaults()
+        // Convert from preferences format (Float weightChangePerRep) to viewmodel format (Int)
+        return JustLiftDefaults(
+            weightPerCableKg = prefsDefaults.weightPerCableKg,
+            weightChangePerRep = kotlin.math.round(prefsDefaults.weightChangePerRep).toInt(),
+            workoutModeId = prefsDefaults.workoutModeId,
+            eccentricLoadPercentage = prefsDefaults.eccentricLoadPercentage,
+            echoLevelValue = prefsDefaults.echoLevelValue,
+            stallDetectionEnabled = prefsDefaults.stallDetectionEnabled
+        )
     }
 
     /**
      * Save Just Lift defaults for next session.
+     * Converts from viewmodel format to preferences format.
      */
     fun saveJustLiftDefaults(defaults: JustLiftDefaults) {
         viewModelScope.launch {
-            // TODO: Implement preferences storage for Just Lift defaults
-            // preferencesManager.saveJustLiftDefaults(defaults)
+            // Convert from viewmodel format (Int weightChangePerRep) to preferences format (Float)
+            val prefsDefaults = com.devil.phoenixproject.data.preferences.JustLiftDefaults(
+                weightPerCableKg = defaults.weightPerCableKg,
+                weightChangePerRep = defaults.weightChangePerRep.toFloat(),
+                workoutModeId = defaults.workoutModeId,
+                eccentricLoadPercentage = defaults.eccentricLoadPercentage,
+                echoLevelValue = defaults.echoLevelValue,
+                stallDetectionEnabled = defaults.stallDetectionEnabled
+            )
+            preferencesManager.saveJustLiftDefaults(prefsDefaults)
             Logger.d("saveJustLiftDefaults: weight=${defaults.weightPerCableKg}kg, mode=${defaults.workoutModeId}")
         }
     }
@@ -1851,8 +1869,10 @@ class MainViewModel constructor(
 
             Logger.d("handleSetCompletion: isJustLift=$isJustLift")
 
-            // Stop hardware
-            bleRepository.sendWorkoutCommand(BlePacketFactory.createStopCommand())
+            // Stop hardware - send RESET command (0x0A) which clears fault state (red lights)
+            // The parent repo uses stopWorkout() which sends 0x0A, not 0x05
+            // 0x0A is what clears the machine fault state and allows immediate restart
+            bleRepository.sendWorkoutCommand(BlePacketFactory.createResetCommand())
             _hapticEvents.emit(HapticEvent.WORKOUT_END)
 
             // Save session
@@ -2041,7 +2061,7 @@ class MainViewModel constructor(
         // Save exercise defaults for next time (only for Just Lift and Single Exercise modes)
         // Routines have their own saved configuration and should not interfere with these defaults
         if (params.isJustLift) {
-            // Just Lift defaults saving handled separately
+            saveJustLiftDefaultsFromWorkout()
         } else if (isSingleExerciseMode()) {
             saveSingleExerciseDefaultsFromWorkout()
         }
@@ -2195,6 +2215,41 @@ class MainViewModel constructor(
     private fun isSingleExerciseMode(): Boolean {
         val routine = _loadedRoutine.value
         return routine == null || routine.id.startsWith(TEMP_SINGLE_EXERCISE_PREFIX)
+    }
+
+    /**
+     * Save Just Lift defaults after completing a Just Lift workout.
+     * Called from saveWorkoutSession when isJustLift is true.
+     */
+    private suspend fun saveJustLiftDefaultsFromWorkout() {
+        val params = _workoutParameters.value
+        if (!params.isJustLift) return
+
+        val (eccentricLoad, echoLevel) = when (val wt = params.workoutType) {
+            is WorkoutType.Echo -> wt.eccentricLoad.percentage to wt.level.levelValue
+            is WorkoutType.Program -> 100 to 2
+        }
+
+        // Convert WorkoutType to workoutModeId (Int)
+        val workoutModeId = when (val wt = params.workoutType) {
+            is WorkoutType.Program -> wt.mode.modeValue
+            is WorkoutType.Echo -> 10
+        }
+
+        try {
+            val defaults = com.devil.phoenixproject.data.preferences.JustLiftDefaults(
+                workoutModeId = workoutModeId,
+                weightPerCableKg = params.weightPerCableKg.coerceAtLeast(0.1f),
+                weightChangePerRep = params.progressionRegressionKg,
+                eccentricLoadPercentage = eccentricLoad,
+                echoLevelValue = echoLevel,
+                stallDetectionEnabled = params.stallDetectionEnabled
+            )
+            preferencesManager.saveJustLiftDefaults(defaults)
+            Logger.d { "Saved Just Lift defaults: mode=$workoutModeId, weight=${params.weightPerCableKg}kg" }
+        } catch (e: Exception) {
+            Logger.e(e) { "Failed to save Just Lift defaults: ${e.message}" }
+        }
     }
 
     /**

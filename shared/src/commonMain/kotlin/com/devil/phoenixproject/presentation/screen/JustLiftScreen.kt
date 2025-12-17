@@ -89,6 +89,7 @@ fun JustLiftScreen(
                 weightPerCable = defaults.weightPerCableKg
 
                 // Convert stored weight change (KG) to display unit if needed
+                // weightChangePerRep is already Int in viewmodel format
                 weightChangePerRep = if (weightUnit == WeightUnit.LB) {
                     kotlin.math.round(defaults.weightChangePerRep * 2.20462f).toInt()
                 } else {
