@@ -143,8 +143,14 @@ fun TrainingCyclesScreen(
                             routines = routines,
                             onStartWorkout = { routineId ->
                                 routineId?.let {
-                                    viewModel.loadRoutineById(it)
-                                    navController.navigate("active_workout")
+                                    viewModel.ensureConnection(
+                                        onConnected = {
+                                            viewModel.loadRoutineById(it)
+                                            viewModel.startWorkout()
+                                            navController.navigate(NavigationRoutes.ActiveWorkout.route)
+                                        },
+                                        onFailed = { /* Error shown via StateFlow */ }
+                                    )
                                 }
                             },
                             onAdvanceDay = {

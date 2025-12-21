@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 /**
@@ -165,7 +166,7 @@ fun EnhancedCablePositionBar(
         Canvas(
             modifier = Modifier
                 .weight(1f)
-                .width(32.dp)
+                .width(40.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
@@ -242,6 +243,8 @@ fun EnhancedCablePositionBar(
             text = "${(animatedPosition * 100).toInt()}%",
             style = MaterialTheme.typography.labelSmall,
             color = activeColor,
+            maxLines = 1,
+            overflow = TextOverflow.Visible,
             modifier = Modifier.padding(top = 4.dp)
         )
     }

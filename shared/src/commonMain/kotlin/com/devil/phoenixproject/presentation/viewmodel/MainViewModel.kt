@@ -1834,10 +1834,10 @@ class MainViewModel constructor(
 
             Logger.d("handleSetCompletion: isJustLift=$isJustLift")
 
-            // Stop hardware - send RESET command (0x0A) which clears fault state (red lights)
-            // The parent repo uses stopWorkout() which sends 0x0A, not 0x05
-            // 0x0A is what clears the machine fault state and allows immediate restart
-            bleRepository.sendWorkoutCommand(BlePacketFactory.createResetCommand())
+            // Stop hardware - use stopWorkout() which sends RESET command (0x0A), delays 50ms, and STOPS polling
+            // This matches parent repo behavior - polling must be fully stopped before restarting
+            // to properly clear the machine's internal state (prevents red light mode on 2nd+ sets)
+            bleRepository.stopWorkout()
             _hapticEvents.emit(HapticEvent.WORKOUT_END)
 
             // Save session
