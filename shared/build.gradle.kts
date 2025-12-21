@@ -35,6 +35,8 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "shared"
             isStatic = true
+            // Generate dSYM for crash symbolication
+            freeCompilerArgs += listOf("-Xadd-light-debug=enable")
         }
     }
 

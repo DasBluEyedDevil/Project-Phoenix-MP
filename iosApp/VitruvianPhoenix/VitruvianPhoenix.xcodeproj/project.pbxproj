@@ -29,7 +29,7 @@
 
 /* Begin PBXFileReference section */
 		DFE6BD472EEDF42200886589 /* VitruvianPhoenix.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VitruvianPhoenix.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		DFE6BD562EEDF53700886589 /* shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = shared.framework; path = ../../shared/build/bin/iosSimulatorArm64/debugFramework/shared.framework; sourceTree = "<group>"; };
+		DFE6BD562EEDF53700886589 /* shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = shared.framework; path = ../../shared/build/bin/iosArm64/releaseFramework/shared.framework; sourceTree = "<group>"; };
 		DFE6BD6D2EEDFF5500886589 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 		DFE6BD782EEE0ABB00886589 /* compose-resources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "compose-resources"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -322,7 +322,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.devil.phoenixproject.VitruvianPhoenix;
+				PRODUCT_BUNDLE_IDENTIFIER = com.devil.phoenixproject.projectphoenix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -345,7 +345,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = BDJDR669ZV;
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../../shared/build/bin/iosSimulatorArm64/debugFramework";
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../../shared/build/bin/iosArm64/releaseFramework";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = VitruvianPhoenix/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -358,7 +358,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.devil.phoenixproject.VitruvianPhoenix;
+				PRODUCT_BUNDLE_IDENTIFIER = com.devil.phoenixproject.projectphoenix;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
