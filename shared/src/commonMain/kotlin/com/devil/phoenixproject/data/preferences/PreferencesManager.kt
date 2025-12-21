@@ -47,7 +47,9 @@ data class SingleExerciseDefaults(
     }
 
     fun getEccentricLoad(): com.devil.phoenixproject.domain.model.EccentricLoad {
-        return com.devil.phoenixproject.domain.model.EccentricLoad.entries.find { it.percentage == eccentricLoadPercentage }
+        // Handle legacy 125% -> fall back to 120%
+        val percentage = if (eccentricLoadPercentage == 125) 120 else eccentricLoadPercentage
+        return com.devil.phoenixproject.domain.model.EccentricLoad.entries.find { it.percentage == percentage }
             ?: com.devil.phoenixproject.domain.model.EccentricLoad.LOAD_100
     }
 
@@ -82,7 +84,9 @@ data class JustLiftDefaults(
     val stallDetectionEnabled: Boolean = true  // Stall detection auto-stop toggle
 ) {
     fun getEccentricLoad(): com.devil.phoenixproject.domain.model.EccentricLoad {
-        return com.devil.phoenixproject.domain.model.EccentricLoad.entries.find { it.percentage == eccentricLoadPercentage }
+        // Handle legacy 125% -> fall back to 120%
+        val percentage = if (eccentricLoadPercentage == 125) 120 else eccentricLoadPercentage
+        return com.devil.phoenixproject.domain.model.EccentricLoad.entries.find { it.percentage == percentage }
             ?: com.devil.phoenixproject.domain.model.EccentricLoad.LOAD_100
     }
 
