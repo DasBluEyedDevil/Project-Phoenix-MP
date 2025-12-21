@@ -140,15 +140,6 @@ fun NavGraph(
             )
         }
 
-        // Weekly Programs screen - view and manage programs (legacy)
-        composable(NavigationRoutes.WeeklyPrograms.route) {
-            WeeklyProgramsScreen(
-                navController = navController,
-                viewModel = viewModel,
-                themeMode = themeMode
-            )
-        }
-
         // Training Cycles screen - new rolling schedule system
         composable(
             route = NavigationRoutes.TrainingCycles.route,
@@ -180,21 +171,6 @@ fun NavGraph(
             TrainingCyclesScreen(
                 navController = navController,
                 viewModel = viewModel,
-                themeMode = themeMode
-            )
-        }
-
-        // Program Builder screen - create/edit weekly program
-        composable(
-            route = NavigationRoutes.ProgramBuilder.route,
-            arguments = listOf(navArgument("programId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val programId = backStackEntry.arguments?.getString("programId") ?: "new"
-            ProgramBuilderScreen(
-                navController = navController,
-                viewModel = viewModel,
-                programId = programId,
-                exerciseRepository = exerciseRepository,
                 themeMode = themeMode
             )
         }

@@ -50,7 +50,7 @@ val commonModule = module {
     single { TemplateConverter(get()) }
 
     // Migration
-    single { MigrationManager(get(), get()) }
+    single { MigrationManager() }
     
     // ViewModels
     factory { MainViewModel(get(), get(), get(), get(), get(), get(), get()) }

@@ -239,23 +239,6 @@ class MainViewModel constructor(
     private val _currentSetRpe = MutableStateFlow<Int?>(null)
     val currentSetRpe: StateFlow<Int?> = _currentSetRpe.asStateFlow()
 
-    // Weekly Programs
-    val weeklyPrograms: StateFlow<List<com.devil.phoenixproject.data.local.WeeklyProgramWithDays>> =
-        workoutRepository.getAllPrograms()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
-
-    val activeProgram: StateFlow<com.devil.phoenixproject.data.local.WeeklyProgramWithDays?> =
-        workoutRepository.getActiveProgram()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = null
-            )
-
     // Personal Records
     @Suppress("unused")
     val personalBests: StateFlow<List<com.devil.phoenixproject.data.repository.PersonalRecordEntity>> =
@@ -1258,24 +1241,6 @@ class MainViewModel constructor(
 
     fun clearLoadedRoutine() {
         _loadedRoutine.value = null
-    }
-
-    // ========== Weekly Program Functions ==========
-
-    fun saveProgram(program: com.devil.phoenixproject.data.local.WeeklyProgramWithDays) {
-        viewModelScope.launch { workoutRepository.saveProgram(program) }
-    }
-
-    fun deleteProgram(programId: String) {
-        viewModelScope.launch { workoutRepository.deleteProgram(programId) }
-    }
-
-    fun activateProgram(programId: String) {
-        viewModelScope.launch { workoutRepository.activateProgram(programId) }
-    }
-
-    fun getProgramById(programId: String): kotlinx.coroutines.flow.Flow<com.devil.phoenixproject.data.local.WeeklyProgramWithDays?> {
-        return workoutRepository.getProgramById(programId)
     }
 
     fun getCurrentExercise(): RoutineExercise? {

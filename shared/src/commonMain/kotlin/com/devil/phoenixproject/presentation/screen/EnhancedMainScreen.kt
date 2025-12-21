@@ -85,8 +85,8 @@ fun EnhancedMainScreen(
         currentRoute == NavigationRoutes.SingleExercise.route ||
         currentRoute == NavigationRoutes.DailyRoutines.route ||
         currentRoute == NavigationRoutes.ActiveWorkout.route ||
-        currentRoute == NavigationRoutes.WeeklyPrograms.route ||
-        currentRoute.startsWith(NavigationRoutes.ProgramBuilder.route.replace("/{programId}", ""))
+        currentRoute == NavigationRoutes.TrainingCycles.route ||
+        currentRoute.startsWith(NavigationRoutes.CycleEditor.route.replace("/{cycleId}", ""))
     }
 
     // Always show TopBar unless in Active Workout (HUD handles it)
@@ -98,7 +98,7 @@ fun EnhancedMainScreen(
     val shouldShowBottomBar = remember(currentRoute) {
         currentRoute == NavigationRoutes.Home.route ||
         currentRoute == NavigationRoutes.DailyRoutines.route ||
-        currentRoute == NavigationRoutes.WeeklyPrograms.route ||
+        currentRoute == NavigationRoutes.TrainingCycles.route ||
         currentRoute == NavigationRoutes.Analytics.route ||
         currentRoute == NavigationRoutes.Settings.route
     }
@@ -425,10 +425,10 @@ private fun getScreenTitle(route: String): String {
         route == NavigationRoutes.JustLift.route -> "Just Lift"
         route == NavigationRoutes.SingleExercise.route -> "Single Exercise"
         route == NavigationRoutes.DailyRoutines.route -> "Daily Routines"
-        route == NavigationRoutes.WeeklyPrograms.route -> "Weekly Programs"
+        route == NavigationRoutes.TrainingCycles.route -> "Training Cycles"
         route == NavigationRoutes.ActiveWorkout.route -> "Active Workout"
         route == NavigationRoutes.ConnectionLogs.route -> "Connection Logs"
-        route.startsWith("program_builder") -> "Program Builder"
+        route.startsWith("cycle_editor") -> "Cycle Editor"
         else -> "Choose Your Workout"
     }
 }

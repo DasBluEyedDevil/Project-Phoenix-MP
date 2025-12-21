@@ -3,11 +3,8 @@ package com.devil.phoenixproject.data.repository
 import com.devil.phoenixproject.domain.model.PersonalRecord
 import com.devil.phoenixproject.domain.model.Routine
 import com.devil.phoenixproject.domain.model.WorkoutSession
-import com.devil.phoenixproject.data.local.WeeklyProgramWithDays
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 
 /**
  * Personal record entity - stub for database
@@ -54,14 +51,6 @@ interface WorkoutRepository {
      * Mark routine as used (updates lastUsed and increments useCount)
      */
     suspend fun markRoutineUsed(routineId: String)
-
-    // Weekly programs
-    fun getAllPrograms(): Flow<List<WeeklyProgramWithDays>>
-    fun getActiveProgram(): Flow<WeeklyProgramWithDays?>
-    fun getProgramById(programId: String): Flow<WeeklyProgramWithDays?>
-    suspend fun saveProgram(program: WeeklyProgramWithDays)
-    suspend fun activateProgram(programId: String)
-    suspend fun deleteProgram(programId: String)
 
     // Personal records
     fun getAllPersonalRecords(): Flow<List<PersonalRecordEntity>>
@@ -135,32 +124,6 @@ class StubWorkoutRepository : WorkoutRepository {
     override suspend fun deleteRoutine(routineId: String) {}
     override suspend fun getRoutineById(routineId: String): Routine? = null
     override suspend fun markRoutineUsed(routineId: String) {}
-
-    private val _programs = MutableStateFlow<List<WeeklyProgramWithDays>>(emptyList())
-
-    override fun getAllPrograms(): Flow<List<WeeklyProgramWithDays>> = _programs
-    override fun getActiveProgram(): Flow<WeeklyProgramWithDays?> = _programs.map { programs ->
-        programs.find { it.program.isActive }
-    }
-    override fun getProgramById(programId: String): Flow<WeeklyProgramWithDays?> = _programs.map { programs ->
-        programs.find { it.program.id == programId }
-    }
-    override suspend fun saveProgram(program: WeeklyProgramWithDays) {
-        val existingIndex = _programs.value.indexOfFirst { it.program.id == program.program.id }
-        _programs.value = if (existingIndex >= 0) {
-            _programs.value.toMutableList().apply { this[existingIndex] = program }
-        } else {
-            _programs.value + program
-        }
-    }
-    override suspend fun activateProgram(programId: String) {
-        _programs.value = _programs.value.map { pwDays ->
-            pwDays.copy(program = pwDays.program.copy(isActive = pwDays.program.id == programId))
-        }
-    }
-    override suspend fun deleteProgram(programId: String) {
-        _programs.value = _programs.value.filter { it.program.id != programId }
-    }
 
     override fun getAllPersonalRecords() = flowOf(emptyList<PersonalRecordEntity>())
     override suspend fun updatePRIfBetter(exerciseId: String, weightKg: Float, reps: Int, mode: String) {}

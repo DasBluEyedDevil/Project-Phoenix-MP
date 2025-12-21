@@ -9,6 +9,7 @@ import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.EccentricLoad
 import com.devil.phoenixproject.domain.model.EchoLevel
 import com.devil.phoenixproject.domain.model.Exercise
+import com.devil.phoenixproject.domain.model.PRType
 import com.devil.phoenixproject.domain.model.ProgramMode
 import com.devil.phoenixproject.domain.model.Routine
 import com.devil.phoenixproject.domain.model.RoutineExercise
@@ -16,11 +17,9 @@ import com.devil.phoenixproject.domain.model.WorkoutSession
 import com.devil.phoenixproject.domain.model.WorkoutType
 import com.devil.phoenixproject.domain.model.currentTimeMillis
 import com.devil.phoenixproject.domain.model.generateUUID
-import com.devil.phoenixproject.data.local.WeeklyProgramWithDays
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -409,38 +408,6 @@ class SqlDelightWorkoutRepository(
         }
     }
 
-    // In-memory storage for programs (until SQLDelight schema is extended)
-    private val _programs = kotlinx.coroutines.flow.MutableStateFlow<List<WeeklyProgramWithDays>>(emptyList())
-
-    override fun getAllPrograms(): Flow<List<WeeklyProgramWithDays>> = _programs
-
-    override fun getActiveProgram(): Flow<WeeklyProgramWithDays?> = _programs.map { programs ->
-        programs.find { it.program.isActive }
-    }
-
-    override fun getProgramById(programId: String): Flow<WeeklyProgramWithDays?> = _programs.map { programs ->
-        programs.find { it.program.id == programId }
-    }
-
-    override suspend fun saveProgram(program: WeeklyProgramWithDays) {
-        val existingIndex = _programs.value.indexOfFirst { it.program.id == program.program.id }
-        _programs.value = if (existingIndex >= 0) {
-            _programs.value.toMutableList().apply { this[existingIndex] = program }
-        } else {
-            _programs.value + program
-        }
-    }
-
-    override suspend fun activateProgram(programId: String) {
-        _programs.value = _programs.value.map { pwDays ->
-            pwDays.copy(program = pwDays.program.copy(isActive = pwDays.program.id == programId))
-        }
-    }
-
-    override suspend fun deleteProgram(programId: String) {
-        _programs.value = _programs.value.filter { it.program.id != programId }
-    }
-
     override fun getAllPersonalRecords(): Flow<List<PersonalRecordEntity>> {
         return queries.selectAllRecords { id, exerciseId, exerciseName, weight, reps, oneRepMax, achievedAt, workoutMode, prType, volume ->
             PersonalRecordEntity(
@@ -455,7 +422,70 @@ class SqlDelightWorkoutRepository(
     }
 
     override suspend fun updatePRIfBetter(exerciseId: String, weightKg: Float, reps: Int, mode: String) {
-        // Logic to check PR and insert
+        withContext(Dispatchers.IO) {
+            if (exerciseId.isBlank() || reps <= 0) return@withContext
+
+            val timestamp = currentTimeMillis()
+            val newVolume = weightKg * reps
+            val exerciseName = exerciseRepository.getExerciseById(exerciseId)?.name ?: ""
+
+            val currentWeightPR = queries.selectPR(
+                exerciseId,
+                mode,
+                PRType.MAX_WEIGHT.name
+            ).executeAsOneOrNull()
+
+            val currentVolumePR = queries.selectPR(
+                exerciseId,
+                mode,
+                PRType.MAX_VOLUME.name
+            ).executeAsOneOrNull()
+
+            val isNewWeightPR = currentWeightPR == null || weightKg > currentWeightPR.weight.toFloat()
+            val currentVolume = (currentVolumePR?.weight?.toFloat() ?: 0f) * (currentVolumePR?.reps?.toInt() ?: 0)
+            val isNewVolumePR = newVolume > currentVolume
+
+            if (!isNewWeightPR && !isNewVolumePR) return@withContext
+
+            val oneRepMax = if (reps == 1) {
+                weightKg
+            } else {
+                weightKg * (1 + reps / 30f)
+            }
+
+            if (isNewWeightPR) {
+                queries.upsertPR(
+                    exerciseId = exerciseId,
+                    exerciseName = exerciseName,
+                    weight = weightKg.toDouble(),
+                    reps = reps.toLong(),
+                    oneRepMax = oneRepMax.toDouble(),
+                    achievedAt = timestamp,
+                    workoutMode = mode,
+                    prType = PRType.MAX_WEIGHT.name,
+                    volume = newVolume.toDouble()
+                )
+
+                queries.updateOneRepMax(
+                    one_rep_max_kg = oneRepMax.toDouble(),
+                    id = exerciseId
+                )
+            }
+
+            if (isNewVolumePR && !isNewWeightPR) {
+                queries.upsertPR(
+                    exerciseId = exerciseId,
+                    exerciseName = exerciseName,
+                    weight = weightKg.toDouble(),
+                    reps = reps.toLong(),
+                    oneRepMax = oneRepMax.toDouble(),
+                    achievedAt = timestamp,
+                    workoutMode = mode,
+                    prType = PRType.MAX_VOLUME.name,
+                    volume = newVolume.toDouble()
+                )
+            }
+        }
     }
 
     override suspend fun saveMetrics(
