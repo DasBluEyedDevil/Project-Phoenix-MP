@@ -119,11 +119,10 @@ fun ProfileSidePanel(
                 }
             }
 
-            // Main panel
+            // Main panel - wraps content height
             Surface(
                 modifier = Modifier
                     .width(PANEL_WIDTH)
-                    .fillMaxHeight()
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures { _, dragAmount ->
                             if (dragAmount > 20) {
@@ -131,11 +130,11 @@ fun ProfileSidePanel(
                             }
                         }
                     },
-                shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
+                shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 shadowElevation = 8.dp
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
+                Column {
                     // Header
                     Text(
                         text = "Profiles",
@@ -147,10 +146,8 @@ fun ProfileSidePanel(
                     HorizontalDivider()
 
                     // Profile list
-                    LazyColumn(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        items(profiles, key = { it.id }) { profile ->
+                    Column {
+                        profiles.forEach { profile ->
                             val isActive = profile.id == activeProfile?.id
 
                             Box {
