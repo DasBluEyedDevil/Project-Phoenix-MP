@@ -47,6 +47,7 @@ import co.touchlab.kermit.Logger
 import com.devil.phoenixproject.data.repository.AutoStopUiState
 import com.devil.phoenixproject.data.repository.UserProfileRepository
 import com.devil.phoenixproject.domain.model.*
+import com.devil.phoenixproject.presentation.components.AddProfileDialog
 import com.devil.phoenixproject.presentation.components.CompactNumberPicker
 import com.devil.phoenixproject.presentation.components.ExpressiveSlider
 import com.devil.phoenixproject.presentation.components.ProfileSpeedDial
@@ -490,40 +491,11 @@ fun JustLiftScreen(
             }
         // Add Profile Dialog
         if (showAddProfileDialog) {
-            var newProfileName by remember { mutableStateOf("") }
-            AlertDialog(
-                onDismissRequest = { showAddProfileDialog = false },
-                title = { Text("Add Profile") },
-                text = {
-                    OutlinedTextField(
-                        value = newProfileName,
-                        onValueChange = { newProfileName = it },
-                        label = { Text("Name") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            if (newProfileName.isNotBlank()) {
-                                scope.launch {
-                                    val colorIndex = profiles.size % 8
-                                    profileRepository.createProfile(newProfileName.trim(), colorIndex)
-                                }
-                                showAddProfileDialog = false
-                            }
-                        },
-                        enabled = newProfileName.isNotBlank()
-                    ) {
-                        Text("Add")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showAddProfileDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
+            AddProfileDialog(
+                profiles = profiles,
+                profileRepository = profileRepository,
+                scope = scope,
+                onDismiss = { showAddProfileDialog = false }
             )
         }
         }

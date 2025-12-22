@@ -18,7 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.devil.phoenixproject.data.repository.UserProfile
+import com.devil.phoenixproject.data.repository.UserProfileRepository
 import com.devil.phoenixproject.ui.theme.Spacing
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 // Profile color palette
 val ProfileColors = listOf(
@@ -31,6 +34,9 @@ val ProfileColors = listOf(
     Color(0xFF06B6D4), // Cyan
     Color(0xFFF97316)  // Orange
 )
+
+// Constant for profile color count to avoid magic numbers
+const val PROFILE_COLOR_COUNT = 8
 
 @Composable
 fun ProfileSpeedDial(
@@ -171,4 +177,52 @@ fun ProfileAvatar(
             fontWeight = FontWeight.Bold
         )
     }
+}
+
+/**
+ * Reusable dialog for adding a new user profile.
+ */
+@Composable
+fun AddProfileDialog(
+    profiles: List<UserProfile>,
+    profileRepository: UserProfileRepository,
+    scope: CoroutineScope,
+    onDismiss: () -> Unit
+) {
+    var newProfileName by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Profile") },
+        text = {
+            OutlinedTextField(
+                value = newProfileName,
+                onValueChange = { newProfileName = it },
+                label = { Text("Name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (newProfileName.isNotBlank()) {
+                        scope.launch {
+                            val colorIndex = profiles.size % PROFILE_COLOR_COUNT
+                            profileRepository.createProfile(newProfileName.trim(), colorIndex)
+                        }
+                        onDismiss()
+                    }
+                },
+                enabled = newProfileName.isNotBlank()
+            ) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

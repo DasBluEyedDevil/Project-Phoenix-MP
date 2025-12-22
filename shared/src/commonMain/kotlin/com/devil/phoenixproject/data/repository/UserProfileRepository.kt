@@ -39,17 +39,12 @@ class SqlDelightUserProfileRepository(
     private val _allProfiles = MutableStateFlow<List<UserProfile>>(emptyList())
     override val allProfiles: StateFlow<List<UserProfile>> = _allProfiles.asStateFlow()
 
-    private fun refreshProfilesSync() {
-        val profiles = queries.getAllProfiles().executeAsList().map { it.toUserProfile() }
-        _allProfiles.value = profiles
-        _activeProfile.value = profiles.find { it.isActive }
+    init {
+        // Ensure default profile exists and refresh profiles on initialization
+        ensureDefaultProfileSync()
     }
 
-    override suspend fun refreshProfiles() {
-        refreshProfilesSync()
-    }
-
-    override suspend fun ensureDefaultProfile() {
+    private fun ensureDefaultProfileSync() {
         val count = queries.countProfiles().executeAsOne()
         if (count == 0L) {
             queries.insertProfile(
@@ -61,6 +56,20 @@ class SqlDelightUserProfileRepository(
             )
         }
         refreshProfilesSync()
+    }
+
+    private fun refreshProfilesSync() {
+        val profiles = queries.getAllProfiles().executeAsList().map { it.toUserProfile() }
+        _allProfiles.value = profiles
+        _activeProfile.value = profiles.find { it.isActive }
+    }
+
+    override suspend fun refreshProfiles() {
+        refreshProfilesSync()
+    }
+
+    override suspend fun ensureDefaultProfile() {
+        ensureDefaultProfileSync()
     }
 
     override suspend fun createProfile(name: String, colorIndex: Int): UserProfile {

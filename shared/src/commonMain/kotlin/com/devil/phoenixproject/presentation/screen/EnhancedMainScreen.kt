@@ -40,6 +40,7 @@ import com.devil.phoenixproject.presentation.navigation.NavigationRoutes
 import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
 import com.devil.phoenixproject.ui.theme.ThemeMode
 import com.devil.phoenixproject.data.repository.UserProfileRepository
+import com.devil.phoenixproject.presentation.components.AddProfileDialog
 import com.devil.phoenixproject.presentation.components.ProfileSpeedDial
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -127,17 +128,24 @@ fun EnhancedMainScreen(
         currentRoute != NavigationRoutes.Settings.route
     }
 
+    // Only show ProfileSpeedDial on Home screen (JustLift has its own)
+    val showProfileSpeedDial = remember(currentRoute) {
+        currentRoute == NavigationRoutes.Home.route
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            ProfileSpeedDial(
-                profiles = profiles,
-                activeProfile = activeProfile,
-                onProfileSelected = { profile ->
-                    scope.launch { profileRepository.setActiveProfile(profile.id) }
-                },
-                onAddProfile = { showAddProfileDialog = true }
-            )
+            if (showProfileSpeedDial) {
+                ProfileSpeedDial(
+                    profiles = profiles,
+                    activeProfile = activeProfile,
+                    onProfileSelected = { profile ->
+                        scope.launch { profileRepository.setActiveProfile(profile.id) }
+                    },
+                    onAddProfile = { showAddProfileDialog = true }
+                )
+            }
         },
         topBar = {
             if (shouldShowTopBar) {
@@ -345,40 +353,11 @@ fun EnhancedMainScreen(
 
     // Add Profile Dialog
     if (showAddProfileDialog) {
-        var newProfileName by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { showAddProfileDialog = false },
-            title = { Text("Add Profile") },
-            text = {
-                OutlinedTextField(
-                    value = newProfileName,
-                    onValueChange = { newProfileName = it },
-                    label = { Text("Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (newProfileName.isNotBlank()) {
-                            scope.launch {
-                                val colorIndex = profiles.size % 8
-                                profileRepository.createProfile(newProfileName.trim(), colorIndex)
-                            }
-                            showAddProfileDialog = false
-                        }
-                    },
-                    enabled = newProfileName.isNotBlank()
-                ) {
-                    Text("Add")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddProfileDialog = false }) {
-                    Text("Cancel")
-                }
-            }
+        AddProfileDialog(
+            profiles = profiles,
+            profileRepository = profileRepository,
+            scope = scope,
+            onDismiss = { showAddProfileDialog = false }
         )
     }
 }
