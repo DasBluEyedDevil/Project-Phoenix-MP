@@ -50,8 +50,11 @@ data class MetricSampleBackup(
     val sessionId: String,
     val timestamp: Long,
     val position: Float?,
+    val positionB: Float? = null,
     val velocity: Float?,
+    val velocityB: Float? = null,
     val load: Float?,
+    val loadB: Float? = null,
     val power: Float?,
     val status: Int = 0
 )

@@ -500,8 +500,11 @@ class SqlDelightWorkoutRepository(
                     sessionId = sessionId,
                     timestamp = metric.timestamp,
                     position = metric.positionA.toDouble(),
+                    positionB = metric.positionB.toDouble(),
                     velocity = metric.velocityA,
+                    velocityB = metric.velocityB,
                     load = metric.loadA.toDouble(),
+                    loadB = metric.loadB.toDouble(),
                     power = power.toDouble(),
                     status = metric.status.toLong()
                 )
@@ -532,15 +535,15 @@ class SqlDelightWorkoutRepository(
     }
 
     override fun getMetricsForSession(sessionId: String): Flow<List<com.devil.phoenixproject.domain.model.WorkoutMetric>> {
-        return queries.selectMetricsBySession(sessionId) { id, sessId, timestamp, position, velocity, load, power, status ->
+        return queries.selectMetricsBySession(sessionId) { id, sessId, timestamp, position, positionB, velocity, velocityB, load, loadB, power, status ->
             com.devil.phoenixproject.domain.model.WorkoutMetric(
                 timestamp = timestamp,
                 loadA = load?.toFloat() ?: 0f,
-                loadB = load?.toFloat() ?: 0f,
+                loadB = loadB?.toFloat() ?: 0f,
                 positionA = position?.toFloat() ?: 0f,
-                positionB = position?.toFloat() ?: 0f,
+                positionB = positionB?.toFloat() ?: 0f,
                 velocityA = velocity ?: 0.0,
-                velocityB = velocity ?: 0.0,
+                velocityB = velocityB ?: 0.0,
                 status = status?.toInt() ?: 0
             )
         }.asFlow().mapToList(Dispatchers.IO)
@@ -548,15 +551,15 @@ class SqlDelightWorkoutRepository(
 
     override suspend fun getMetricsForSessionSync(sessionId: String): List<com.devil.phoenixproject.domain.model.WorkoutMetric> {
         return withContext(Dispatchers.IO) {
-            queries.selectMetricsBySession(sessionId) { id, sessId, timestamp, position, velocity, load, power, status ->
+            queries.selectMetricsBySession(sessionId) { id, sessId, timestamp, position, positionB, velocity, velocityB, load, loadB, power, status ->
                 com.devil.phoenixproject.domain.model.WorkoutMetric(
                     timestamp = timestamp,
                     loadA = load?.toFloat() ?: 0f,
-                    loadB = load?.toFloat() ?: 0f,
+                    loadB = loadB?.toFloat() ?: 0f,
                     positionA = position?.toFloat() ?: 0f,
-                    positionB = position?.toFloat() ?: 0f,
+                    positionB = positionB?.toFloat() ?: 0f,
                     velocityA = velocity ?: 0.0,
-                    velocityB = velocity ?: 0.0,
+                    velocityB = velocityB ?: 0.0,
                     status = status?.toInt() ?: 0
                 )
             }.executeAsList()

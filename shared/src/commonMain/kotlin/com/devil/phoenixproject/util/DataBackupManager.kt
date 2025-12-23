@@ -123,8 +123,11 @@ abstract class BaseDataBackupManager(
                         sessionId = metric.sessionId,
                         timestamp = metric.timestamp,
                         position = metric.position?.toFloat(),
+                        positionB = metric.positionB?.toFloat(),
                         velocity = metric.velocity?.toFloat(),
+                        velocityB = metric.velocityB?.toFloat(),
                         load = metric.load?.toFloat(),
+                        loadB = metric.loadB?.toFloat(),
                         power = metric.power?.toFloat(),
                         status = metric.status.toInt()
                     )
@@ -255,8 +258,11 @@ abstract class BaseDataBackupManager(
                         sessionId = metric.sessionId,
                         timestamp = metric.timestamp,
                         position = metric.position?.toDouble(),
+                        positionB = metric.positionB?.toDouble(),
                         velocity = metric.velocity?.toDouble(),
+                        velocityB = metric.velocityB?.toDouble(),
                         load = metric.load?.toDouble(),
+                        loadB = metric.loadB?.toDouble(),
                         power = metric.power?.toDouble(),
                         status = metric.status.toLong()
                     )
