@@ -1284,6 +1284,13 @@ class KableBleRepository : BleRepository {
                             if (consecutiveTimeouts <= 3 || consecutiveTimeouts % 10 == 0) {
                                 log.w { "⏱️ Monitor read timed out (${HEARTBEAT_READ_TIMEOUT_MS}ms) - consecutive: $consecutiveTimeouts" }
                             }
+                            // Task 13: Disconnect after too many consecutive timeouts
+                            if (consecutiveTimeouts >= MAX_CONSECUTIVE_TIMEOUTS) {
+                                log.e { "Too many consecutive timeouts ($consecutiveTimeouts), triggering disconnect" }
+                                _connectionState.value = ConnectionState.Disconnected
+                                scope.launch { disconnect() }
+                                return@withLock
+                            }
                             // Small delay after timeout to avoid tight loop
                             delay(50)
                         }
@@ -1302,11 +1309,12 @@ class KableBleRepository : BleRepository {
                         // Delay on failure to prevent tight error loops
                         delay(50)
                     }
+                    }
+                } catch (e: Exception) {
+                    log.e { "Monitor polling stopped: ${e.message}" }
                 }
-            } catch (e: Exception) {
-                log.e { "Monitor polling stopped: ${e.message}" }
+                log.i { "📊 Monitor polling ended (reads: $successCount, failures: $failCount, timeouts: $consecutiveTimeouts)" }
             }
-            log.i { "📊 Monitor polling ended (reads: $successCount, failures: $failCount, timeouts: $consecutiveTimeouts)" }
         }
     }
 
