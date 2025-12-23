@@ -1498,6 +1498,9 @@ class KableBleRepository : BleRepository {
                 maxPositionSeen = Double.MIN_VALUE
                 forceAboveGrabThresholdStart = null
                 forceBelowReleaseThresholdStart = null
+                // Task 14: Reset hysteresis timers
+                pendingGrabbedStartTime = null
+                pendingReleasedStartTime = null
                 log.i { "🎮 Handle state machine reset (no peripheral - will arm when connected)" }
             }
         } else {
@@ -1514,6 +1517,9 @@ class KableBleRepository : BleRepository {
         maxPositionSeen = Double.MIN_VALUE
         forceAboveGrabThresholdStart = null
         forceBelowReleaseThresholdStart = null
+        // Task 14: Reset hysteresis timers
+        pendingGrabbedStartTime = null
+        pendingReleasedStartTime = null
     }
 
     override fun enableJustLiftWaitingMode() {
@@ -1527,6 +1533,10 @@ class KableBleRepository : BleRepository {
         // Reset grab/release timers for hysteresis
         forceAboveGrabThresholdStart = null
         forceBelowReleaseThresholdStart = null
+
+        // Task 14: Reset hysteresis timers
+        pendingGrabbedStartTime = null
+        pendingReleasedStartTime = null
 
         // Reset handle state log counter
         handleStateLogCounter = 0L
@@ -1754,10 +1764,17 @@ class KableBleRepository : BleRepository {
             // Apply Exponential Moving Average (EMA) smoothing (Issue #204, #214)
             // This prevents false stall detection during controlled tempo movements
             // and reduces sensitivity to BLE position jitter
-            smoothedVelocityA = VELOCITY_SMOOTHING_ALPHA * rawVelocityA +
-                    (1 - VELOCITY_SMOOTHING_ALPHA) * smoothedVelocityA
-            smoothedVelocityB = VELOCITY_SMOOTHING_ALPHA * rawVelocityB +
-                    (1 - VELOCITY_SMOOTHING_ALPHA) * smoothedVelocityB
+            // Task 10: Initialize EMA with first raw sample to prevent cold start lag
+            if (isFirstVelocitySample) {
+                smoothedVelocityA = rawVelocityA
+                smoothedVelocityB = rawVelocityB
+                isFirstVelocitySample = false
+            } else {
+                smoothedVelocityA = VELOCITY_SMOOTHING_ALPHA * rawVelocityA +
+                        (1 - VELOCITY_SMOOTHING_ALPHA) * smoothedVelocityA
+                smoothedVelocityB = VELOCITY_SMOOTHING_ALPHA * rawVelocityB +
+                        (1 - VELOCITY_SMOOTHING_ALPHA) * smoothedVelocityB
+            }
 
             // Update tracking state for next velocity calculation
             lastPositionA = posA
@@ -1815,6 +1832,16 @@ class KableBleRepository : BleRepository {
 
         val sampleStatus = SampleStatus(status)
 
+        // Task 5: ROM violation safety handling
+        if (sampleStatus.isRomOutsideHigh()) {
+            log.w { "SAFETY: ROM_OUTSIDE_HIGH detected - Status: 0x${status.toString(16)}" }
+            scope.launch { _romViolationEvents.emit(RomViolationType.OUTSIDE_HIGH) }
+        }
+        if (sampleStatus.isRomOutsideLow()) {
+            log.w { "SAFETY: ROM_OUTSIDE_LOW detected - Status: 0x${status.toString(16)}" }
+            scope.launch { _romViolationEvents.emit(RomViolationType.OUTSIDE_LOW) }
+        }
+
         if (sampleStatus.isDeloadOccurred()) {
             log.w { "MACHINE STATUS: DELOAD_OCCURRED flag set - Status: 0x${status.toString(16)}" }
 
@@ -1847,6 +1874,12 @@ class KableBleRepository : BleRepository {
         if (posA !in MIN_POSITION.toFloat()..MAX_POSITION.toFloat() ||
             posB !in MIN_POSITION.toFloat()..MAX_POSITION.toFloat()) {
             log.w { "Position out of range: posA=$posA, posB=$posB (valid: $MIN_POSITION to $MAX_POSITION mm)" }
+            return false
+        }
+
+        // Task 8: Load validation - check against hardware max weight
+        if (loadA < 0f || loadA > MAX_WEIGHT_KG || loadB < 0f || loadB > MAX_WEIGHT_KG) {
+            log.w { "Load out of range: loadA=$loadA, loadB=$loadB (max=$MAX_WEIGHT_KG)" }
             return false
         }
 
@@ -1930,21 +1963,34 @@ class KableBleRepository : BleRepository {
 
                 when {
                     aActive || bActive -> {
-                        // GRAB CONFIRMED - position AND velocity thresholds met
-                        val activeHandle = when {
-                            aActive && bActive -> "both"
-                            aActive -> "A"
-                            else -> "B"
+                        // Task 14: Handle state hysteresis - require 200ms sustained before transition
+                        val currentTime = currentTimeMillis()
+                        if (pendingGrabbedStartTime == null) {
+                            // Start dwell timer
+                            pendingGrabbedStartTime = currentTime
+                            currentState  // Stay in current state
+                        } else if (currentTime - pendingGrabbedStartTime!! >= STATE_TRANSITION_DWELL_MS) {
+                            // GRAB CONFIRMED - position AND velocity thresholds met for 200ms
+                            val activeHandle = when {
+                                aActive && bActive -> "both"
+                                aActive -> "A"
+                                else -> "B"
+                            }
+                            log.i { "🔥 GRAB CONFIRMED: handle=$activeHandle (posA=${posA.format(1)}, posB=${posB.format(1)}, velA=${velocityA.format(0)}, velB=${velocityB.format(0)}) after ${STATE_TRANSITION_DWELL_MS}ms dwell" }
+                            pendingGrabbedStartTime = null
+                            HandleState.Grabbed
+                        } else {
+                            currentState  // Still dwelling
                         }
-                        log.i { "🔥 GRAB CONFIRMED: handle=$activeHandle (posA=${posA.format(1)}, posB=${posB.format(1)}, velA=${velocityA.format(0)}, velB=${velocityB.format(0)})" }
-                        HandleState.Grabbed
                     }
                     handleAGrabbed || handleBGrabbed -> {
                         // Position extended but no significant movement yet
+                        pendingGrabbedStartTime = null  // Reset grab timer
                         HandleState.Moving
                     }
                     else -> {
                         // Back to rest position
+                        pendingGrabbedStartTime = null  // Reset grab timer
                         HandleState.Released
                     }
                 }
@@ -1957,9 +2003,21 @@ class KableBleRepository : BleRepository {
                 val bReleased = posB < HANDLE_REST_THRESHOLD
 
                 if (aReleased && bReleased) {
-                    log.d { "RELEASE DETECTED: posA=$posA, posB=$posB < $HANDLE_REST_THRESHOLD" }
-                    HandleState.Released
+                    // Task 14: Handle state hysteresis - require 200ms sustained before release
+                    val currentTime = currentTimeMillis()
+                    if (pendingReleasedStartTime == null) {
+                        // Start dwell timer
+                        pendingReleasedStartTime = currentTime
+                        HandleState.Grabbed  // Stay grabbed
+                    } else if (currentTime - pendingReleasedStartTime!! >= STATE_TRANSITION_DWELL_MS) {
+                        log.d { "RELEASE DETECTED: posA=$posA, posB=$posB < $HANDLE_REST_THRESHOLD after ${STATE_TRANSITION_DWELL_MS}ms dwell" }
+                        pendingReleasedStartTime = null
+                        HandleState.Released
+                    } else {
+                        HandleState.Grabbed  // Still dwelling
+                    }
                 } else {
+                    pendingReleasedStartTime = null  // Reset release timer if handles move away from rest
                     HandleState.Grabbed
                 }
             }
