@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
@@ -26,7 +28,8 @@ kotlin {
         }
     }
 
-    // iOS targets
+    // iOS targets with XCFramework support
+    val xcf = XCFramework()
     listOf(
         iosX64(),
         iosArm64(),
@@ -35,6 +38,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "shared"
             isStatic = true
+            xcf.add(this)
         }
         // Generate dSYM for release framework
         iosTarget.binaries.all {
