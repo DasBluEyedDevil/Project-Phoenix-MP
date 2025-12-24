@@ -28,20 +28,15 @@ kotlin {
         }
     }
 
-    // iOS targets with XCFramework support
+    // iOS target (iosArm64 only - physical devices for distribution)
     val xcf = XCFramework()
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    iosArm64 {
+        binaries.framework {
             baseName = "shared"
             isStatic = true
             xcf.add(this)
         }
-        // Generate dSYM for release framework
-        iosTarget.binaries.all {
+        binaries.all {
             freeCompilerArgs += listOf("-Xadd-light-debug=enable")
         }
     }
@@ -134,14 +129,10 @@ kotlin {
             }
         }
         
-        val iosX64Main by getting
         val iosArm64Main by getting
-        val iosSimulatorArm64Main by getting
         val iosMain by creating {
             dependsOn(commonMain)
-            iosX64Main.dependsOn(this)
             iosArm64Main.dependsOn(this)
-            iosSimulatorArm64Main.dependsOn(this)
 
             dependencies {
                 // SQLDelight Native Driver

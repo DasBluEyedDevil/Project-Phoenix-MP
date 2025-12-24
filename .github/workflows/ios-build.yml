@@ -61,9 +61,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-konan-
 
-      - name: Build shared XCFramework
-        run: ./gradlew :shared:assembleSharedReleaseXCFramework --no-parallel
-        # --no-parallel reduces peak memory by building architectures sequentially
+      - name: Build shared framework (iosArm64 only)
+        run: ./gradlew :shared:linkReleaseFrameworkIosArm64 --no-parallel
+
+      - name: Create XCFramework from iosArm64
+        run: |
+          # Create XCFramework with just the ARM64 framework (no simulator archs needed for distribution)
+          xcodebuild -create-xcframework \
+            -framework shared/build/bin/iosArm64/releaseFramework/shared.framework \
+            -output shared/build/XCFrameworks/release/shared.xcframework
 
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer

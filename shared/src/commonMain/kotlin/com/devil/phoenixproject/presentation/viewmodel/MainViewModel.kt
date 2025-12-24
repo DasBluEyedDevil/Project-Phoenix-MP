@@ -834,7 +834,10 @@ class MainViewModel constructor(
                  workingReps = repCount.workingReps,
                  warmupReps = repCount.warmupReps,
                  duration = currentTimeMillis() - workoutStartTime,
-                 isJustLift = isJustLift
+                 isJustLift = isJustLift,
+                 exerciseId = params.selectedExerciseId,
+                 routineSessionId = currentRoutineSessionId,
+                 routineName = currentRoutineName
              )
              workoutRepository.saveSession(session)
 
