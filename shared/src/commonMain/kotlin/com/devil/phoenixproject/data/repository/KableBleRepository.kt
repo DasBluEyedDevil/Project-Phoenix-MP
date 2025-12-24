@@ -1635,6 +1635,7 @@ class KableBleRepository : BleRepository {
 
         // Disconnect and release the peripheral
         try {
+            isExplicitDisconnect = true
             existingPeripheral.disconnect()
         } catch (e: Exception) {
             log.w { "Cleanup disconnect error (non-fatal): ${e.message}" }
