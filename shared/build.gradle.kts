@@ -58,6 +58,9 @@ kotlin {
                 // Navigation Compose (Multiplatform) - 2.9.1 required for Compose MP 1.10.0
                 implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.1")
 
+                // SavedState (required for navigation arguments in 2.9.x)
+                implementation("org.jetbrains.androidx.savedstate:savedstate:1.4.0")
+
                 // Kotlinx
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.json)

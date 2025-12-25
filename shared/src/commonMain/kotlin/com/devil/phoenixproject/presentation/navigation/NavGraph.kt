@@ -15,6 +15,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.savedstate.read
 import com.devil.phoenixproject.data.repository.ExerciseRepository
 import com.devil.phoenixproject.presentation.screen.*
 import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
@@ -218,7 +219,7 @@ fun NavGraph(
                 )
             }
         ) { backStackEntry ->
-            val exerciseId = backStackEntry.arguments?.getString("exerciseId") ?: return@composable
+            val exerciseId = backStackEntry.arguments?.read { getStringOrNull("exerciseId") } ?: return@composable
             ExerciseDetailScreen(
                 exerciseId = exerciseId,
                 navController = navController,
@@ -298,8 +299,8 @@ fun NavGraph(
             route = NavigationRoutes.RoutineEditor.route,
             arguments = listOf(navArgument("routineId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val routineId = backStackEntry.arguments?.getString("routineId") ?: "new"
-            
+            val routineId = backStackEntry.arguments?.read { getStringOrNull("routineId") } ?: "new"
+
             // Collect dependencies from ViewModel/Koin
             val weightUnit by viewModel.weightUnit.collectAsState()
             val enableVideo by viewModel.enableVideoPlayback.collectAsState()
@@ -321,7 +322,7 @@ fun NavGraph(
             route = NavigationRoutes.CycleEditor.route,
             arguments = listOf(navArgument("cycleId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val cycleId = backStackEntry.arguments?.getString("cycleId") ?: "new"
+            val cycleId = backStackEntry.arguments?.read { getStringOrNull("cycleId") } ?: "new"
             val routines by viewModel.routines.collectAsState()
 
             CycleEditorScreen(
