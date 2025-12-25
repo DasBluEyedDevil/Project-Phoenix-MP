@@ -195,24 +195,6 @@ jobs:
           fail_on_unmatched_files: false
           generate_release_notes: true
 
-      - name: Upload to TestFlight
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-        env:
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-          APP_STORE_CONNECT_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
-        run: |
-          # Create API key file
-          mkdir -p ~/.private_keys
-          echo -n "$APP_STORE_CONNECT_API_KEY" > ~/.private_keys/AuthKey_$APP_STORE_CONNECT_API_KEY_ID.p8
-
-          # Upload to TestFlight
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$RUNNER_TEMP/export/VitruvianPhoenix.ipa" \
-            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
-
       - name: Clean up keychain
         if: always() && github.event_name != 'pull_request'
         run: |
