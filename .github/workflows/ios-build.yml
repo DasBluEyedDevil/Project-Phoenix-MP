@@ -184,6 +184,26 @@ jobs:
           path: ${{ runner.temp }}/export/*.ipa
           retention-days: 14
 
+      - name: Upload to TestFlight
+        if: github.event_name != 'pull_request'
+        env:
+          APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        run: |
+          # Create private keys directory for App Store Connect API
+          mkdir -p ~/.appstoreconnect/private_keys
+
+          # Write API key to expected location
+          echo "$APPSTORE_API_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8
+
+          # Upload to TestFlight
+          xcrun altool --upload-app \
+            -f "$RUNNER_TEMP/export/VitruvianPhoenix.ipa" \
+            --type ios \
+            --apiKey "$APPSTORE_API_KEY_ID" \
+            --apiIssuer "$APPSTORE_ISSUER_ID"
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
