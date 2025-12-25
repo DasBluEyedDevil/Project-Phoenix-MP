@@ -192,6 +192,7 @@ jobs:
 
       - name: Upload to TestFlight
         if: github.event_name != 'pull_request'
+        continue-on-error: true  # Don't fail the workflow if TestFlight upload fails
         env:
           APPSTORE_API_KEY: ${{ secrets.APPSTORE_API_KEY }}
           APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
