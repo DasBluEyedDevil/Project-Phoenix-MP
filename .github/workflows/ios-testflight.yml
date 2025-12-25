@@ -80,21 +80,13 @@ jobs:
           find shared/build -type d -name "composeResources" 2>/dev/null | head -10
           find shared/build -name "vitphoe_logo.png" 2>/dev/null | head -5
 
-      - name: Create XCFramework
+      - name: Copy Compose resources to framework bundle
         run: |
-          xcodebuild -create-xcframework \
-            -framework shared/build/bin/iosArm64/releaseFramework/shared.framework \
-            -output shared/build/XCFrameworks/release/shared.xcframework
-
-      - name: Link framework to Xcode path
-        run: |
-          mkdir -p shared/build/bin/iosArm64/debugFramework
-          ln -sfn ../releaseFramework/shared.framework shared/build/bin/iosArm64/debugFramework/shared.framework
-
-      - name: Copy Compose resources
-        run: |
-          # IMPORTANT: Folder must be named 'composeResources' (camelCase) to match what Compose runtime expects
-          RESOURCE_DST="iosApp/VitruvianPhoenix/composeResources"
+          # Compose MP looks for resources in the framework bundle when embedded as dynamic framework
+          # Copy resources into shared.framework so they can be found at runtime
+          # IMPORTANT: This must happen BEFORE creating XCFramework or symlinks
+          FRAMEWORK_PATH="shared/build/bin/iosArm64/releaseFramework/shared.framework"
+          RESOURCE_DST="$FRAMEWORK_PATH/composeResources"
           mkdir -p "$RESOURCE_DST"
 
           # Try multiple possible source paths (Compose MP resource generation varies by version)
@@ -117,7 +109,7 @@ jobs:
           done
 
           if [ "$FOUND" = true ]; then
-            echo "=== Copied compose resources to $RESOURCE_DST ==="
+            echo "=== Copied compose resources to framework bundle ==="
             find "$RESOURCE_DST" -type f | head -20
           else
             echo "ERROR: No compose resources found!"
@@ -125,6 +117,17 @@ jobs:
             printf '  - %s\n' "${RESOURCE_PATHS[@]}"
             exit 1
           fi
+
+      - name: Create XCFramework
+        run: |
+          xcodebuild -create-xcframework \
+            -framework shared/build/bin/iosArm64/releaseFramework/shared.framework \
+            -output shared/build/XCFrameworks/release/shared.xcframework
+
+      - name: Link framework to Xcode path
+        run: |
+          mkdir -p shared/build/bin/iosArm64/debugFramework
+          ln -sfn ../releaseFramework/shared.framework shared/build/bin/iosArm64/debugFramework/shared.framework
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
