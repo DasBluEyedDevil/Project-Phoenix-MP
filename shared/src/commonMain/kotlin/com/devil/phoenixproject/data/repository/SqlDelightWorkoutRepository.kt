@@ -320,13 +320,12 @@ class SqlDelightWorkoutRepository(
 
     override suspend fun saveRoutine(routine: Routine) {
         withContext(Dispatchers.IO) {
-            val now = currentTimeMillis()
             // Generate a UUID for the routine if not provided
             val routineId = routine.id.takeIf { it.isNotBlank() } ?: generateUUID()
 
             db.transaction {
-                // Insert the routine
-                queries.insertRoutine(
+                // Upsert the routine (handles both new and existing routines)
+                queries.upsertRoutine(
                     id = routineId,
                     name = routine.name,
                     description = "", // Default empty description
@@ -334,6 +333,9 @@ class SqlDelightWorkoutRepository(
                     lastUsed = routine.lastUsed,
                     useCount = routine.useCount.toLong()
                 )
+
+                // Delete existing exercises before re-inserting (prevents duplicates on edit)
+                queries.deleteRoutineExercises(routineId)
 
                 // Insert all exercises
                 routine.exercises.forEachIndexed { index, exercise ->
