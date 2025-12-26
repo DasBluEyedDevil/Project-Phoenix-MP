@@ -64,7 +64,7 @@ jobs:
             -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
-            -Pandroid.injected.version.code=${{ steps.version.outputs.version_code }}
+            -Pversion.code=${{ steps.version.outputs.version_code }}
           rm keystore.jks
 
       - name: Upload to Play Store Internal Testing
