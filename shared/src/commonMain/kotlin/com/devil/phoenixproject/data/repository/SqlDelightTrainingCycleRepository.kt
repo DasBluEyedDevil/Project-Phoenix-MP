@@ -244,14 +244,16 @@ class SqlDelightTrainingCycleRepository(
 
     override suspend fun deleteCycle(cycleId: String) {
         withContext(Dispatchers.IO) {
-            // Delete progress first
-            queries.deleteCycleProgress(cycleId)
+            db.transaction {
+                // Delete progress first
+                queries.deleteCycleProgress(cycleId)
 
-            // Delete days (should cascade, but be explicit)
-            queries.deleteCycleDaysByCycle(cycleId)
+                // Delete days (should cascade, but be explicit)
+                queries.deleteCycleDaysByCycle(cycleId)
 
-            // Delete the cycle
-            queries.deleteTrainingCycle(cycleId)
+                // Delete the cycle
+                queries.deleteTrainingCycle(cycleId)
+            }
         }
     }
 
