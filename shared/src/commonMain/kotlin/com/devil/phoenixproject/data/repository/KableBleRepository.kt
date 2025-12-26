@@ -1253,11 +1253,11 @@ class KableBleRepository : BleRepository {
 
         // Start sequential polling using suspend-based reads (official app approach)
         monitorPollingJob = scope.launch {
-            // Task 4: Prevent concurrent polling restarts with mutex
-            if (monitorPollingMutex.isLocked) {
-                log.w { "Monitor polling restart in progress, skipping duplicate" }
-                return@launch
-            }
+            // Use mutex to ensure only one polling loop runs at a time.
+            // NOTE: We removed the premature `isLocked` check which caused a race condition
+            // where the second call to startMonitorPolling (with forAutoStart=true) would skip
+            // because the first call's mutex was still locked. Now we properly wait for the
+            // cancelled job to release the mutex before starting the new polling loop.
             monitorPollingMutex.withLock {
                 var failCount = 0
                 var successCount = 0L

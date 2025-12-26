@@ -591,9 +591,10 @@ class MainViewModel constructor(
             // Update rep ranges for position bar ROM visualization
             _repRanges.value = repCounter.getRepRanges()
 
-            // Just Lift / AMRAP Auto-Stop (stall detection)
-            // Stall detection is now toggleable via stallDetectionEnabled flag
-            if ((params.isJustLift || params.isAMRAP) && params.stallDetectionEnabled) {
+            // Just Lift / AMRAP Auto-Stop
+            // Always call checkAutoStop for position-based detection.
+            // Stall (velocity) detection inside is gated by stallDetectionEnabled.
+            if (params.isJustLift || params.isAMRAP) {
                 checkAutoStop(metric)
             } else {
                 resetAutoStopTimer()
@@ -1656,61 +1657,68 @@ class MainViewModel constructor(
         }
 
         val hasMeaningfulRange = repCounter.hasMeaningfulRange(MIN_RANGE_THRESHOLD)
+        val params = _workoutParameters.value
 
         // ===== 1. VELOCITY-BASED STALL DETECTION (Issue #204, #214, #216) =====
-        // Two-tier hysteresis matching official app (<2.5 stalled, >10 moving):
-        // - Below LOW threshold (<2.5): start/continue stall timer
-        // - Above HIGH threshold (>10): reset stall timer (clear movement)
-        // - Between LOW and HIGH (≥2.5 and ≤10): maintain current state (prevents toggling)
+        // Only run if stallDetectionEnabled is true (user preference in Settings)
+        if (params.stallDetectionEnabled) {
+            // Two-tier hysteresis matching official app (<2.5 stalled, >10 moving):
+            // - Below LOW threshold (<2.5): start/continue stall timer
+            // - Above HIGH threshold (>10): reset stall timer (clear movement)
+            // - Between LOW and HIGH (≥2.5 and ≤10): maintain current state (prevents toggling)
 
-        // Get max velocity (use absolute values for comparison)
-        val maxVelocity = maxOf(kotlin.math.abs(metric.velocityA), kotlin.math.abs(metric.velocityB))
-        val isDefinitelyStalled = maxVelocity < STALL_VELOCITY_LOW
-        val isDefinitelyMoving = maxVelocity > STALL_VELOCITY_HIGH
+            // Get max velocity (use absolute values for comparison)
+            val maxVelocity = maxOf(kotlin.math.abs(metric.velocityA), kotlin.math.abs(metric.velocityB))
+            val isDefinitelyStalled = maxVelocity < STALL_VELOCITY_LOW
+            val isDefinitelyMoving = maxVelocity > STALL_VELOCITY_HIGH
 
-        // Check if handles are actively being used (position > 10mm OR meaningful range achieved)
-        val maxPosition = maxOf(metric.positionA, metric.positionB)
-        val isActivelyUsing = maxPosition > STALL_MIN_POSITION || hasMeaningfulRange
+            // Check if handles are actively being used (position > 10mm OR meaningful range achieved)
+            val maxPosition = maxOf(metric.positionA, metric.positionB)
+            val isActivelyUsing = maxPosition > STALL_MIN_POSITION || hasMeaningfulRange
 
-        // Hysteresis state machine:
-        // - Definitely stalled (< LOW): start timer if not already running
-        // - Definitely moving (> HIGH): reset timer
-        // - Hysteresis band (LOW to HIGH): maintain current state, keep timer running if active
-        if (isDefinitelyStalled && isActivelyUsing && stallStartTime == null) {
-            // Velocity below LOW threshold - start stall timer
-            stallStartTime = currentTimeMillis()
-            isCurrentlyStalled = true
-        } else if (isDefinitelyMoving && stallStartTime != null) {
-            // Velocity above HIGH threshold - clear movement detected, reset timer
+            // Hysteresis state machine:
+            // - Definitely stalled (< LOW): start timer if not already running
+            // - Definitely moving (> HIGH): reset timer
+            // - Hysteresis band (LOW to HIGH): maintain current state, keep timer running if active
+            if (isDefinitelyStalled && isActivelyUsing && stallStartTime == null) {
+                // Velocity below LOW threshold - start stall timer
+                stallStartTime = currentTimeMillis()
+                isCurrentlyStalled = true
+            } else if (isDefinitelyMoving && stallStartTime != null) {
+                // Velocity above HIGH threshold - clear movement detected, reset timer
+                resetStallTimer()
+            }
+            // else: velocity in hysteresis band (2.5-10.0) - maintain current timer state
+
+            // If timer is running (regardless of current velocity zone), check progress and update UI
+            val startTime = stallStartTime
+            if (startTime != null) {
+                val stallElapsed = (currentTimeMillis() - startTime) / 1000f
+
+                // Trigger auto-stop after 5 seconds of no movement
+                if (stallElapsed >= STALL_DURATION_SECONDS && !autoStopTriggered) {
+                    requestAutoStop()
+                    return
+                }
+
+                // Update UI with stall progress (always update when timer is active)
+                if (stallElapsed >= 1.0f) { // Only show after 1 second of stall
+                    val progress = (stallElapsed / STALL_DURATION_SECONDS).coerceIn(0f, 1f)
+                    val remaining = (STALL_DURATION_SECONDS - stallElapsed).coerceAtLeast(0f)
+
+                    _autoStopState.value = AutoStopUiState(
+                        isActive = true,
+                        progress = progress,
+                        secondsRemaining = ceil(remaining).toInt()
+                    )
+                }
+            }
+        } else {
+            // Stall detection disabled - reset stall timer to avoid stale state
             resetStallTimer()
         }
-        // else: velocity in hysteresis band (2.5-10.0) - maintain current timer state
 
-        // If timer is running (regardless of current velocity zone), check progress and update UI
-        val startTime = stallStartTime
-        if (startTime != null) {
-            val stallElapsed = (currentTimeMillis() - startTime) / 1000f
-
-            // Trigger auto-stop after 5 seconds of no movement
-            if (stallElapsed >= STALL_DURATION_SECONDS && !autoStopTriggered) {
-                requestAutoStop()
-                return
-            }
-
-            // Update UI with stall progress (always update when timer is active)
-            if (stallElapsed >= 1.0f) { // Only show after 1 second of stall
-                val progress = (stallElapsed / STALL_DURATION_SECONDS).coerceIn(0f, 1f)
-                val remaining = (STALL_DURATION_SECONDS - stallElapsed).coerceAtLeast(0f)
-
-                _autoStopState.value = AutoStopUiState(
-                    isActive = true,
-                    progress = progress,
-                    secondsRemaining = ceil(remaining).toInt()
-                )
-            }
-        }
-
-        // ===== 2. POSITION-BASED DETECTION (secondary/backup) =====
+        // ===== 2. POSITION-BASED DETECTION (always active) =====
         // Only check if we have meaningful range established
         if (!hasMeaningfulRange) {
             resetAutoStopTimer()
