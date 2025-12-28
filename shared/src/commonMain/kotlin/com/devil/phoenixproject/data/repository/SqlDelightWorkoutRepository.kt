@@ -148,9 +148,12 @@ class SqlDelightWorkoutRepository(
                     )
                 }
 
-                // Parse comma-separated setReps
+                // Parse comma-separated setReps (supports "AMRAP" as null marker)
                 val setReps: List<Int?> = try {
-                    row.setReps.split(",").map { it.trim().toIntOrNull() }
+                    row.setReps.split(",").map { value ->
+                        val trimmed = value.trim()
+                        if (trimmed.equals("AMRAP", ignoreCase = true)) null else trimmed.toIntOrNull()
+                    }
                 } catch (e: Exception) {
                     Logger.w(e) { "Failed to parse setReps '${row.setReps}' for exercise ${row.exerciseName}, using default [10]" }
                     listOf(10)
@@ -387,7 +390,7 @@ class SqlDelightWorkoutRepository(
             exerciseId = exercise.exercise.id,
             cableConfig = exercise.cableConfig.name,
             orderIndex = index.toLong(),
-            setReps = exercise.setReps.joinToString(",") { (it ?: 10).toString() },
+            setReps = exercise.setReps.joinToString(",") { it?.toString() ?: "AMRAP" },
             weightPerCableKg = exercise.weightPerCableKg.toDouble(),
             setWeights = exercise.setWeightsPerCableKg.joinToString(","),
             mode = serializeWorkoutType(exercise.workoutType),
