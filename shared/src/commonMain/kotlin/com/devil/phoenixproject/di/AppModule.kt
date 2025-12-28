@@ -6,6 +6,7 @@ import com.devil.phoenixproject.data.migration.MigrationManager
 import com.devil.phoenixproject.data.preferences.PreferencesManager
 import com.devil.phoenixproject.data.preferences.SettingsPreferencesManager
 import com.devil.phoenixproject.data.repository.*
+import com.devil.phoenixproject.domain.subscription.SubscriptionManager
 import com.devil.phoenixproject.domain.usecase.ProgressionUseCase
 import com.devil.phoenixproject.domain.usecase.RepCounterFromMachine
 import com.devil.phoenixproject.domain.usecase.TemplateConverter
@@ -39,6 +40,10 @@ val commonModule = module {
     single<TrainingCycleRepository> { SqlDelightTrainingCycleRepository(get()) }
     single<CompletedSetRepository> { SqlDelightCompletedSetRepository(get()) }
     single<ProgressionRepository> { SqlDelightProgressionRepository(get()) }
+
+    // Auth & Subscription
+    single<AuthRepository> { SupabaseAuthRepository() }
+    single { SubscriptionManager(get()) }
 
     // Preferences
     // Settings is provided by platformModule
