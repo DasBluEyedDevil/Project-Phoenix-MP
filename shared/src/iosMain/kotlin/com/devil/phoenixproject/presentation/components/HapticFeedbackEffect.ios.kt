@@ -88,7 +88,8 @@ private class IosSoundManager {
 
     private fun loadSounds() {
         // Map events to sound file names (without extension)
-        val soundFiles = mapOf(
+        // Note: Using sealed class data objects as map keys (they have proper equals/hashCode)
+        val soundFiles: Map<HapticEvent, String> = mapOf(
             HapticEvent.REP_COMPLETED to "beep",
             HapticEvent.WARMUP_COMPLETE to "beepboop",
             HapticEvent.WORKOUT_COMPLETE to "boopbeepbeep",
@@ -96,7 +97,7 @@ private class IosSoundManager {
             HapticEvent.WORKOUT_END to "chirpchirp",
             HapticEvent.REST_ENDING to "restover",
             HapticEvent.DISCO_MODE_UNLOCKED to "discomode"
-            // ERROR, BADGE_EARNED, PERSONAL_RECORD handled separately
+            // ERROR, BADGE_EARNED, PERSONAL_RECORD, REP_COUNT_ANNOUNCED handled separately
         )
 
         soundFiles.forEach { (event, fileName) ->
@@ -185,20 +186,21 @@ private class IosSoundManager {
     }
 
     fun playSound(event: HapticEvent) {
-        // ERROR event has no sound
-        if (event == HapticEvent.ERROR) return
+        // ERROR event has no sound, REP_COUNT_ANNOUNCED is handled by separate audio system
+        if (event is HapticEvent.ERROR || event is HapticEvent.REP_COUNT_ANNOUNCED) return
 
         val player = when (event) {
-            HapticEvent.BADGE_EARNED -> {
+            is HapticEvent.BADGE_EARNED -> {
                 if (badgeSoundPlayers.isNotEmpty()) {
                     badgeSoundPlayers[kotlin.random.Random.nextInt(badgeSoundPlayers.size)]
                 } else null
             }
-            HapticEvent.PERSONAL_RECORD -> {
+            is HapticEvent.PERSONAL_RECORD -> {
                 if (prSoundPlayers.isNotEmpty()) {
                     prSoundPlayers[kotlin.random.Random.nextInt(prSoundPlayers.size)]
                 } else null
             }
+            is HapticEvent.REP_COUNT_ANNOUNCED -> null // Handled by separate audio system
             else -> players[event]
         }
 
@@ -257,39 +259,42 @@ private class IosSoundManager {
  * Play haptic feedback based on event type
  */
 private fun playHapticFeedback(event: HapticEvent) {
+    // REP_COUNT_ANNOUNCED has no haptic feedback - it's audio only
+    if (event is HapticEvent.REP_COUNT_ANNOUNCED) return
+
     try {
         when (event) {
-            HapticEvent.REP_COMPLETED -> {
+            is HapticEvent.REP_COMPLETED -> {
                 // Light impact for each rep
                 val generator = UIImpactFeedbackGenerator(UIImpactFeedbackStyle.UIImpactFeedbackStyleLight)
                 generator.prepare()
                 generator.impactOccurred()
             }
-            HapticEvent.WARMUP_COMPLETE, HapticEvent.WORKOUT_COMPLETE -> {
+            is HapticEvent.WARMUP_COMPLETE, is HapticEvent.WORKOUT_COMPLETE -> {
                 // Success notification for completions
                 val generator = UINotificationFeedbackGenerator()
                 generator.prepare()
                 generator.notificationOccurred(UINotificationFeedbackType.UINotificationFeedbackTypeSuccess)
             }
-            HapticEvent.WORKOUT_START, HapticEvent.WORKOUT_END -> {
+            is HapticEvent.WORKOUT_START, is HapticEvent.WORKOUT_END -> {
                 // Medium impact for start/end
                 val generator = UIImpactFeedbackGenerator(UIImpactFeedbackStyle.UIImpactFeedbackStyleMedium)
                 generator.prepare()
                 generator.impactOccurred()
             }
-            HapticEvent.REST_ENDING -> {
+            is HapticEvent.REST_ENDING -> {
                 // Warning notification when rest is ending
                 val generator = UINotificationFeedbackGenerator()
                 generator.prepare()
                 generator.notificationOccurred(UINotificationFeedbackType.UINotificationFeedbackTypeWarning)
             }
-            HapticEvent.ERROR -> {
+            is HapticEvent.ERROR -> {
                 // Error notification
                 val generator = UINotificationFeedbackGenerator()
                 generator.prepare()
                 generator.notificationOccurred(UINotificationFeedbackType.UINotificationFeedbackTypeError)
             }
-            HapticEvent.DISCO_MODE_UNLOCKED, HapticEvent.BADGE_EARNED, HapticEvent.PERSONAL_RECORD -> {
+            is HapticEvent.DISCO_MODE_UNLOCKED, is HapticEvent.BADGE_EARNED, is HapticEvent.PERSONAL_RECORD -> {
                 // Celebration - heavy impact followed by success notification
                 val impactGenerator = UIImpactFeedbackGenerator(UIImpactFeedbackStyle.UIImpactFeedbackStyleHeavy)
                 impactGenerator.prepare()
@@ -298,6 +303,9 @@ private fun playHapticFeedback(event: HapticEvent) {
                 val notificationGenerator = UINotificationFeedbackGenerator()
                 notificationGenerator.prepare()
                 notificationGenerator.notificationOccurred(UINotificationFeedbackType.UINotificationFeedbackTypeSuccess)
+            }
+            is HapticEvent.REP_COUNT_ANNOUNCED -> {
+                // No haptic for rep count announcement - audio only
             }
         }
     } catch (e: Exception) {

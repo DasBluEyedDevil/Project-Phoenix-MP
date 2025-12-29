@@ -43,6 +43,7 @@ fun HapticFeedbackEffect(
     }
 
     // Load sounds
+    // Note: Using sealed class data objects as map keys (they have proper equals/hashCode)
     val soundIds = remember(soundPool) {
         mutableMapOf<HapticEvent, Int>().apply {
             try {
@@ -53,8 +54,9 @@ fun HapticFeedbackEffect(
                 put(HapticEvent.WORKOUT_END, soundPool.load(context, R.raw.chirpchirp, 1))
                 put(HapticEvent.REST_ENDING, soundPool.load(context, R.raw.restover, 1))
                 put(HapticEvent.DISCO_MODE_UNLOCKED, soundPool.load(context, R.raw.discomode, 1))
-                // BADGE_EARNED and PERSONAL_RECORD use random sounds from lists below
+                // BADGE_EARNED, PERSONAL_RECORD use random sounds from lists below
                 // ERROR has no sound
+                // REP_COUNT_ANNOUNCED is handled by separate audio system
             } catch (e: Exception) {
                 Logger.e(e) { "Failed to load sounds" }
             }
@@ -136,18 +138,23 @@ fun HapticFeedbackEffect(
  * Play haptic feedback based on event type
  */
 private fun playHapticFeedback(event: HapticEvent, hapticFeedback: HapticFeedback) {
-    val feedbackType = when (event) {
-        HapticEvent.REP_COMPLETED,
-        HapticEvent.WORKOUT_START,
-        HapticEvent.WORKOUT_END -> HapticFeedbackType.TextHandleMove // Light click
+    // REP_COUNT_ANNOUNCED has no haptic feedback - it's audio only
+    if (event is HapticEvent.REP_COUNT_ANNOUNCED) return
 
-        HapticEvent.WARMUP_COMPLETE,
-        HapticEvent.WORKOUT_COMPLETE,
-        HapticEvent.REST_ENDING,
-        HapticEvent.ERROR,
-        HapticEvent.DISCO_MODE_UNLOCKED,
-        HapticEvent.BADGE_EARNED,
-        HapticEvent.PERSONAL_RECORD -> HapticFeedbackType.LongPress // Strong vibration
+    val feedbackType = when (event) {
+        is HapticEvent.REP_COMPLETED,
+        is HapticEvent.WORKOUT_START,
+        is HapticEvent.WORKOUT_END -> HapticFeedbackType.TextHandleMove // Light click
+
+        is HapticEvent.WARMUP_COMPLETE,
+        is HapticEvent.WORKOUT_COMPLETE,
+        is HapticEvent.REST_ENDING,
+        is HapticEvent.ERROR,
+        is HapticEvent.DISCO_MODE_UNLOCKED,
+        is HapticEvent.BADGE_EARNED,
+        is HapticEvent.PERSONAL_RECORD -> HapticFeedbackType.LongPress // Strong vibration
+
+        is HapticEvent.REP_COUNT_ANNOUNCED -> return // Already handled above
     }
 
     try {
@@ -167,20 +174,21 @@ private fun playSound(
     badgeSoundIds: List<Int>,
     prSoundIds: List<Int>
 ) {
-    // ERROR event has no sound
-    if (event == HapticEvent.ERROR) return
+    // ERROR event has no sound, REP_COUNT_ANNOUNCED is handled by separate audio system
+    if (event is HapticEvent.ERROR || event is HapticEvent.REP_COUNT_ANNOUNCED) return
 
     val soundId = when (event) {
-        HapticEvent.BADGE_EARNED -> {
+        is HapticEvent.BADGE_EARNED -> {
             if (badgeSoundIds.isNotEmpty()) {
                 badgeSoundIds[Random.nextInt(badgeSoundIds.size)]
             } else null
         }
-        HapticEvent.PERSONAL_RECORD -> {
+        is HapticEvent.PERSONAL_RECORD -> {
             if (prSoundIds.isNotEmpty()) {
                 prSoundIds[Random.nextInt(prSoundIds.size)]
             } else null
         }
+        is HapticEvent.REP_COUNT_ANNOUNCED -> null // Handled by separate audio system
         else -> soundIds[event]
     } ?: return
 

@@ -288,18 +288,46 @@ data class RepEvent(
 
 /**
  * Haptic feedback event types for workout notifications
+ *
+ * Implemented as a sealed class to support parameterized variants (REP_COUNT_ANNOUNCED).
  */
-enum class HapticEvent {
-    REP_COMPLETED,      // Light haptic + beep sound
-    WARMUP_COMPLETE,    // Strong haptic + beepboop sound
-    WORKOUT_COMPLETE,   // Strong haptic + boopbeepbeep sound
-    WORKOUT_START,      // Light haptic + chirpchirp sound
-    WORKOUT_END,        // Light haptic + chirpchirp sound
-    REST_ENDING,        // Strong haptic + restover sound (5 seconds left in rest timer)
-    ERROR,              // Strong haptic (no sound)
-    DISCO_MODE_UNLOCKED, // Easter egg celebration sound
-    BADGE_EARNED,       // Strong haptic + random badge celebration sound
-    PERSONAL_RECORD     // Strong haptic + random PR celebration sound
+sealed class HapticEvent {
+    /** Light haptic + beep sound */
+    data object REP_COMPLETED : HapticEvent()
+
+    /** Audio rep count announcement (1-25) - no haptic, just spoken number */
+    data class REP_COUNT_ANNOUNCED(val repNumber: Int) : HapticEvent() {
+        init {
+            require(repNumber in 1..25) { "Rep number must be between 1 and 25" }
+        }
+    }
+
+    /** Strong haptic + beepboop sound */
+    data object WARMUP_COMPLETE : HapticEvent()
+
+    /** Strong haptic + boopbeepbeep sound */
+    data object WORKOUT_COMPLETE : HapticEvent()
+
+    /** Light haptic + chirpchirp sound */
+    data object WORKOUT_START : HapticEvent()
+
+    /** Light haptic + chirpchirp sound */
+    data object WORKOUT_END : HapticEvent()
+
+    /** Strong haptic + restover sound (5 seconds left in rest timer) */
+    data object REST_ENDING : HapticEvent()
+
+    /** Strong haptic (no sound) */
+    data object ERROR : HapticEvent()
+
+    /** Easter egg celebration sound */
+    data object DISCO_MODE_UNLOCKED : HapticEvent()
+
+    /** Strong haptic + random badge celebration sound */
+    data object BADGE_EARNED : HapticEvent()
+
+    /** Strong haptic + random PR celebration sound */
+    data object PERSONAL_RECORD : HapticEvent()
 }
 
 /**

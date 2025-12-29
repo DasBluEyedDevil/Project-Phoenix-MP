@@ -43,14 +43,17 @@ private fun playHapticFeedback(
     vibrator: Vibrator,
     event: HapticEvent
 ) {
+    // REP_COUNT_ANNOUNCED has no haptic feedback - it's audio only
+    if (event is HapticEvent.REP_COUNT_ANNOUNCED) return
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         // Use VibrationEffect for better control
         val effect = when (event) {
-            HapticEvent.REP_COMPLETED -> {
+            is HapticEvent.REP_COMPLETED -> {
                 // Light, quick click for each rep
                 VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)
             }
-            HapticEvent.WARMUP_COMPLETE -> {
+            is HapticEvent.WARMUP_COMPLETE -> {
                 // Double pulse - strong
                 VibrationEffect.createWaveform(
                     longArrayOf(0, 100, 100, 100), // timings: delay, on, off, on
@@ -58,7 +61,7 @@ private fun playHapticFeedback(
                     -1 // don't repeat
                 )
             }
-            HapticEvent.WORKOUT_COMPLETE -> {
+            is HapticEvent.WORKOUT_COMPLETE -> {
                 // Triple pulse - celebration pattern
                 VibrationEffect.createWaveform(
                     longArrayOf(0, 100, 80, 100, 80, 150), // timings
@@ -66,7 +69,7 @@ private fun playHapticFeedback(
                     -1
                 )
             }
-            HapticEvent.WORKOUT_START -> {
+            is HapticEvent.WORKOUT_START -> {
                 // Two quick pulses - attention getter
                 VibrationEffect.createWaveform(
                     longArrayOf(0, 80, 60, 80),
@@ -74,7 +77,7 @@ private fun playHapticFeedback(
                     -1
                 )
             }
-            HapticEvent.WORKOUT_END -> {
+            is HapticEvent.WORKOUT_END -> {
                 // Same as start - symmetrical experience
                 VibrationEffect.createWaveform(
                     longArrayOf(0, 80, 60, 80),
@@ -82,7 +85,7 @@ private fun playHapticFeedback(
                     -1
                 )
             }
-            HapticEvent.REST_ENDING -> {
+            is HapticEvent.REST_ENDING -> {
                 // Warning pattern - gets attention
                 VibrationEffect.createWaveform(
                     longArrayOf(0, 150, 100, 150, 100, 150),
@@ -90,11 +93,11 @@ private fun playHapticFeedback(
                     -1
                 )
             }
-            HapticEvent.ERROR -> {
+            is HapticEvent.ERROR -> {
                 // Sharp error pulse
                 VibrationEffect.createOneShot(200, 255)
             }
-            HapticEvent.DISCO_MODE_UNLOCKED -> {
+            is HapticEvent.DISCO_MODE_UNLOCKED -> {
                 // Funky disco celebration pattern - rhythmic pulses
                 VibrationEffect.createWaveform(
                     longArrayOf(0, 80, 60, 80, 60, 80, 60, 120, 80, 120),
@@ -102,7 +105,7 @@ private fun playHapticFeedback(
                     -1
                 )
             }
-            HapticEvent.BADGE_EARNED, HapticEvent.PERSONAL_RECORD -> {
+            is HapticEvent.BADGE_EARNED, is HapticEvent.PERSONAL_RECORD -> {
                 // Celebration pattern - escalating pulses for achievement
                 VibrationEffect.createWaveform(
                     longArrayOf(0, 100, 60, 120, 60, 150),
@@ -110,35 +113,42 @@ private fun playHapticFeedback(
                     -1
                 )
             }
+            is HapticEvent.REP_COUNT_ANNOUNCED -> {
+                // Already handled above, but needed for exhaustive when
+                return
+            }
         }
         vibrator.vibrate(effect)
     } else {
         // Fallback for older devices
         @Suppress("DEPRECATION")
         when (event) {
-            HapticEvent.REP_COMPLETED -> {
+            is HapticEvent.REP_COMPLETED -> {
                 vibrator.vibrate(50)
             }
-            HapticEvent.WARMUP_COMPLETE -> {
+            is HapticEvent.WARMUP_COMPLETE -> {
                 vibrator.vibrate(longArrayOf(0, 100, 100, 100), -1)
             }
-            HapticEvent.WORKOUT_COMPLETE -> {
+            is HapticEvent.WORKOUT_COMPLETE -> {
                 vibrator.vibrate(longArrayOf(0, 100, 80, 100, 80, 150), -1)
             }
-            HapticEvent.WORKOUT_START, HapticEvent.WORKOUT_END -> {
+            is HapticEvent.WORKOUT_START, is HapticEvent.WORKOUT_END -> {
                 vibrator.vibrate(longArrayOf(0, 80, 60, 80), -1)
             }
-            HapticEvent.REST_ENDING -> {
+            is HapticEvent.REST_ENDING -> {
                 vibrator.vibrate(longArrayOf(0, 150, 100, 150, 100, 150), -1)
             }
-            HapticEvent.ERROR -> {
+            is HapticEvent.ERROR -> {
                 vibrator.vibrate(200)
             }
-            HapticEvent.DISCO_MODE_UNLOCKED -> {
+            is HapticEvent.DISCO_MODE_UNLOCKED -> {
                 vibrator.vibrate(longArrayOf(0, 80, 60, 80, 60, 80, 60, 120, 80, 120), -1)
             }
-            HapticEvent.BADGE_EARNED, HapticEvent.PERSONAL_RECORD -> {
+            is HapticEvent.BADGE_EARNED, is HapticEvent.PERSONAL_RECORD -> {
                 vibrator.vibrate(longArrayOf(0, 100, 60, 120, 60, 150), -1)
+            }
+            is HapticEvent.REP_COUNT_ANNOUNCED -> {
+                // No haptic for rep count announcement - audio only
             }
         }
     }
