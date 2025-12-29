@@ -97,7 +97,9 @@ fun WorkoutTab(
         onHideWorkoutSetupDialog = actions::onHideWorkoutSetupDialog,
         modifier = modifier,
         showConnectionCard = state.showConnectionCard,
-        showWorkoutSetupCard = state.showWorkoutSetupCard
+        showWorkoutSetupCard = state.showWorkoutSetupCard,
+        loadBaselineA = state.loadBaselineA,
+        loadBaselineB = state.loadBaselineB
     )
 }
 
@@ -147,7 +149,9 @@ fun WorkoutTab(
     onHideWorkoutSetupDialog: () -> Unit = {},
     modifier: Modifier = Modifier,
     showConnectionCard: Boolean = true,
-    showWorkoutSetupCard: Boolean = true
+    showWorkoutSetupCard: Boolean = true,
+    loadBaselineA: Float = 0f,
+    loadBaselineB: Float = 0f
 ) {
     // Note: HapticFeedbackEffect is now global in EnhancedMainScreen
     // No need for local haptic effect here
@@ -174,6 +178,8 @@ fun WorkoutTab(
             onUpdateParameters = onUpdateParameters,
             onStartNextExercise = onStartNextExercise,
             currentHeuristicKgMax = currentHeuristicKgMax,
+            loadBaselineA = loadBaselineA,
+            loadBaselineB = loadBaselineB,
             modifier = modifier
         )
         return

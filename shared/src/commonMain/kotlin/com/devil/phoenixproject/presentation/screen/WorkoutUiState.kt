@@ -29,6 +29,8 @@ import com.devil.phoenixproject.domain.usecase.RepRanges
  * @property isWorkoutSetupDialogVisible Whether setup dialog is shown
  * @property showConnectionCard Whether to show connection status card
  * @property showWorkoutSetupCard Whether to show workout setup button
+ * @property loadBaselineA Load baseline for cable A (base tension to subtract, ~4kg)
+ * @property loadBaselineB Load baseline for cable B (base tension to subtract, ~4kg)
  */
 data class WorkoutUiState(
     val connectionState: ConnectionState = ConnectionState.Disconnected,
@@ -54,7 +56,9 @@ data class WorkoutUiState(
     val canSkipForward: Boolean = false,
     val isWorkoutSetupDialogVisible: Boolean = false,
     val showConnectionCard: Boolean = true,
-    val showWorkoutSetupCard: Boolean = true
+    val showWorkoutSetupCard: Boolean = true,
+    val loadBaselineA: Float = 0f,
+    val loadBaselineB: Float = 0f
 )
 
 /**

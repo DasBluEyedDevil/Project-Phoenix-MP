@@ -126,6 +126,14 @@ class MainViewModel constructor(
     val currentHeuristicKgMax: StateFlow<Float> = _currentHeuristicKgMax.asStateFlow()
     private var maxHeuristicKgMax = 0f // Track session maximum for history recording
 
+    // Load baseline tracking (Issue: Base tension subtraction)
+    // The machine exerts ~4kg base tension on cables even at rest. This baseline is
+    // captured when workout starts (handles at rest) and subtracted to show actual user effort.
+    private val _loadBaselineA = MutableStateFlow(0f)
+    private val _loadBaselineB = MutableStateFlow(0f)
+    val loadBaselineA: StateFlow<Float> = _loadBaselineA.asStateFlow()
+    val loadBaselineB: StateFlow<Float> = _loadBaselineB.asStateFlow()
+
     private val _workoutParameters = MutableStateFlow(
         WorkoutParameters(
             workoutType = WorkoutType.Program(ProgramMode.OldSchool),
@@ -423,10 +431,10 @@ class MainViewModel constructor(
                  when (event.type) {
                      RepType.WORKING_COMPLETED -> {
                          // Check if audio rep count is enabled and rep is within announcement range (1-25)
+                         // Use event.workingCount (not _repCount.value) - the state hasn't been updated yet
                          val prefs = userPreferences.value
-                         val workingReps = _repCount.value.workingReps
-                         if (prefs.audioRepCountEnabled && workingReps in 1..25) {
-                             _hapticEvents.emit(HapticEvent.REP_COUNT_ANNOUNCED(workingReps))
+                         if (prefs.audioRepCountEnabled && event.workingCount in 1..25) {
+                             _hapticEvents.emit(HapticEvent.REP_COUNT_ANNOUNCED(event.workingCount))
                          } else {
                              _hapticEvents.emit(HapticEvent.REP_COMPLETED)
                          }
@@ -808,6 +816,14 @@ class MainViewModel constructor(
                 repCounter.setInitialBaseline(metric.positionA, metric.positionB)
                 _repRanges.value = repCounter.getRepRanges()
                 Logger.d("MainViewModel") { "POSITION BASELINE: Set initial baseline posA=${metric.positionA}, posB=${metric.positionB}" }
+
+                // Capture load baseline for base tension subtraction
+                // The machine exerts ~4kg base tension per cable even at rest.
+                // By capturing this at workout start (handles at rest), we can subtract it
+                // to show the user's actual effort during the workout.
+                _loadBaselineA.value = metric.loadA
+                _loadBaselineB.value = metric.loadB
+                Logger.d("MainViewModel") { "LOAD BASELINE: Set initial baseline loadA=${metric.loadA}kg, loadB=${metric.loadB}kg" }
             }
 
             // Note: Metric collection is handled globally in init via handleMonitorMetric()
@@ -1148,6 +1164,31 @@ class MainViewModel constructor(
         _workoutState.value = WorkoutState.Idle
         _repCount.value = RepCount()
         _repRanges.value = null  // Clear ROM calibration for new workout
+        // Note: Load baseline is NOT reset here - it persists across sets in the same workout session
+        // This is intentional since the base tension doesn't change between sets
+    }
+
+    /**
+     * Manually recapture load baseline (tare function).
+     * Call this when handles are at rest to zero out the displayed load.
+     * Useful if baseline drifted or user wants to recalibrate mid-workout.
+     */
+    fun recaptureLoadBaseline() {
+        _currentMetric.value?.let { metric ->
+            _loadBaselineA.value = metric.loadA
+            _loadBaselineB.value = metric.loadB
+            Logger.d("MainViewModel") { "LOAD BASELINE: Manually recaptured loadA=${metric.loadA}kg, loadB=${metric.loadB}kg" }
+        }
+    }
+
+    /**
+     * Reset load baseline to zero (disable baseline subtraction).
+     * Useful for debugging or when raw values are desired.
+     */
+    fun resetLoadBaseline() {
+        _loadBaselineA.value = 0f
+        _loadBaselineB.value = 0f
+        Logger.d("MainViewModel") { "LOAD BASELINE: Reset to 0 (disabled)" }
     }
 
     fun advanceToNextExercise() {

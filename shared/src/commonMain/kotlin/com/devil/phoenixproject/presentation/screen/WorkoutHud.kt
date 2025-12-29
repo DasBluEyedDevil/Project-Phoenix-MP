@@ -51,6 +51,8 @@ fun WorkoutHud(
     onUpdateParameters: (WorkoutParameters) -> Unit,
     onStartNextExercise: () -> Unit,
     currentHeuristicKgMax: Float = 0f, // Echo mode: actual measured force per cable (kg)
+    loadBaselineA: Float = 0f, // Load baseline for cable A (base tension to subtract)
+    loadBaselineB: Float = 0f, // Load baseline for cable B (base tension to subtract)
     modifier: Modifier = Modifier
 ) {
     // Determine if we're in Echo mode
@@ -98,7 +100,9 @@ fun WorkoutHud(
                         formatWeight = formatWeight,
                         workoutParameters = workoutParameters,
                         isEchoMode = isEchoMode,
-                        echoForceKgMax = currentHeuristicKgMax
+                        echoForceKgMax = currentHeuristicKgMax,
+                        loadBaselineA = loadBaselineA,
+                        loadBaselineB = loadBaselineB
                     )
                     1 -> InstructionPage(
                         loadedRoutine = loadedRoutine,
@@ -289,7 +293,9 @@ private fun ExecutionPage(
     formatWeight: (Float, WeightUnit) -> String,
     workoutParameters: WorkoutParameters,
     isEchoMode: Boolean = false,
-    echoForceKgMax: Float = 0f // Echo mode: actual measured force per cable (kg)
+    echoForceKgMax: Float = 0f, // Echo mode: actual measured force per cable (kg)
+    loadBaselineA: Float = 0f, // Load baseline for cable A (base tension to subtract)
+    loadBaselineB: Float = 0f  // Load baseline for cable B (base tension to subtract)
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -331,11 +337,16 @@ private fun ExecutionPage(
         if (metric != null) {
             // Current Load - show per-cable resistance (matching parent repo)
             // For Echo mode: use heuristic kgMax (actual measured force from device)
-            // For other modes: use totalLoad / 2 (from workout metrics)
+            // For other modes: subtract baseline to show actual user effort
+            // The machine exerts ~4kg base tension per cable even at rest
             val perCableKg = if (isEchoMode && echoForceKgMax > 0f) {
                 echoForceKgMax
             } else {
-                (metric.loadA + metric.loadB) / 2f
+                // Subtract baseline (base tension) from each cable and average
+                // coerceAtLeast(0f) ensures we never show negative values
+                val adjustedLoadA = (metric.loadA - loadBaselineA).coerceAtLeast(0f)
+                val adjustedLoadB = (metric.loadB - loadBaselineB).coerceAtLeast(0f)
+                (adjustedLoadA + adjustedLoadB) / 2f
             }
             val targetWeight = workoutParameters.weightPerCableKg
             val gaugeMax = (targetWeight * 1.5f).coerceAtLeast(20f)

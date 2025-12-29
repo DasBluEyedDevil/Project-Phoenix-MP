@@ -40,6 +40,9 @@ fun ActiveWorkoutScreen(
     val currentExerciseIndex by viewModel.currentExerciseIndex.collectAsState()
     val hapticEvents = viewModel.hapticEvents
     val connectionState by viewModel.connectionState.collectAsState()
+    // Load baseline for base tension subtraction (~4kg per cable)
+    val loadBaselineA by viewModel.loadBaselineA.collectAsState()
+    val loadBaselineB by viewModel.loadBaselineB.collectAsState()
     @Suppress("UNUSED_VARIABLE") // Reserved for future connecting overlay
     val isAutoConnecting by viewModel.isAutoConnecting.collectAsState()
     val connectionError by viewModel.connectionError.collectAsState()
@@ -145,7 +148,8 @@ fun ActiveWorkoutScreen(
     val workoutUiState = remember(
         connectionState, workoutState, currentMetric, currentHeuristicKgMax, workoutParameters,
         repCount, repRanges, autoStopState, weightUnit, enableVideoPlayback,
-        loadedRoutine, currentExerciseIndex, userPreferences.autoplayEnabled
+        loadedRoutine, currentExerciseIndex, userPreferences.autoplayEnabled,
+        loadBaselineA, loadBaselineB
     ) {
         WorkoutUiState(
             connectionState = connectionState,
@@ -163,7 +167,9 @@ fun ActiveWorkoutScreen(
             autoplayEnabled = userPreferences.autoplayEnabled,
             isWorkoutSetupDialogVisible = false,
             showConnectionCard = false,
-            showWorkoutSetupCard = false
+            showWorkoutSetupCard = false,
+            loadBaselineA = loadBaselineA,
+            loadBaselineB = loadBaselineB
         )
     }
 
