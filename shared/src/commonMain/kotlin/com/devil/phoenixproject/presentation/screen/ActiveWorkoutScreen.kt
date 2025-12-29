@@ -102,8 +102,8 @@ fun ActiveWorkoutScreen(
         }
     }
 
-    // Haptic feedback effect
-    HapticFeedbackEffect(hapticEvents = hapticEvents)
+    // Note: HapticFeedbackEffect is now global in EnhancedMainScreen
+    // No need for local haptic effect here
 
     // Navigation guard to prevent double navigateUp() calls (Issue #204)
     // The LaunchedEffect can re-trigger if workoutParameters changes during navigation,

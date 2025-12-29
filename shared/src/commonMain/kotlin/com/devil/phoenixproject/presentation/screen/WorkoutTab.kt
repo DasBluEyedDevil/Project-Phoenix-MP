@@ -149,11 +149,8 @@ fun WorkoutTab(
     showConnectionCard: Boolean = true,
     showWorkoutSetupCard: Boolean = true
 ) {
-    // Haptic feedback effect
-    hapticEvents?.let {
-        HapticFeedbackEffect(hapticEvents = it)
-    }
-
+    // Note: HapticFeedbackEffect is now global in EnhancedMainScreen
+    // No need for local haptic effect here
 
     // Gradient backgrounds
     val backgroundGradient = screenBackgroundBrush()
