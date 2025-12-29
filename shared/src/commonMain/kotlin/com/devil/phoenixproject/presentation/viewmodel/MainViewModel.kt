@@ -421,7 +421,16 @@ class MainViewModel constructor(
         repCounter.onRepEvent = { event ->
              viewModelScope.launch {
                  when (event.type) {
-                     RepType.WORKING_COMPLETED -> _hapticEvents.emit(HapticEvent.REP_COMPLETED)
+                     RepType.WORKING_COMPLETED -> {
+                         // Check if audio rep count is enabled and rep is within announcement range (1-25)
+                         val prefs = userPreferences.value
+                         val workingReps = _repCount.value.workingReps
+                         if (prefs.audioRepCountEnabled && workingReps in 1..25) {
+                             _hapticEvents.emit(HapticEvent.REP_COUNT_ANNOUNCED(workingReps))
+                         } else {
+                             _hapticEvents.emit(HapticEvent.REP_COMPLETED)
+                         }
+                     }
                      RepType.WARMUP_COMPLETED -> _hapticEvents.emit(HapticEvent.REP_COMPLETED)
                      RepType.WARMUP_COMPLETE -> _hapticEvents.emit(HapticEvent.WARMUP_COMPLETE)
                      RepType.WORKOUT_COMPLETE -> _hapticEvents.emit(HapticEvent.WORKOUT_COMPLETE)
