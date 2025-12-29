@@ -580,3 +580,305 @@ fun TotalVolumeCard(
         }
     }
 }
+
+/**
+ * Volume comparison data class for fun volume representations
+ */
+private data class VolumeComparison(
+    val funValue: String,
+    val funLabel: String,
+    val actualKg: Float
+)
+
+/**
+ * Get fun volume comparison based on total volume in kg
+ */
+private fun getVolumeComparison(totalVolumeKg: Float): VolumeComparison {
+    return when {
+        totalVolumeKg >= 1_000_000 -> VolumeComparison(
+            funValue = String.format("%.1f", totalVolumeKg / 52_000_000f),
+            funLabel = "Titanics",
+            actualKg = totalVolumeKg
+        )
+        totalVolumeKg >= 200_000 -> VolumeComparison(
+            funValue = String.format("%.1f", totalVolumeKg / 150_000f),
+            funLabel = "Blue Whales",
+            actualKg = totalVolumeKg
+        )
+        totalVolumeKg >= 100_000 -> VolumeComparison(
+            funValue = String.format("%.1f", totalVolumeKg / 100_000f),
+            funLabel = "Jumbo Jets",
+            actualKg = totalVolumeKg
+        )
+        totalVolumeKg >= 50_000 -> VolumeComparison(
+            funValue = String.format("%.1f", totalVolumeKg / 5_000f),
+            funLabel = "Elephants Moved",
+            actualKg = totalVolumeKg
+        )
+        totalVolumeKg >= 10_000 -> VolumeComparison(
+            funValue = String.format("%.1f", totalVolumeKg / 1_500f),
+            funLabel = "Cars Crushed",
+            actualKg = totalVolumeKg
+        )
+        else -> VolumeComparison(
+            funValue = String.format("%.0f", totalVolumeKg),
+            funLabel = "kg lifted",
+            actualKg = totalVolumeKg
+        )
+    }
+}
+
+/**
+ * Lifetime stats data class
+ */
+data class LifetimeStats(
+    val totalWorkouts: Int,
+    val totalVolumeKg: Float,
+    val totalReps: Int,
+    val daysSinceFirst: Long,
+    val favoriteExercise: String?,
+    val favoriteExerciseCount: Int,
+    val favoriteMode: String?,
+    val favoriteModeCount: Int
+)
+
+/**
+ * Calculate lifetime stats from workout sessions
+ */
+private fun calculateLifetimeStats(
+    workoutSessions: List<WorkoutSession>,
+    exerciseNames: Map<String, String>
+): LifetimeStats {
+    if (workoutSessions.isEmpty()) {
+        return LifetimeStats(
+            totalWorkouts = 0,
+            totalVolumeKg = 0f,
+            totalReps = 0,
+            daysSinceFirst = 0,
+            favoriteExercise = null,
+            favoriteExerciseCount = 0,
+            favoriteMode = null,
+            favoriteModeCount = 0
+        )
+    }
+
+    val totalWorkouts = workoutSessions.size
+
+    // Calculate total volume: weight per cable * 2 (total weight) * reps
+    val totalVolumeKg = workoutSessions.sumOf {
+        (it.weightPerCableKg * 2 * it.totalReps).toDouble()
+    }.toFloat()
+
+    val totalReps = workoutSessions.sumOf { it.totalReps }
+
+    // Days since first workout
+    val firstWorkoutTimestamp = workoutSessions.minOf { it.timestamp }
+    val now = KmpUtils.currentTimeMillis()
+    val daysSinceFirst = (now - firstWorkoutTimestamp) / (24L * 60 * 60 * 1000)
+
+    // Favorite exercise (by workout count)
+    val exerciseCounts = workoutSessions
+        .mapNotNull { it.exerciseId }
+        .groupingBy { it }
+        .eachCount()
+    val favoriteExerciseId = exerciseCounts.maxByOrNull { it.value }?.key
+    val favoriteExercise = favoriteExerciseId?.let { exerciseNames[it] }
+    val favoriteExerciseCount = favoriteExerciseId?.let { exerciseCounts[it] } ?: 0
+
+    // Favorite mode (by workout count)
+    val modeCounts = workoutSessions
+        .groupingBy { it.mode }
+        .eachCount()
+    val favoriteMode = modeCounts.maxByOrNull { it.value }?.key
+    val favoriteModeCount = favoriteMode?.let { modeCounts[it] } ?: 0
+
+    return LifetimeStats(
+        totalWorkouts = totalWorkouts,
+        totalVolumeKg = totalVolumeKg,
+        totalReps = totalReps,
+        daysSinceFirst = daysSinceFirst,
+        favoriteExercise = favoriteExercise,
+        favoriteExerciseCount = favoriteExerciseCount,
+        favoriteMode = favoriteMode,
+        favoriteModeCount = favoriteModeCount
+    )
+}
+
+/**
+ * Lifetime Stats Card - shows all-time statistics with fun volume comparisons
+ */
+@Composable
+fun LifetimeStatsCard(
+    workoutSessions: List<WorkoutSession>,
+    exerciseRepository: ExerciseRepository,
+    weightUnit: WeightUnit,
+    modifier: Modifier = Modifier
+) {
+    // Build exercise names map
+    var exerciseNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+
+    LaunchedEffect(workoutSessions) {
+        val exerciseIds = workoutSessions.mapNotNull { it.exerciseId }.distinct()
+        val names = mutableMapOf<String, String>()
+        exerciseIds.forEach { id ->
+            val exercise = exerciseRepository.getExerciseById(id)
+            names[id] = exercise?.name ?: "Unknown Exercise"
+        }
+        exerciseNames = names
+    }
+
+    val stats = remember(workoutSessions, exerciseNames) {
+        calculateLifetimeStats(workoutSessions, exerciseNames)
+    }
+
+    val volumeComparison = remember(stats.totalVolumeKg) {
+        getVolumeComparison(stats.totalVolumeKg)
+    }
+
+    // Format actual volume for display
+    val actualVolumeDisplay = remember(stats.totalVolumeKg, weightUnit) {
+        val displayVolume = if (weightUnit == WeightUnit.LB) {
+            stats.totalVolumeKg * 2.20462f
+        } else {
+            stats.totalVolumeKg
+        }
+        when {
+            displayVolume >= 1_000_000 -> String.format("%.1fM %s", displayVolume / 1_000_000f, weightUnit.name.lowercase())
+            displayVolume >= 1_000 -> String.format("%.1fk %s", displayVolume / 1_000f, weightUnit.name.lowercase())
+            else -> String.format("%.0f %s", displayVolume, weightUnit.name.lowercase())
+        }
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Lifetime Stats",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Your all-time achievements",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (workoutSessions.isEmpty()) {
+                Text(
+                    "Complete workouts to see your lifetime stats!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 32.dp)
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Total Workouts
+                    LifetimeStatRow(
+                        label = "Total Workouts",
+                        value = "${stats.totalWorkouts}",
+                        subtext = null
+                    )
+
+                    // Total Volume with fun comparison
+                    if (stats.totalVolumeKg >= 10_000) {
+                        // Show fun comparison prominently
+                        LifetimeStatRow(
+                            label = "Total Volume",
+                            value = "${volumeComparison.funValue} ${volumeComparison.funLabel}",
+                            subtext = actualVolumeDisplay,
+                            isFunStat = true
+                        )
+                    } else {
+                        LifetimeStatRow(
+                            label = "Total Volume",
+                            value = actualVolumeDisplay,
+                            subtext = null
+                        )
+                    }
+
+                    // Total Reps
+                    LifetimeStatRow(
+                        label = "Total Reps",
+                        value = when {
+                            stats.totalReps >= 1000 -> String.format("%.1fk", stats.totalReps / 1000f)
+                            else -> "${stats.totalReps}"
+                        },
+                        subtext = null
+                    )
+
+                    // Days Since First Workout
+                    if (stats.daysSinceFirst > 0) {
+                        LifetimeStatRow(
+                            label = "Days Since First",
+                            value = "${stats.daysSinceFirst}",
+                            subtext = "days of gains"
+                        )
+                    }
+
+                    // Favorite Exercise
+                    stats.favoriteExercise?.let { exercise ->
+                        LifetimeStatRow(
+                            label = "Favorite Exercise",
+                            value = exercise,
+                            subtext = "${stats.favoriteExerciseCount} workouts"
+                        )
+                    }
+
+                    // Favorite Mode
+                    stats.favoriteMode?.let { mode ->
+                        LifetimeStatRow(
+                            label = "Favorite Mode",
+                            value = mode,
+                            subtext = "${stats.favoriteModeCount} workouts"
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Individual stat row for Lifetime Stats Card
+ */
+@Composable
+private fun LifetimeStatRow(
+    label: String,
+    value: String,
+    subtext: String?,
+    isFunStat: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = value,
+                style = if (isFunStat) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isFunStat) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+            subtext?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
