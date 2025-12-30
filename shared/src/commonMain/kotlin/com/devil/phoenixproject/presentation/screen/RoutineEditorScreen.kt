@@ -39,10 +39,16 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 // State holder for the editor
 data class RoutineEditorState(
     val routineName: String = "",
-    val exercises: List<RoutineExercise> = emptyList(),
-    val selectedIds: Set<String> = emptySet(),
-    val isSelectionMode: Boolean = false
-)
+    val routine: Routine? = null,
+    val selectedIds: Set<String> = emptySet(),  // Can be exercise or superset IDs
+    val isSelectionMode: Boolean = false,
+    val collapsedSupersets: Set<String> = emptySet(),  // Collapsed superset IDs
+    val showAddMenu: Boolean = false
+) {
+    val items: List<RoutineItem> get() = routine?.getItems() ?: emptyList()
+    val exercises: List<RoutineExercise> get() = routine?.exercises ?: emptyList()
+    val supersets: List<Superset> get() = routine?.supersets ?: emptyList()
+}
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -76,12 +82,15 @@ fun RoutineEditorScreen(
             if (existing != null) {
                 state = state.copy(
                     routineName = existing.name,
-                    exercises = existing.exercises.sortedBy { it.orderIndex }
+                    routine = existing
                 )
             }
             hasInitialized = true
         } else if (!hasInitialized) {
-            state = state.copy(routineName = "New Routine")
+            state = state.copy(
+                routineName = "New Routine",
+                routine = Routine(id = "new", name = "New Routine")
+            )
             hasInitialized = true
         }
     }
@@ -101,9 +110,16 @@ fun RoutineEditorScreen(
         }
     }
 
+    // Helper: Update Routine
+    fun updateRoutine(updateFn: (Routine) -> Routine) {
+        state.routine?.let { current ->
+            state = state.copy(routine = updateFn(current))
+        }
+    }
+
     // Helper: Update Exercises
     fun updateExercises(newList: List<RoutineExercise>) {
-        state = state.copy(exercises = newList.mapIndexed { i, ex -> ex.copy(orderIndex = i) })
+        updateRoutine { it.copy(exercises = newList.mapIndexed { i, ex -> ex.copy(orderIndex = i) }) }
     }
 
     Scaffold(
@@ -469,7 +485,7 @@ fun DraggableExerciseCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "${exercise.sets} sets x ${exercise.reps} reps @ ${kgToDisplay(exercise.weightPerCableKg, weightUnit).toInt()}",
+                        "${formatReps(exercise.setReps)} @ ${kgToDisplay(exercise.weightPerCableKg, weightUnit).toInt()}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
