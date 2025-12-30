@@ -49,9 +49,11 @@ actual fun CompactNumberPicker(
         }
     }
 
-    // Find current index
+    // Find current index - use minByOrNull to find CLOSEST value regardless of precision
+    // This handles unit conversions (e.g., 20kg -> 44.0924 lbs) where exact matching fails
     val currentIndex = remember(value, values) {
-        values.indexOfFirst { abs(it - value) < 0.001f }.coerceAtLeast(0)
+        if (values.isEmpty()) 0
+        else values.indices.minByOrNull { abs(values[it] - value) } ?: 0
     }
 
     // Format a value for display

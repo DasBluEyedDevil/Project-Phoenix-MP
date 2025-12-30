@@ -38,8 +38,12 @@ fun ActiveWorkoutScreen(
     val enableVideoPlayback by viewModel.enableVideoPlayback.collectAsState()
     val loadedRoutine by viewModel.loadedRoutine.collectAsState()
     val currentExerciseIndex by viewModel.currentExerciseIndex.collectAsState()
+    val currentSetIndex by viewModel.currentSetIndex.collectAsState()
     val hapticEvents = viewModel.hapticEvents
     val connectionState by viewModel.connectionState.collectAsState()
+    // Load baseline for base tension subtraction (~4kg per cable)
+    val loadBaselineA by viewModel.loadBaselineA.collectAsState()
+    val loadBaselineB by viewModel.loadBaselineB.collectAsState()
     @Suppress("UNUSED_VARIABLE") // Reserved for future connecting overlay
     val isAutoConnecting by viewModel.isAutoConnecting.collectAsState()
     val connectionError by viewModel.connectionError.collectAsState()
@@ -102,8 +106,8 @@ fun ActiveWorkoutScreen(
         }
     }
 
-    // Haptic feedback effect
-    HapticFeedbackEffect(hapticEvents = hapticEvents)
+    // Note: HapticFeedbackEffect is now global in EnhancedMainScreen
+    // No need for local haptic effect here
 
     // Navigation guard to prevent double navigateUp() calls (Issue #204)
     // The LaunchedEffect can re-trigger if workoutParameters changes during navigation,
@@ -145,7 +149,8 @@ fun ActiveWorkoutScreen(
     val workoutUiState = remember(
         connectionState, workoutState, currentMetric, currentHeuristicKgMax, workoutParameters,
         repCount, repRanges, autoStopState, weightUnit, enableVideoPlayback,
-        loadedRoutine, currentExerciseIndex, userPreferences.autoplayEnabled
+        loadedRoutine, currentExerciseIndex, currentSetIndex, userPreferences.autoplayEnabled,
+        loadBaselineA, loadBaselineB
     ) {
         WorkoutUiState(
             connectionState = connectionState,
@@ -160,10 +165,13 @@ fun ActiveWorkoutScreen(
             enableVideoPlayback = enableVideoPlayback,
             loadedRoutine = loadedRoutine,
             currentExerciseIndex = currentExerciseIndex,
+            currentSetIndex = currentSetIndex,
             autoplayEnabled = userPreferences.autoplayEnabled,
             isWorkoutSetupDialogVisible = false,
             showConnectionCard = false,
-            showWorkoutSetupCard = false
+            showWorkoutSetupCard = false,
+            loadBaselineA = loadBaselineA,
+            loadBaselineB = loadBaselineB
         )
     }
 
@@ -242,7 +250,8 @@ fun ActiveWorkoutScreen(
             show = true,
             exerciseName = event.exerciseName,
             weight = "${viewModel.formatWeight(event.weightPerCableKg, weightUnit)}/cable × ${event.reps} reps",
-            onDismiss = { prCelebrationEvent = null }
+            onDismiss = { prCelebrationEvent = null },
+            onSoundTrigger = { viewModel.emitPRSound() }
         )
     }
 
@@ -255,7 +264,8 @@ fun ActiveWorkoutScreen(
                 kotlinx.coroutines.MainScope().launch {
                     gamificationRepository.markBadgeCelebrated(badgeId)
                 }
-            }
+            },
+            onSoundTrigger = { viewModel.emitBadgeSound() }
         )
     }
 }

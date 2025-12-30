@@ -73,6 +73,7 @@ fun WorkoutTab(
         hapticEvents = hapticEvents,
         loadedRoutine = state.loadedRoutine,
         currentExerciseIndex = state.currentExerciseIndex,
+        currentSetIndex = state.currentSetIndex,
         skippedExercises = state.skippedExercises,
         completedExercises = state.completedExercises,
         autoplayEnabled = state.autoplayEnabled,
@@ -97,7 +98,9 @@ fun WorkoutTab(
         onHideWorkoutSetupDialog = actions::onHideWorkoutSetupDialog,
         modifier = modifier,
         showConnectionCard = state.showConnectionCard,
-        showWorkoutSetupCard = state.showWorkoutSetupCard
+        showWorkoutSetupCard = state.showWorkoutSetupCard,
+        loadBaselineA = state.loadBaselineA,
+        loadBaselineB = state.loadBaselineB
     )
 }
 
@@ -123,6 +126,7 @@ fun WorkoutTab(
     hapticEvents: SharedFlow<HapticEvent>? = null,
     loadedRoutine: Routine? = null,
     currentExerciseIndex: Int = 0,
+    currentSetIndex: Int = 0,
     skippedExercises: Set<Int> = emptySet(),
     completedExercises: Set<Int> = emptySet(),
     autoplayEnabled: Boolean = false,
@@ -147,13 +151,12 @@ fun WorkoutTab(
     onHideWorkoutSetupDialog: () -> Unit = {},
     modifier: Modifier = Modifier,
     showConnectionCard: Boolean = true,
-    showWorkoutSetupCard: Boolean = true
+    showWorkoutSetupCard: Boolean = true,
+    loadBaselineA: Float = 0f,
+    loadBaselineB: Float = 0f
 ) {
-    // Haptic feedback effect
-    hapticEvents?.let {
-        HapticFeedbackEffect(hapticEvents = it)
-    }
-
+    // Note: HapticFeedbackEffect is now global in EnhancedMainScreen
+    // No need for local haptic effect here
 
     // Gradient backgrounds
     val backgroundGradient = screenBackgroundBrush()
@@ -171,12 +174,15 @@ fun WorkoutTab(
             exerciseRepository = exerciseRepository,
             loadedRoutine = loadedRoutine,
             currentExerciseIndex = currentExerciseIndex,
+            currentSetIndex = currentSetIndex,
             enableVideoPlayback = enableVideoPlayback,
             onStopWorkout = onStopWorkout,
             formatWeight = formatWeight,
             onUpdateParameters = onUpdateParameters,
             onStartNextExercise = onStartNextExercise,
             currentHeuristicKgMax = currentHeuristicKgMax,
+            loadBaselineA = loadBaselineA,
+            loadBaselineB = loadBaselineB,
             modifier = modifier
         )
         return
@@ -1343,7 +1349,7 @@ fun SetSummaryCard(
     val avgConcentric = kgToDisplay(maxOf(summary.avgForceConcentricA, summary.avgForceConcentricB), weightUnit)
     val avgEccentric = kgToDisplay(maxOf(summary.avgForceEccentricA, summary.avgForceEccentricB), weightUnit)
 
-    val unitLabel = if (weightUnit == WeightUnit.LB) "lb" else "kg"
+    val unitLabel = if (weightUnit == WeightUnit.LB) "lbs" else "kg"
 
     Column(
         modifier = Modifier.fillMaxWidth(),

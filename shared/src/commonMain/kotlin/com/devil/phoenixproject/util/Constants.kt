@@ -59,7 +59,7 @@ object UnitConverter {
      */
     fun formatWeight(kg: Float, useLb: Boolean): String {
         return if (useLb) {
-            "${kgToLb(kg).toInt()} lb"
+            "${kgToLb(kg).toInt()} lbs"
         } else {
             "${kg.toInt()} kg"
         }

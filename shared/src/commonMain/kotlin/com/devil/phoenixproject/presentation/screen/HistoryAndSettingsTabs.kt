@@ -1,8 +1,14 @@
 package com.devil.phoenixproject.presentation.screen
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -776,6 +782,7 @@ fun SettingsTab(
     enableVideoPlayback: Boolean,
     darkModeEnabled: Boolean,
     stallDetectionEnabled: Boolean = true,
+    audioRepCountEnabled: Boolean = false,
     selectedColorSchemeIndex: Int = 0,
     onWeightUnitChange: (WeightUnit) -> Unit,
     onAutoplayChange: (Boolean) -> Unit,
@@ -783,6 +790,7 @@ fun SettingsTab(
     onEnableVideoPlaybackChange: (Boolean) -> Unit,
     onDarkModeChange: (Boolean) -> Unit,
     onStallDetectionChange: (Boolean) -> Unit,
+    onAudioRepCountChange: (Boolean) -> Unit,
     onColorSchemeChange: (Int) -> Unit,
     onDeleteAllWorkouts: () -> Unit,
     onNavigateToConnectionLogs: () -> Unit = {},
@@ -793,9 +801,21 @@ fun SettingsTab(
     onClearConnectionError: () -> Unit = {},
     onCancelAutoConnecting: () -> Unit = {},
     onSetTitle: (String) -> Unit,
+    // Disco mode Easter egg
+    discoModeUnlocked: Boolean = false,
+    discoModeActive: Boolean = false,
+    isConnected: Boolean = false,
+    onDiscoModeUnlocked: () -> Unit = {},
+    onDiscoModeToggle: (Boolean) -> Unit = {},
+    onPlayDiscoSound: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showDeleteAllDialog by remember { mutableStateOf(false) }
+    // Easter egg tap counter for disco mode
+    var easterEggTapCount by remember { mutableStateOf(0) }
+    var lastTapTime by remember { mutableStateOf(0L) }
+    // Disco mode unlock celebration dialog
+    var showDiscoUnlockDialog by remember { mutableStateOf(false) }
     // Optimistic UI state for immediate visual feedback
     var localWeightUnit by remember(weightUnit) { mutableStateOf(weightUnit) }
 
@@ -1208,6 +1228,36 @@ fun SettingsTab(
                         onCheckedChange = onStallDetectionChange
                     )
                 }
+
+                Spacer(modifier = Modifier.height(Spacing.medium))
+
+                // Audio Rep Counter toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            "Audio Rep Counter",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Play spoken rep numbers during working sets",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = audioRepCountEnabled,
+                        onCheckedChange = onAudioRepCountChange
+                    )
+                }
             }
         }
 
@@ -1226,25 +1276,52 @@ fun SettingsTab(
                 .fillMaxWidth()
                 .padding(Spacing.medium)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Easter egg: tap the header 7 times rapidly to unlock disco mode
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable {
+                    val currentTime = KmpUtils.currentTimeMillis()
+                    // Reset if more than 2 seconds since last tap
+                    if (currentTime - lastTapTime > 2000L) {
+                        easterEggTapCount = 1
+                    } else {
+                        easterEggTapCount++
+                    }
+                    lastTapTime = currentTime
+
+                    // Unlock disco mode after 7 rapid taps
+                    if (easterEggTapCount >= 7 && !discoModeUnlocked) {
+                        showDiscoUnlockDialog = true
+                        onPlayDiscoSound()
+                        onDiscoModeUnlocked()
+                        easterEggTapCount = 0
+                    }
+                }
+            ) {
                 Box(
                     modifier = Modifier
                         .size(48.dp)
                         .shadow(8.dp, RoundedCornerShape(20.dp))
                         .background(
                             Brush.linearGradient(
-                                colors = listOf(Color(0xFF3B82F6), Color(0xFF6366F1))
+                                colors = if (discoModeActive) {
+                                    // Rainbow gradient when disco mode is active
+                                    listOf(Color(0xFFFF0000), Color(0xFFFF7F00), Color(0xFFFFFF00),
+                                           Color(0xFF00FF00), Color(0xFF0000FF), Color(0xFF8B00FF))
+                                } else {
+                                    listOf(Color(0xFF3B82F6), Color(0xFF6366F1))
+                                }
                             ),
                             RoundedCornerShape(20.dp)
                         ),
                     contentAlignment = Alignment.Center
-                ) { 
+                ) {
                     Icon(
                         Icons.Default.ColorLens,
                         contentDescription = "LED color scheme",
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(24.dp)
-                    ) 
+                    )
                 }
                 Spacer(modifier = Modifier.width(Spacing.medium))
                 Text(
@@ -1254,9 +1331,9 @@ fun SettingsTab(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(Spacing.medium))
-            
+
             // Compact horizontal scrollable color chips
             val colorSchemes = ColorSchemes.ALL
             Row(
@@ -1270,6 +1347,48 @@ fun SettingsTab(
                         scheme = scheme,
                         isSelected = index == selectedColorSchemeIndex,
                         onClick = { onColorSchemeChange(index) }
+                    )
+                }
+            }
+
+            // Disco mode toggle (only visible when unlocked)
+            if (discoModeUnlocked) {
+                Spacer(modifier = Modifier.height(Spacing.medium))
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = Spacing.small),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "🕺",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.width(Spacing.small))
+                        Column {
+                            Text(
+                                "Disco Mode",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                if (!isConnected) "Connect to enable"
+                                else if (discoModeActive) "Party time!"
+                                else "Cycle through colors",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = discoModeActive,
+                        onCheckedChange = { onDiscoModeToggle(it) },
+                        enabled = isConnected
                     )
                 }
             }
@@ -1620,6 +1739,143 @@ fun SettingsTab(
             onDismiss = onClearConnectionError
         )
     }
+
+    // Disco Mode Unlock Celebration Dialog
+    if (showDiscoUnlockDialog) {
+        DiscoModeUnlockDialog(
+            onDismiss = { showDiscoUnlockDialog = false }
+        )
+    }
+}
+
+/**
+ * Fun animated dialog celebrating disco mode unlock
+ */
+@Composable
+private fun DiscoModeUnlockDialog(onDismiss: () -> Unit) {
+    // Auto-dismiss after 4 seconds
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(4000)
+        onDismiss()
+    }
+
+    // Animate the scale for a fun pop-in effect
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+
+    val scale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "dialog_scale"
+    )
+
+    // Rotating disco ball effect - use coroutine-based animation
+    var rotation by remember { mutableStateOf(0f) }
+    var glowAlpha by remember { mutableStateOf(0.3f) }
+    var glowUp by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(16) // ~60fps
+            rotation = (rotation + 3f) % 360f
+            // Pulsing glow effect
+            if (glowUp) {
+                glowAlpha += 0.02f
+                if (glowAlpha >= 0.8f) glowUp = false
+            } else {
+                glowAlpha -= 0.02f
+                if (glowAlpha <= 0.3f) glowUp = true
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.scale(scale),
+        containerColor = Color(0xFF1A1A2E),
+        shape = RoundedCornerShape(28.dp),
+        title = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Spinning disco ball emoji with glow
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .rotate(rotation)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = glowAlpha),
+                                    Color.Transparent
+                                )
+                            ),
+                            shape = RoundedCornerShape(40.dp)
+                        )
+                ) {
+                    Text(
+                        "🪩",
+                        style = MaterialTheme.typography.displayLarge
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "DISCO MODE UNLOCKED!",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White,
+                    modifier = Modifier.background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFFFF0000), Color(0xFFFF7F00), Color(0xFFFFFF00),
+                                Color(0xFF00FF00), Color(0xFF0000FF), Color(0xFF8B00FF)
+                            )
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ).padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "🕺 Time to get funky! 💃",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Toggle Disco Mode in the LED Color Scheme section to make your trainer party!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.height(48.dp),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Text(
+                    "🎉 Let's Party!",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFD700) // Gold
+                )
+            }
+        }
+    )
 }
 
 private fun formatTimestamp(timestamp: Long): String {
@@ -1695,19 +1951,25 @@ private fun ColorSchemeChip(
         ),
         label = "scale"
     )
-    
+
+    // Check if this is the "None" color scheme (turns off LEDs)
+    val isNoneScheme = scheme.name == "None"
+
     // Convert RGB colors to Compose Color
     val composeColors = scheme.colors.map { rgbColor ->
         Color(rgbColor.r, rgbColor.g, rgbColor.b)
     }
-    
+
     // Create gradient from the color scheme
-    val gradientColors = if (composeColors.size >= 2) {
+    // For "None", use a gray gradient to make it visible
+    val gradientColors = if (isNoneScheme) {
+        listOf(Color.DarkGray, Color.Gray, Color.DarkGray)
+    } else if (composeColors.size >= 2) {
         composeColors
     } else {
         listOf(composeColors.firstOrNull() ?: Color.Gray, Color.DarkGray)
     }
-    
+
     Surface(
         onClick = {
             isPressed = true
@@ -1737,7 +1999,7 @@ private fun ColorSchemeChip(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Color preview (gradient box)
+            // Color preview (gradient box) or "Off" icon for None
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1745,9 +2007,20 @@ private fun ColorSchemeChip(
                     .background(
                         Brush.horizontalGradient(gradientColors),
                         RoundedCornerShape(8.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isNoneScheme) {
+                    // Show power off icon for "None" scheme
+                    Icon(
+                        imageVector = Icons.Default.PowerSettingsNew,
+                        contentDescription = "LEDs Off",
+                        tint = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(24.dp)
                     )
-            )
-            
+                }
+            }
+
             // Color name with background for readability
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -1763,7 +2036,7 @@ private fun ColorSchemeChip(
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
-            
+
             // Selected indicator
             if (isSelected) {
                 Icon(

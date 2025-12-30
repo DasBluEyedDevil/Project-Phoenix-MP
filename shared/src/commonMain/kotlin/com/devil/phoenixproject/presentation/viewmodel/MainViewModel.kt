@@ -126,6 +126,14 @@ class MainViewModel constructor(
     val currentHeuristicKgMax: StateFlow<Float> = _currentHeuristicKgMax.asStateFlow()
     private var maxHeuristicKgMax = 0f // Track session maximum for history recording
 
+    // Load baseline tracking (Issue: Base tension subtraction)
+    // The machine exerts ~4kg base tension on cables even at rest. This baseline is
+    // captured when workout starts (handles at rest) and subtracted to show actual user effort.
+    private val _loadBaselineA = MutableStateFlow(0f)
+    private val _loadBaselineB = MutableStateFlow(0f)
+    val loadBaselineA: StateFlow<Float> = _loadBaselineA.asStateFlow()
+    val loadBaselineB: StateFlow<Float> = _loadBaselineB.asStateFlow()
+
     private val _workoutParameters = MutableStateFlow(
         WorkoutParameters(
             workoutType = WorkoutType.Program(ProgramMode.OldSchool),
@@ -421,7 +429,16 @@ class MainViewModel constructor(
         repCounter.onRepEvent = { event ->
              viewModelScope.launch {
                  when (event.type) {
-                     RepType.WORKING_COMPLETED -> _hapticEvents.emit(HapticEvent.REP_COMPLETED)
+                     RepType.WORKING_COMPLETED -> {
+                         // Check if audio rep count is enabled and rep is within announcement range (1-25)
+                         // Use event.workingCount (not _repCount.value) - the state hasn't been updated yet
+                         val prefs = userPreferences.value
+                         if (prefs.audioRepCountEnabled && event.workingCount in 1..25) {
+                             _hapticEvents.emit(HapticEvent.REP_COUNT_ANNOUNCED(event.workingCount))
+                         } else {
+                             _hapticEvents.emit(HapticEvent.REP_COMPLETED)
+                         }
+                     }
                      RepType.WARMUP_COMPLETED -> _hapticEvents.emit(HapticEvent.REP_COMPLETED)
                      RepType.WARMUP_COMPLETE -> _hapticEvents.emit(HapticEvent.WARMUP_COMPLETE)
                      RepType.WORKOUT_COMPLETE -> _hapticEvents.emit(HapticEvent.WORKOUT_COMPLETE)
@@ -799,6 +816,14 @@ class MainViewModel constructor(
                 repCounter.setInitialBaseline(metric.positionA, metric.positionB)
                 _repRanges.value = repCounter.getRepRanges()
                 Logger.d("MainViewModel") { "POSITION BASELINE: Set initial baseline posA=${metric.positionA}, posB=${metric.positionB}" }
+
+                // Capture load baseline for base tension subtraction
+                // The machine exerts ~4kg base tension per cable even at rest.
+                // By capturing this at workout start (handles at rest), we can subtract it
+                // to show the user's actual effort during the workout.
+                _loadBaselineA.value = metric.loadA
+                _loadBaselineB.value = metric.loadB
+                Logger.d("MainViewModel") { "LOAD BASELINE: Set initial baseline loadA=${metric.loadA}kg, loadB=${metric.loadB}kg" }
             }
 
             // Note: Metric collection is handled globally in init via handleMonitorMetric()
@@ -809,9 +834,9 @@ class MainViewModel constructor(
 
     fun stopWorkout() {
         viewModelScope.launch {
-             bleRepository.sendWorkoutCommand(BlePacketFactory.createStopCommand())
-             // Note: Don't cancel monitorDataCollectionJob here - it's global and should
-             // continue running to track positions for the next workout (matching parent repo)
+             // Send RESET command (0x0A) to fully stop workout on machine
+             // This matches parent repo and web app behavior
+             bleRepository.stopWorkout()
              _hapticEvents.emit(HapticEvent.WORKOUT_END)
 
              val params = _workoutParameters.value
@@ -826,6 +851,11 @@ class MainViewModel constructor(
                  bleRepository.restartMonitorPolling()
              }
 
+             // Get exercise name for display (avoids DB lookups when viewing history)
+             val exerciseName = params.selectedExerciseId?.let { exerciseId ->
+                 exerciseRepository.getExerciseById(exerciseId)?.name
+             }
+
              val session = WorkoutSession(
                  timestamp = workoutStartTime,
                  mode = params.workoutType.displayName,
@@ -837,10 +867,20 @@ class MainViewModel constructor(
                  duration = currentTimeMillis() - workoutStartTime,
                  isJustLift = isJustLift,
                  exerciseId = params.selectedExerciseId,
+                 exerciseName = exerciseName,
                  routineSessionId = currentRoutineSessionId,
                  routineName = currentRoutineName
              )
              workoutRepository.saveSession(session)
+
+             // Save exercise defaults for next time (only for Just Lift and Single Exercise modes)
+             // This mirrors the logic in saveWorkoutSession() to ensure defaults are saved
+             // whether the workout is manually stopped or auto-completed
+             if (isJustLift) {
+                 saveJustLiftDefaultsFromWorkout()
+             } else if (isSingleExerciseMode()) {
+                 saveSingleExerciseDefaultsFromWorkout()
+             }
 
              // Show Summary
              val metrics = collectedMetrics.toList()
@@ -883,8 +923,64 @@ class MainViewModel constructor(
     fun setStallDetectionEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setStallDetectionEnabled(enabled) }
     }
+
+    fun setAudioRepCountEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setAudioRepCountEnabled(enabled) }
+    }
+
     fun setColorScheme(schemeIndex: Int) {
-        viewModelScope.launch { bleRepository.setColorScheme(schemeIndex) }
+        viewModelScope.launch {
+            bleRepository.setColorScheme(schemeIndex)
+            preferencesManager.setColorScheme(schemeIndex)
+            // Update disco mode's restore color index
+            (bleRepository as? com.devil.phoenixproject.data.repository.KableBleRepository)?.setLastColorSchemeIndex(schemeIndex)
+        }
+    }
+
+    // ========== Disco Mode (Easter Egg) ==========
+
+    val discoModeActive: StateFlow<Boolean> = bleRepository.discoModeActive
+
+    fun unlockDiscoMode() {
+        viewModelScope.launch {
+            preferencesManager.setDiscoModeUnlocked(true)
+            Logger.i { "🕺🪩 DISCO MODE UNLOCKED! 🪩🕺" }
+        }
+    }
+
+    fun toggleDiscoMode(enabled: Boolean) {
+        if (enabled) {
+            bleRepository.startDiscoMode()
+        } else {
+            bleRepository.stopDiscoMode()
+        }
+    }
+
+    /**
+     * Emit disco mode unlock sound event for the celebration popup
+     */
+    fun emitDiscoSound() {
+        viewModelScope.launch {
+            _hapticEvents.emit(HapticEvent.DISCO_MODE_UNLOCKED)
+        }
+    }
+
+    /**
+     * Emit badge earned sound event for badge celebration
+     */
+    fun emitBadgeSound() {
+        viewModelScope.launch {
+            _hapticEvents.emit(HapticEvent.BADGE_EARNED)
+        }
+    }
+
+    /**
+     * Emit personal record sound event for PR celebration
+     */
+    fun emitPRSound() {
+        viewModelScope.launch {
+            _hapticEvents.emit(HapticEvent.PERSONAL_RECORD)
+        }
     }
 
     fun deleteAllWorkouts() {
@@ -1083,6 +1179,31 @@ class MainViewModel constructor(
         _workoutState.value = WorkoutState.Idle
         _repCount.value = RepCount()
         _repRanges.value = null  // Clear ROM calibration for new workout
+        // Note: Load baseline is NOT reset here - it persists across sets in the same workout session
+        // This is intentional since the base tension doesn't change between sets
+    }
+
+    /**
+     * Manually recapture load baseline (tare function).
+     * Call this when handles are at rest to zero out the displayed load.
+     * Useful if baseline drifted or user wants to recalibrate mid-workout.
+     */
+    fun recaptureLoadBaseline() {
+        _currentMetric.value?.let { metric ->
+            _loadBaselineA.value = metric.loadA
+            _loadBaselineB.value = metric.loadB
+            Logger.d("MainViewModel") { "LOAD BASELINE: Manually recaptured loadA=${metric.loadA}kg, loadB=${metric.loadB}kg" }
+        }
+    }
+
+    /**
+     * Reset load baseline to zero (disable baseline subtraction).
+     * Useful for debugging or when raw values are desired.
+     */
+    fun resetLoadBaseline() {
+        _loadBaselineA.value = 0f
+        _loadBaselineB.value = 0f
+        Logger.d("MainViewModel") { "LOAD BASELINE: Reset to 0 (disabled)" }
     }
 
     fun advanceToNextExercise() {
@@ -1440,6 +1561,33 @@ class MainViewModel constructor(
      */
     suspend fun getSingleExerciseDefaults(exerciseId: String, cableConfig: String): com.devil.phoenixproject.data.preferences.SingleExerciseDefaults? {
         return preferencesManager.getSingleExerciseDefaults(exerciseId, cableConfig)
+    }
+
+    /**
+     * Get saved Single Exercise defaults for an exercise, trying the preferred cable config first,
+     * then falling back to other cable configs if not found.
+     * This handles cases where user changed cable config in a previous session.
+     */
+    suspend fun getSingleExerciseDefaultsWithFallback(
+        exerciseId: String,
+        preferredCableConfig: String
+    ): com.devil.phoenixproject.data.preferences.SingleExerciseDefaults? {
+        // Try preferred config first
+        preferencesManager.getSingleExerciseDefaults(exerciseId, preferredCableConfig)?.let {
+            return it
+        }
+
+        // Try other cable configs as fallback
+        val allConfigs = listOf("DOUBLE", "SINGLE", "EITHER")
+        for (config in allConfigs) {
+            if (config != preferredCableConfig) {
+                preferencesManager.getSingleExerciseDefaults(exerciseId, config)?.let {
+                    return it
+                }
+            }
+        }
+
+        return null
     }
 
     /**
@@ -1994,6 +2142,11 @@ class MainViewModel constructor(
             params.weightPerCableKg
         }
 
+        // Get exercise name for display (avoids DB lookups when viewing history)
+        val exerciseName = params.selectedExerciseId?.let { exerciseId ->
+            exerciseRepository.getExerciseById(exerciseId)?.name
+        }
+
         val session = WorkoutSession(
             id = sessionId,
             timestamp = workoutStartTime,
@@ -2008,6 +2161,7 @@ class MainViewModel constructor(
             isJustLift = params.isJustLift,
             stopAtTop = params.stopAtTop,
             exerciseId = params.selectedExerciseId,
+            exerciseName = exerciseName,
             routineSessionId = currentRoutineSessionId,
             routineName = currentRoutineName
         )

@@ -183,10 +183,7 @@ fun NavGraph(
         ) {
             AnalyticsScreen(
                 viewModel = viewModel,
-                themeMode = themeMode,
-                onNavigateToExerciseDetail = { exerciseId ->
-                    navController.navigate(NavigationRoutes.ExerciseDetail.createRoute(exerciseId))
-                }
+                themeMode = themeMode
             )
         }
 
@@ -238,6 +235,8 @@ fun NavGraph(
             val userPreferences by viewModel.userPreferences.collectAsState()
             val isAutoConnecting by viewModel.isAutoConnecting.collectAsState()
             val connectionError by viewModel.connectionError.collectAsState()
+            val connectionState by viewModel.connectionState.collectAsState()
+            val discoModeActive by viewModel.discoModeActive.collectAsState()
             SettingsTab(
                 weightUnit = weightUnit,
                 autoplayEnabled = userPreferences.autoplayEnabled,
@@ -245,12 +244,14 @@ fun NavGraph(
                 enableVideoPlayback = userPreferences.enableVideoPlayback,
                 darkModeEnabled = themeMode == ThemeMode.DARK,
                 stallDetectionEnabled = userPreferences.stallDetectionEnabled,
+                audioRepCountEnabled = userPreferences.audioRepCountEnabled,
                 onWeightUnitChange = { viewModel.setWeightUnit(it) },
                 onAutoplayChange = { viewModel.setAutoplayEnabled(it) },
                 onStopAtTopChange = { viewModel.setStopAtTop(it) },
                 onEnableVideoPlaybackChange = { viewModel.setEnableVideoPlayback(it) },
                 onDarkModeChange = { enabled -> onThemeModeChange(if (enabled) ThemeMode.DARK else ThemeMode.LIGHT) },
                 onStallDetectionChange = { viewModel.setStallDetectionEnabled(it) },
+                onAudioRepCountChange = { viewModel.setAudioRepCountEnabled(it) },
                 onColorSchemeChange = { viewModel.setColorScheme(it) },
                 onDeleteAllWorkouts = { viewModel.deleteAllWorkouts() },
                 onNavigateToConnectionLogs = { navController.navigate(NavigationRoutes.ConnectionLogs.route) },
@@ -259,7 +260,14 @@ fun NavGraph(
                 connectionError = connectionError,
                 onClearConnectionError = { viewModel.clearConnectionError() },
                 onCancelAutoConnecting = { viewModel.cancelAutoConnecting() },
-                onSetTitle = { viewModel.updateTopBarTitle(it) }
+                onSetTitle = { viewModel.updateTopBarTitle(it) },
+                // Disco mode Easter egg
+                discoModeUnlocked = userPreferences.discoModeUnlocked,
+                discoModeActive = discoModeActive,
+                isConnected = connectionState is com.devil.phoenixproject.domain.model.ConnectionState.Connected,
+                onDiscoModeUnlocked = { viewModel.unlockDiscoMode() },
+                onDiscoModeToggle = { viewModel.toggleDiscoMode(it) },
+                onPlayDiscoSound = { viewModel.emitDiscoSound() }
             )
         }
 
