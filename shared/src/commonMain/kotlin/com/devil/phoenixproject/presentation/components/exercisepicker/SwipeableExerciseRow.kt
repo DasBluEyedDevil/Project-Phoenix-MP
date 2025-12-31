@@ -48,6 +48,7 @@ fun SwipeableExerciseRow(
     isLoadingThumbnail: Boolean,
     onSelect: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onLongPress: (() -> Unit)? = null,
     onThumbnailClick: (() -> Unit)? = null,
     isRevealed: Boolean = false,
     onRevealChange: (Boolean) -> Unit = {},
@@ -158,6 +159,7 @@ fun SwipeableExerciseRow(
                         onSelect()
                     }
                 },
+                onLongPress = onLongPress,
                 onThumbnailClick = onThumbnailClick
             )
         }

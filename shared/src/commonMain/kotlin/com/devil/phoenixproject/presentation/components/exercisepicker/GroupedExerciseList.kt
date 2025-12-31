@@ -43,6 +43,7 @@ fun GroupedExerciseList(
     onExerciseSelected: (Exercise) -> Unit,
     onToggleFavorite: (Exercise) -> Unit,
     onShowVideo: (Exercise, List<ExerciseVideoEntity>) -> Unit,
+    onEditExercise: ((Exercise) -> Unit)? = null,
     listState: LazyListState = rememberLazyListState(),
     modifier: Modifier = Modifier,
     emptyContent: @Composable () -> Unit = {}
@@ -94,6 +95,9 @@ fun GroupedExerciseList(
                         onSelect = { onExerciseSelected(exercise) },
                         onToggleFavorite = { onToggleFavorite(exercise) },
                         onShowVideo = { videos -> onShowVideo(exercise, videos) },
+                        onLongPress = if (exercise.isCustom && onEditExercise != null) {
+                            { onEditExercise(exercise) }
+                        } else null,
                         isRevealed = exercise.id == revealedExerciseId,
                         onRevealChange = { revealed ->
                             revealedExerciseId = if (revealed) exercise.id else null
@@ -132,6 +136,7 @@ private fun ExerciseItemWithVideo(
     onSelect: () -> Unit,
     onToggleFavorite: () -> Unit,
     onShowVideo: (List<ExerciseVideoEntity>) -> Unit,
+    onLongPress: (() -> Unit)? = null,
     isRevealed: Boolean = false,
     onRevealChange: (Boolean) -> Unit = {}
 ) {
@@ -167,6 +172,7 @@ private fun ExerciseItemWithVideo(
         isLoadingThumbnail = isLoadingVideo,
         onSelect = onSelect,
         onToggleFavorite = onToggleFavorite,
+        onLongPress = onLongPress,
         onThumbnailClick = if (videos.isNotEmpty()) {
             { onShowVideo(videos) }
         } else null,

@@ -1,8 +1,10 @@
 package com.devil.phoenixproject.presentation.components.exercisepicker
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,19 +36,24 @@ import com.devil.phoenixproject.domain.model.Exercise
  * Enhanced exercise row content with larger thumbnail, inline favorite indicator,
  * and compact layout.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ExerciseRowContent(
     exercise: Exercise,
     thumbnailUrl: String?,
     isLoadingThumbnail: Boolean,
     onClick: () -> Unit,
+    onLongPress: (() -> Unit)? = null,
     onThumbnailClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongPress
+            ),
         color = MaterialTheme.colorScheme.surface
     ) {
         Row(

@@ -262,6 +262,7 @@ fun ExercisePickerDialog(
                         enableVideoPlayback = enableVideoPlayback,
                         enableCustomExercises = enableCustomExercises,
                         onCreateExercise = { showCreateDialog = true },
+                        onEditExercise = { exercise -> exerciseToEdit = exercise },
                         fullScreen = true
                     )
                 }
@@ -321,6 +322,7 @@ fun ExercisePickerDialog(
                 enableVideoPlayback = enableVideoPlayback,
                 enableCustomExercises = enableCustomExercises,
                 onCreateExercise = { showCreateDialog = true },
+                onEditExercise = { exercise -> exerciseToEdit = exercise },
                 fullScreen = false
             )
         }
@@ -351,6 +353,7 @@ fun ExercisePickerContent(
     enableVideoPlayback: Boolean,
     enableCustomExercises: Boolean = true,
     onCreateExercise: () -> Unit = {},
+    onEditExercise: ((Exercise) -> Unit)? = null,
     fullScreen: Boolean
 ) {
     var showVideoDialog by remember { mutableStateOf(false) }
@@ -459,6 +462,7 @@ fun ExercisePickerContent(
                     videoDialogVideos = videos
                     showVideoDialog = true
                 },
+                onEditExercise = if (enableCustomExercises) onEditExercise else null,
                 listState = listState,
                 modifier = Modifier.weight(1f),
                 emptyContent = {
