@@ -1,13 +1,7 @@
 name: iOS TestFlight
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'shared/**'
-      - 'iosApp/**'
-      - '.github/workflows/ios-testflight.yml'
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:  # Manual trigger only
 
 permissions:
   contents: read
