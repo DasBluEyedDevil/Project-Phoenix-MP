@@ -321,6 +321,23 @@ fun WorkoutTab(
 //                }
             }
 
+            // Show "Workout Paused" card when connection is lost during an active workout (Issue #42)
+            // Note: SetSummary is excluded because the summary screen doesn't need connection
+            // and should remain fully visible to show workout results and save to history
+            val isWorkoutInProgress = workoutState is WorkoutState.Active ||
+                workoutState is WorkoutState.Countdown ||
+                workoutState is WorkoutState.Resting
+            val isDisconnected = connectionState is ConnectionState.Disconnected ||
+                connectionState is ConnectionState.Error
+
+            if (isWorkoutInProgress && isDisconnected) {
+                WorkoutPausedCard(
+                    onScan = onScan,
+                    workoutState = workoutState,
+                    repCount = repCount
+                )
+            }
+
             // OVERLAYS - These float on top of all content
             when (workoutState) {
                 is WorkoutState.Countdown -> {
@@ -544,6 +561,89 @@ private fun ErrorCard(message: String) {
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center
             )
+        }
+    }
+}
+
+/**
+ * Workout Paused Card - shown when connection is lost during an active workout (Issue #42)
+ * Displays workout progress and prompts user to reconnect
+ */
+@Composable
+private fun WorkoutPausedCard(
+    onScan: () -> Unit,
+    workoutState: WorkoutState,
+    repCount: RepCount
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.medium),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.small)
+        ) {
+            Icon(
+                Icons.Default.BluetoothDisabled,
+                contentDescription = "Connection lost",
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(48.dp)
+            )
+            Text(
+                "Workout Paused",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Connection to trainer lost",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(Spacing.small))
+
+            // Show workout progress info
+            val progressText = when {
+                repCount.workingReps > 0 -> "Progress: ${repCount.workingReps} reps completed"
+                repCount.warmupReps > 0 -> "Progress: ${repCount.warmupReps} warmup reps"
+                else -> "Workout was in progress"
+            }
+            Text(
+                progressText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                "Reconnect to continue your session",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(Spacing.medium))
+
+            Button(
+                onClick = onScan,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
+                )
+            ) {
+                Icon(
+                    Icons.Default.Bluetooth,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(Spacing.small))
+                Text("Reconnect", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
@@ -1318,12 +1418,11 @@ fun SetSummaryCard(
 ) {
     // State for RPE tracking
     var loggedRpe by remember { mutableStateOf<Int?>(null) }
-    // Auto-continue countdown when autoplay is enabled (only in live view)
-    var autoCountdown by remember { mutableStateOf(if (autoplayEnabled && !isHistoryView) 10 else -1) }
+    // Auto-continue countdown when autoplay is enabled
+    var autoCountdown by remember { mutableStateOf(if (autoplayEnabled) 10 else -1) }
 
-    // Only run countdown in live view
-    LaunchedEffect(autoplayEnabled, isHistoryView) {
-        if (autoplayEnabled && !isHistoryView) {
+    LaunchedEffect(autoplayEnabled) {
+        if (autoplayEnabled) {
             autoCountdown = 10
             while (autoCountdown > 0) {
                 kotlinx.coroutines.delay(1000)
