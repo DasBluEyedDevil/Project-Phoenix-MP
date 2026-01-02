@@ -2715,3 +2715,27 @@ private fun Float.pow(n: Int): Float {
     repeat(n) { result *= this }
     return result
 }
+
+/**
+ * Format reps for display in workout completion card.
+ * Handles AMRAP (null reps), uniform reps, and varied reps.
+ */
+private fun formatReps(setReps: List<Int?>): String {
+    if (setReps.isEmpty()) return "AMRAP - As Many Reps As Possible"
+
+    val nonNullReps = setReps.filterNotNull()
+    return when {
+        nonNullReps.isEmpty() -> "${setReps.size} sets AMRAP"
+        nonNullReps.size == setReps.size && nonNullReps.distinct().size == 1 ->
+            "${setReps.size} sets x ${nonNullReps.first()} reps"
+        else -> {
+            val min = nonNullReps.minOrNull() ?: 0
+            val max = nonNullReps.maxOrNull() ?: 0
+            if (min != max) {
+                "${setReps.size} sets x $min-$max reps"
+            } else {
+                "${setReps.size} sets x $min reps"
+            }
+        }
+    }
+}
