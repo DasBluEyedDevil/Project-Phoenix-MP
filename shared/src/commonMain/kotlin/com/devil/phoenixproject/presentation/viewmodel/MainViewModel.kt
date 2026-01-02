@@ -546,6 +546,42 @@ class MainViewModel constructor(
                 }
             }
         }
+
+        // Connection state observer for detecting connection loss during workout (Issue #42)
+        // When connection is lost during an active workout, show the ConnectionLostDialog
+        viewModelScope.launch {
+            var wasConnected = false
+            bleRepository.connectionState.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected -> {
+                        wasConnected = true
+                        // Clear any previous connection lost alert when reconnected
+                        _connectionLostDuringWorkout.value = false
+                    }
+                    is ConnectionState.Disconnected, is ConnectionState.Error -> {
+                        // Only trigger alert if we were previously connected
+                        // and a workout is in progress
+                        if (wasConnected) {
+                            val workoutActive = when (_workoutState.value) {
+                                is WorkoutState.Active,
+                                is WorkoutState.Countdown,
+                                is WorkoutState.Resting,
+                                is WorkoutState.SetSummary -> true
+                                else -> false
+                            }
+                            if (workoutActive) {
+                                Logger.w { "Connection lost during active workout! Showing reconnection dialog." }
+                                _connectionLostDuringWorkout.value = true
+                            }
+                        }
+                        wasConnected = false
+                    }
+                    else -> {
+                        // Scanning, Connecting - don't change wasConnected or alert state
+                    }
+                }
+            }
+        }
     }
 
     /**
