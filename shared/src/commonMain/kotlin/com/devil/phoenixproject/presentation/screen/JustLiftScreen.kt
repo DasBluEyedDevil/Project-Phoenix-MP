@@ -143,18 +143,13 @@ fun JustLiftScreen(
     // Enable handle detection for auto-start when connected (matches official app)
     val connectionState by viewModel.connectionState.collectAsState()
 
-    // Enable handle detection on screen entry if already connected
-    LaunchedEffect(Unit) {
-        if (connectionState is ConnectionState.Connected) {
-            Logger.i("JustLiftScreen: Already connected on entry, enabling handle detection")
-            viewModel.enableHandleDetection()
-        }
-    }
-
-    // Also enable when connection state changes to connected
+    // Single consolidated effect for handle detection (Issue: iOS autostart race condition fix)
+    // Previously had two effects (Unit + connectionState) that could both fire and reset
+    // the state machine mid-grab on iOS due to different recomposition timing.
+    // Now uses connectionState as key - fires on initial composition AND when connection changes.
     LaunchedEffect(connectionState) {
         if (connectionState is ConnectionState.Connected) {
-            Logger.i("JustLiftScreen: Connection state changed to Connected, enabling handle detection")
+            Logger.i("JustLiftScreen: Connection ready, enabling handle detection")
             viewModel.enableHandleDetection()
         }
     }

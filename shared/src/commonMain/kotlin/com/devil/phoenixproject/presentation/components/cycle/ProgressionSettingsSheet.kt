@@ -109,7 +109,7 @@ fun ProgressionSettingsSheet(
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        text = String.format("%.1f%%", weightPercent),
+                        text = "${(kotlin.math.round(weightPercent * 10) / 10)}%",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.width(50.dp)
                     )

@@ -401,6 +401,11 @@ class MainViewModel constructor(
     private var repEventsCollectionJob: Job? = null
     // Track if current workout is duration-based (timed exercise) to skip ROM calibration and rep processing
     private var isCurrentWorkoutTimed: Boolean = false
+    
+    // Idempotency tracking for handle detection (iOS autostart race condition fix)
+    // Prevents duplicate enableHandleDetection() calls from resetting state machine mid-grab
+    private var handleDetectionEnabledTimestamp: Long = 0L
+    private val HANDLE_DETECTION_DEBOUNCE_MS = 500L
 
     init {
         Logger.d("MainViewModel initialized")
@@ -1781,8 +1786,17 @@ class MainViewModel constructor(
     /**
      * Enable handle detection for auto-start functionality.
      * When connected, the machine monitors handle grip to auto-start workout.
+     * 
+     * Made idempotent to prevent iOS race condition where multiple LaunchedEffects
+     * could call this and reset the state machine mid-grab.
      */
     fun enableHandleDetection() {
+        val now = currentTimeMillis()
+        if (now - handleDetectionEnabledTimestamp < HANDLE_DETECTION_DEBOUNCE_MS) {
+            Logger.d("MainViewModel: Handle detection already enabled recently, skipping (idempotent)")
+            return
+        }
+        handleDetectionEnabledTimestamp = now
         Logger.d("MainViewModel: Enabling handle detection for auto-start")
         bleRepository.enableHandleDetection(true)
     }
@@ -2036,8 +2050,36 @@ class MainViewModel constructor(
             }
             _autoStartCountdown.value = null
 
+            // FINAL GUARD: Verify conditions still valid before starting workout
+            // Fixes iOS race condition where cancel() is called but coroutine proceeds
+            // due to cooperative cancellation timing
+            
+            // Check if coroutine was cancelled during countdown
+            if (autoStartJob?.isActive != true) {
+                Logger.d("Auto-start aborted: job cancelled during countdown")
+                return@launch
+            }
+            
+            val currentHandle = bleRepository.handleState.value
+            if (currentHandle != HandleState.Grabbed && currentHandle != HandleState.Moving) {
+                Logger.d("Auto-start aborted: handles no longer grabbed (state=$currentHandle)")
+                return@launch
+            }
+            
+            val params = _workoutParameters.value
+            if (!params.useAutoStart) {
+                Logger.d("Auto-start aborted: autoStart disabled in parameters")
+                return@launch
+            }
+            
+            val state = _workoutState.value
+            if (state !is WorkoutState.Idle && state !is WorkoutState.SetSummary) {
+                Logger.d("Auto-start aborted: workout state changed (state=$state)")
+                return@launch
+            }
+
             // Auto-start the workout in Just Lift mode
-            if (_workoutParameters.value.isJustLift) {
+            if (params.isJustLift) {
                 startWorkout(skipCountdown = true, isJustLiftMode = true)
             } else {
                 startWorkout(skipCountdown = false, isJustLiftMode = false)

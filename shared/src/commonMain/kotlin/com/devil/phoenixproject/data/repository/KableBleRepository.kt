@@ -131,6 +131,10 @@ class KableBleRepository : BleRepository {
 
         // Handle state hysteresis (Task 14)
         private const val STATE_TRANSITION_DWELL_MS = 200L
+        
+        // WaitingForRest timeout (iOS autostart fix)
+        // If handles are pre-tensioned when screen loads, allow arming after timeout
+        private const val WAITING_FOR_REST_TIMEOUT_MS = 3000L
     }
 
     // Kable characteristic references - PRIMARY (required for basic operation)
@@ -294,6 +298,9 @@ class KableBleRepository : BleRepository {
     // Handle state hysteresis timers (Task 14)
     private var pendingGrabbedStartTime: Long? = null
     private var pendingReleasedStartTime: Long? = null
+    
+    // WaitingForRest timeout tracking (iOS autostart fix)
+    private var waitingForRestStartTime: Long? = null
 
     // Monitor polling job (for explicit control)
     private var monitorPollingJob: kotlinx.coroutines.Job? = null
@@ -1298,13 +1305,9 @@ class KableBleRepository : BleRepository {
             forceAboveGrabThresholdStart = null
             forceBelowReleaseThresholdStart = null
             handleDetectionEnabled = true
+            // iOS autostart fix: Reset WaitingForRest timeout tracker
+            waitingForRestStartTime = null
             log.i { "🎯 Monitor polling for AUTO-START - waiting for handles at rest (pos < ${HANDLE_REST_THRESHOLD}mm)" }
-        } else {
-            // ACTIVE WORKOUT MODE: Skip state machine initialization, set to Active
-            // Workout is already running, no need for grab detection
-            _handleState.value = HandleState.Grabbed
-            handleDetectionEnabled = false
-            log.i { "🏋️ Monitor polling for ACTIVE WORKOUT (handle detection disabled)" }
         }
 
         // Cancel any existing polling job before starting new one
@@ -1577,6 +1580,8 @@ class KableBleRepository : BleRepository {
                 // Task 14: Reset hysteresis timers
                 pendingGrabbedStartTime = null
                 pendingReleasedStartTime = null
+                // iOS autostart fix: Reset WaitingForRest timeout
+                waitingForRestStartTime = null
                 log.i { "🎮 Handle state machine reset (no peripheral - will arm when connected)" }
             }
         } else {
@@ -2069,8 +2074,20 @@ class KableBleRepository : BleRepository {
                 // This prevents immediate auto-start if cables already have tension
                 if (posA < HANDLE_REST_THRESHOLD && posB < HANDLE_REST_THRESHOLD) {
                     log.i { "✅ Handles at REST (posA=$posA, posB=$posB < $HANDLE_REST_THRESHOLD) - auto-start now ARMED" }
+                    waitingForRestStartTime = null
                     HandleState.Released  // SetComplete = "Released/Armed" state
                 } else {
+                    // iOS autostart fix: Add timeout to escape WaitingForRest trap
+                    // If user holds handles before screen loads (pre-tensioned cables),
+                    // the state machine would be stuck forever. After timeout, arm anyway.
+                    val currentTime = currentTimeMillis()
+                    if (waitingForRestStartTime == null) {
+                        waitingForRestStartTime = currentTime
+                    } else if (currentTime - waitingForRestStartTime!! > WAITING_FOR_REST_TIMEOUT_MS) {
+                        log.w { "⚠️ WaitingForRest TIMEOUT (${WAITING_FOR_REST_TIMEOUT_MS}ms) - arming with current position (posA=$posA, posB=$posB)" }
+                        waitingForRestStartTime = null
+                        HandleState.Released  // Force arm after timeout
+                    }
                     HandleState.WaitingForRest
                 }
             }
