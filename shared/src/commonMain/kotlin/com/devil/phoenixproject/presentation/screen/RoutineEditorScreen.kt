@@ -191,66 +191,40 @@ fun RoutineEditorScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    if (state.isSelectionMode) {
-                        Text("${state.selectedIds.size} Selected", style = MaterialTheme.typography.titleMedium)
-                    } else {
-                        TextField(
-                            value = state.routineName,
-                            onValueChange = { state = state.copy(routineName = it) },
-                            placeholder = { Text("Routine Name") },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                            singleLine = true
-                        )
-                    }
+                    TextField(
+                        value = state.routineName,
+                        onValueChange = { state = state.copy(routineName = it) },
+                        placeholder = { Text("Routine Name") },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                        singleLine = true
+                    )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (state.isSelectionMode) {
-                            state = state.copy(isSelectionMode = false, selectedIds = emptySet())
-                        } else {
-                            navController.popBackStack()
-                        }
-                    }) {
-                        Icon(
-                            if (state.isSelectionMode) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    if (!state.isSelectionMode) {
-                        TextButton(
-                            onClick = {
-                                val routineToSave = state.routine?.copy(
-                                    id = if (routineId == "new") generateUUID() else routineId,
-                                    name = state.routineName.ifBlank { "Unnamed Routine" }
-                                ) ?: Routine(
-                                    id = generateUUID(),
-                                    name = state.routineName.ifBlank { "Unnamed Routine" }
-                                )
-                                viewModel.saveRoutine(routineToSave)
-                                navController.popBackStack()
-                            }
-                        ) {
-                            Text("Save", fontWeight = FontWeight.Bold)
+                    TextButton(
+                        onClick = {
+                            val routineToSave = state.routine?.copy(
+                                id = if (routineId == "new") generateUUID() else routineId,
+                                name = state.routineName.ifBlank { "Unnamed Routine" }
+                            ) ?: Routine(
+                                id = generateUUID(),
+                                name = state.routineName.ifBlank { "Unnamed Routine" }
+                            )
+                            viewModel.saveRoutine(routineToSave)
+                            navController.popBackStack()
                         }
-                    } else {
-                        // Delete selected items
-                        if (state.selectedIds.isNotEmpty()) {
-                            IconButton(onClick = {
-                                val remaining = state.exercises.filterNot { it.id in state.selectedIds }
-                                updateExercises(remaining)
-                                state = state.copy(isSelectionMode = false, selectedIds = emptySet())
-                            }) {
-                                Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
-                            }
-                        }
+                    ) {
+                        Text("Save", fontWeight = FontWeight.Bold)
                     }
                 }
             )
