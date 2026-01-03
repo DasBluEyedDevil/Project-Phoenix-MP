@@ -21,6 +21,7 @@ import com.devil.phoenixproject.presentation.components.cycle.ProgressionSetting
 import com.devil.phoenixproject.presentation.components.cycle.SwipeableCycleItem
 import com.devil.phoenixproject.presentation.navigation.NavigationRoutes
 import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import sh.calvin.reorderable.ReorderableItem
@@ -113,49 +114,54 @@ fun CycleEditorScreen(
     // Save function
     fun saveCycle() {
         scope.launch {
-            val cycleIdToUse = if (cycleId == "new") generateUUID() else cycleId
+            try {
+                val cycleIdToUse = if (cycleId == "new") generateUUID() else cycleId
 
-            // Convert CycleItems back to CycleDays
-            val days = state.items.map { item ->
-                when (item) {
-                    is CycleItem.Workout -> CycleDay.create(
-                        id = item.id,
-                        cycleId = cycleIdToUse,
-                        dayNumber = item.dayNumber,
-                        name = item.routineName,
-                        routineId = item.routineId,
-                        isRestDay = false
-                    )
-                    is CycleItem.Rest -> CycleDay.restDay(
-                        id = item.id,
-                        cycleId = cycleIdToUse,
-                        dayNumber = item.dayNumber,
-                        name = item.note
-                    )
+                // Convert CycleItems back to CycleDays
+                val days = state.items.map { item ->
+                    when (item) {
+                        is CycleItem.Workout -> CycleDay.create(
+                            id = item.id,
+                            cycleId = cycleIdToUse,
+                            dayNumber = item.dayNumber,
+                            name = item.routineName,
+                            routineId = item.routineId,
+                            isRestDay = false
+                        )
+                        is CycleItem.Rest -> CycleDay.restDay(
+                            id = item.id,
+                            cycleId = cycleIdToUse,
+                            dayNumber = item.dayNumber,
+                            name = item.note
+                        )
+                    }
                 }
+
+                val cycle = TrainingCycle.create(
+                    id = cycleIdToUse,
+                    name = state.cycleName.ifBlank { "Unnamed Cycle" },
+                    description = state.description.ifBlank { null },
+                    days = days,
+                    isActive = false
+                )
+
+                if (cycleId == "new") {
+                    repository.saveCycle(cycle)
+                } else {
+                    repository.updateCycle(cycle)
+                }
+
+                // Save progression if configured
+                state.progression?.let { prog ->
+                    repository.saveCycleProgression(prog.copy(cycleId = cycleIdToUse))
+                }
+
+                // Navigate to review screen
+                navController.navigate(NavigationRoutes.CycleReview.createRoute(cycleIdToUse))
+            } catch (e: Exception) {
+                Logger.e(e) { "Failed to save training cycle" }
+                snackbarHostState.showSnackbar("Failed to save cycle. Please try again.")
             }
-
-            val cycle = TrainingCycle.create(
-                id = cycleIdToUse,
-                name = state.cycleName.ifBlank { "Unnamed Cycle" },
-                description = state.description.ifBlank { null },
-                days = days,
-                isActive = false
-            )
-
-            if (cycleId == "new") {
-                repository.saveCycle(cycle)
-            } else {
-                repository.updateCycle(cycle)
-            }
-
-            // Save progression if configured
-            state.progression?.let { prog ->
-                repository.saveCycleProgression(prog.copy(cycleId = cycleIdToUse))
-            }
-
-            // Navigate to review screen
-            navController.navigate(NavigationRoutes.CycleReview.createRoute(cycleIdToUse))
         }
     }
 
