@@ -255,6 +255,7 @@ fun NavGraph(
                 darkModeEnabled = themeMode == ThemeMode.DARK,
                 stallDetectionEnabled = userPreferences.stallDetectionEnabled,
                 audioRepCountEnabled = userPreferences.audioRepCountEnabled,
+                selectedColorSchemeIndex = userPreferences.colorScheme,
                 onWeightUnitChange = { viewModel.setWeightUnit(it) },
                 onAutoplayChange = { viewModel.setAutoplayEnabled(it) },
                 onStopAtTopChange = { viewModel.setStopAtTop(it) },
