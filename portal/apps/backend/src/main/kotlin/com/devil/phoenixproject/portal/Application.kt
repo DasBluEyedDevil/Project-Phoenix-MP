@@ -1,5 +1,8 @@
 package com.devil.phoenixproject.portal
 
+import com.devil.phoenixproject.portal.auth.AuthService
+import com.devil.phoenixproject.portal.db.DatabaseFactory
+import com.devil.phoenixproject.portal.routes.authRoutes
 import com.devil.phoenixproject.portal.routes.syncRoutes
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
@@ -21,6 +24,11 @@ fun main() {
 }
 
 fun Application.module() {
+    // Initialize database
+    DatabaseFactory.init()
+
+    val authService = AuthService()
+
     install(CallLogging) {
         level = Level.INFO
     }
@@ -41,13 +49,14 @@ fun Application.module() {
         allowMethod(HttpMethod.Delete)
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
-        anyHost() // Configure properly for production
+        anyHost()
     }
 
     install(StatusPages) {
         exception<Throwable> { call, cause ->
+            call.application.log.error("Unhandled exception", cause)
             call.respondText(
-                text = "500: ${cause.localizedMessage}",
+                text = "500: Internal Server Error",
                 status = HttpStatusCode.InternalServerError
             )
         }
@@ -62,6 +71,7 @@ fun Application.module() {
             call.respond(mapOf("status" to "healthy"))
         }
 
+        authRoutes(authService)
         syncRoutes()
     }
 }
