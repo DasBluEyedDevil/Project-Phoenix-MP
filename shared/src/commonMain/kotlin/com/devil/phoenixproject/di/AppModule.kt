@@ -6,6 +6,9 @@ import com.devil.phoenixproject.data.migration.MigrationManager
 import com.devil.phoenixproject.data.preferences.PreferencesManager
 import com.devil.phoenixproject.data.preferences.SettingsPreferencesManager
 import com.devil.phoenixproject.data.repository.*
+import com.devil.phoenixproject.data.sync.PortalApiClient
+import com.devil.phoenixproject.data.sync.PortalTokenStorage
+import com.devil.phoenixproject.data.sync.SyncManager
 import com.devil.phoenixproject.domain.subscription.SubscriptionManager
 import com.devil.phoenixproject.domain.usecase.ProgressionUseCase
 import com.devil.phoenixproject.domain.usecase.RepCounterFromMachine
@@ -44,6 +47,15 @@ val commonModule = module {
     // Auth & Subscription
     single<AuthRepository> { SupabaseAuthRepository() }
     single { SubscriptionManager(get()) }
+
+    // Portal Sync
+    single { PortalTokenStorage(get()) }
+    single {
+        PortalApiClient(
+            tokenProvider = { get<PortalTokenStorage>().getToken() }
+        )
+    }
+    single { SyncManager(get(), get()) }
 
     // Preferences
     // Settings is provided by platformModule
