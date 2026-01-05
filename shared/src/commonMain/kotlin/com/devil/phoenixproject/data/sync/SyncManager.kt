@@ -1,5 +1,6 @@
 package com.devil.phoenixproject.data.sync
 
+import com.devil.phoenixproject.data.repository.SyncRepository
 import com.devil.phoenixproject.getPlatform
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +17,8 @@ sealed class SyncState {
 
 class SyncManager(
     private val apiClient: PortalApiClient,
-    private val tokenStorage: PortalTokenStorage
+    private val tokenStorage: PortalTokenStorage,
+    private val syncRepository: SyncRepository
 ) {
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
@@ -106,21 +108,33 @@ class SyncManager(
         val lastSync = tokenStorage.getLastSyncTimestamp()
         val platform = getPlatformName()
 
-        // TODO: Gather local changes from repositories
+        // Gather local changes from repositories
+        val sessions = syncRepository.getSessionsModifiedSince(lastSync)
+        val records = syncRepository.getPRsModifiedSince(lastSync)
+        val routines = syncRepository.getRoutinesModifiedSince(lastSync)
+        val exercises = syncRepository.getCustomExercisesModifiedSince(lastSync)
+        val badges = syncRepository.getBadgesModifiedSince(lastSync)
+        val gamificationStats = syncRepository.getGamificationStatsForSync()
+
         val request = SyncPushRequest(
             deviceId = deviceId,
             deviceName = getDeviceName(),
             platform = platform,
             lastSync = lastSync,
-            sessions = emptyList(), // TODO: Get from WorkoutRepository
-            records = emptyList(),  // TODO: Get from PersonalRecordRepository
-            routines = emptyList(), // TODO: Get from RoutineRepository
-            exercises = emptyList(), // TODO: Get from ExerciseRepository (custom only)
-            badges = emptyList(),   // TODO: Get from GamificationRepository
-            gamificationStats = null // TODO: Get from GamificationRepository
+            sessions = sessions,
+            records = records,
+            routines = routines,
+            exercises = exercises,
+            badges = badges,
+            gamificationStats = gamificationStats
         )
 
-        return apiClient.pushChanges(request)
+        return apiClient.pushChanges(request).also { result ->
+            // Update server IDs on success
+            result.onSuccess { response ->
+                syncRepository.updateServerIds(response.idMappings)
+            }
+        }
     }
 
     private suspend fun pullRemoteChanges(): Result<Long> {
@@ -133,10 +147,13 @@ class SyncManager(
         )
 
         return apiClient.pullChanges(request).map { response ->
-            // TODO: Merge pulled data into local repositories
-            // - WorkoutRepository.mergeFromSync(response.sessions)
-            // - PersonalRecordRepository.mergeFromSync(response.records)
-            // etc.
+            // Merge pulled data into local repositories
+            syncRepository.mergeSessions(response.sessions)
+            syncRepository.mergePRs(response.records)
+            syncRepository.mergeRoutines(response.routines)
+            syncRepository.mergeCustomExercises(response.exercises)
+            syncRepository.mergeBadges(response.badges)
+            syncRepository.mergeGamificationStats(response.gamificationStats)
 
             response.syncTime
         }

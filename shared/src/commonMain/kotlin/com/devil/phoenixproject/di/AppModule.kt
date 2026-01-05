@@ -56,7 +56,8 @@ val commonModule = module {
             tokenProvider = { get<PortalTokenStorage>().getToken() }
         )
     }
-    single { SyncManager(get(), get()) }
+    single<SyncRepository> { SqlDelightSyncRepository(get()) }
+    single { SyncManager(get(), get(), get()) }
 
     // Preferences
     // Settings is provided by platformModule
