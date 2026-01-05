@@ -9,6 +9,7 @@ import com.devil.phoenixproject.data.repository.*
 import com.devil.phoenixproject.data.sync.PortalApiClient
 import com.devil.phoenixproject.data.sync.PortalTokenStorage
 import com.devil.phoenixproject.data.sync.SyncManager
+import com.devil.phoenixproject.ui.sync.LinkAccountViewModel
 import com.devil.phoenixproject.domain.subscription.SubscriptionManager
 import com.devil.phoenixproject.domain.usecase.ProgressionUseCase
 import com.devil.phoenixproject.domain.usecase.RepCounterFromMachine
@@ -75,4 +76,7 @@ val commonModule = module {
     factory { GamificationViewModel(get()) }
     // ThemeViewModel as singleton - app-wide theme state that must persist
     single { ThemeViewModel(get()) }
+
+    // Sync UI
+    factory { LinkAccountViewModel(get()) }
 }
