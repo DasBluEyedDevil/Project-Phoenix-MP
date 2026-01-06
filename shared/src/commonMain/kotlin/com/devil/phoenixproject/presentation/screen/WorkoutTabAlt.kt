@@ -59,6 +59,7 @@ fun WorkoutTabAlt(
     loadedRoutine: Routine? = null,
     currentExerciseIndex: Int = 0,
     autoplayEnabled: Boolean = false,
+    summaryCountdownSeconds: Int = 10,  // Countdown duration for SetSummary auto-continue (0 = Off)
     kgToDisplay: (Float, WeightUnit) -> Float,
     displayToKg: (Float, WeightUnit) -> Float,
     formatWeight: (Float, WeightUnit) -> String,
@@ -178,7 +179,8 @@ fun WorkoutTabAlt(
                             kgToDisplay = kgToDisplay,
                             formatWeight = formatWeight,
                             onContinue = onProceedFromSummary,
-                            autoplayEnabled = autoplayEnabled
+                            autoplayEnabled = autoplayEnabled,
+                            summaryCountdownSeconds = summaryCountdownSeconds
                         )
                     }
                     is WorkoutState.Resting -> {

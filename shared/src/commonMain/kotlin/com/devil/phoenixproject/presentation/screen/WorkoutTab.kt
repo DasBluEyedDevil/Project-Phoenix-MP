@@ -79,6 +79,7 @@ fun WorkoutTab(
         skippedExercises = state.skippedExercises,
         completedExercises = state.completedExercises,
         autoplayEnabled = state.autoplayEnabled,
+        summaryCountdownSeconds = state.summaryCountdownSeconds,
         onJumpToExercise = actions::onJumpToExercise,
         canGoBack = state.canGoBack,
         canSkipForward = state.canSkipForward,
@@ -132,6 +133,7 @@ fun WorkoutTab(
     skippedExercises: Set<Int> = emptySet(),
     completedExercises: Set<Int> = emptySet(),
     autoplayEnabled: Boolean = false,
+    summaryCountdownSeconds: Int = 10,  // Countdown duration for SetSummary auto-continue (0 = Off)
     onJumpToExercise: (Int) -> Unit = {},
     canGoBack: Boolean = false,
     canSkipForward: Boolean = false,
@@ -367,6 +369,7 @@ fun WorkoutTab(
                         formatWeight = formatWeight,
                         onContinue = onProceedFromSummary,
                         autoplayEnabled = autoplayEnabled,
+                        summaryCountdownSeconds = summaryCountdownSeconds,
                         onRpeLogged = onRpeLogged
                     )
                 }
@@ -1421,18 +1424,19 @@ fun SetSummaryCard(
     formatWeight: (Float, WeightUnit) -> String,
     onContinue: () -> Unit,
     autoplayEnabled: Boolean,
+    summaryCountdownSeconds: Int,  // Configurable countdown duration (0 = Off, no auto-continue)
     onRpeLogged: ((Int) -> Unit)? = null,  // Optional RPE callback
     isHistoryView: Boolean = false,  // Hide interactive elements when viewing from history
     savedRpe: Int? = null  // Show saved RPE value in history view
 ) {
     // State for RPE tracking
     var loggedRpe by remember { mutableStateOf<Int?>(null) }
-    // Auto-continue countdown when autoplay is enabled
-    var autoCountdown by remember { mutableStateOf(if (autoplayEnabled) 10 else -1) }
+    // Auto-continue countdown when autoplay is enabled and countdown > 0
+    var autoCountdown by remember { mutableStateOf(if (autoplayEnabled && summaryCountdownSeconds > 0) summaryCountdownSeconds else -1) }
 
-    LaunchedEffect(autoplayEnabled) {
-        if (autoplayEnabled) {
-            autoCountdown = 10
+    LaunchedEffect(autoplayEnabled, summaryCountdownSeconds) {
+        if (autoplayEnabled && summaryCountdownSeconds > 0) {
+            autoCountdown = summaryCountdownSeconds
             while (autoCountdown > 0) {
                 kotlinx.coroutines.delay(1000)
                 autoCountdown--
@@ -1678,7 +1682,7 @@ fun SetSummaryCard(
                 )
             ) {
                 Text(
-                    text = if (autoplayEnabled && autoCountdown > 0) {
+                    text = if (autoplayEnabled && summaryCountdownSeconds > 0 && autoCountdown > 0) {
                         "Done ($autoCountdown)"
                     } else {
                         "Done"

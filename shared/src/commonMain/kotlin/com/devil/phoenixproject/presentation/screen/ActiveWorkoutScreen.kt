@@ -169,7 +169,7 @@ fun ActiveWorkoutScreen(
         connectionState, workoutState, currentMetric, currentHeuristicKgMax, workoutParameters,
         repCount, repRanges, autoStopState, weightUnit, enableVideoPlayback,
         loadedRoutine, currentExerciseIndex, currentSetIndex, userPreferences.autoplayEnabled,
-        loadBaselineA, loadBaselineB, canGoBack, canSkipForward
+        userPreferences.summaryCountdownSeconds, loadBaselineA, loadBaselineB, canGoBack, canSkipForward
     ) {
         WorkoutUiState(
             connectionState = connectionState,
@@ -186,6 +186,7 @@ fun ActiveWorkoutScreen(
             currentExerciseIndex = currentExerciseIndex,
             currentSetIndex = currentSetIndex,
             autoplayEnabled = userPreferences.autoplayEnabled,
+            summaryCountdownSeconds = userPreferences.summaryCountdownSeconds,
             isWorkoutSetupDialogVisible = false,
             showConnectionCard = false,
             showWorkoutSetupCard = false,

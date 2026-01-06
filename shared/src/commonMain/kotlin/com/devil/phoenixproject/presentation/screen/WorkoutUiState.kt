@@ -54,6 +54,7 @@ data class WorkoutUiState(
     val skippedExercises: Set<Int> = emptySet(),
     val completedExercises: Set<Int> = emptySet(),
     val autoplayEnabled: Boolean = false,
+    val summaryCountdownSeconds: Int = 10,  // Countdown duration for SetSummary auto-continue (0 = Off)
     val canGoBack: Boolean = false,
     val canSkipForward: Boolean = false,
     val isWorkoutSetupDialogVisible: Boolean = false,

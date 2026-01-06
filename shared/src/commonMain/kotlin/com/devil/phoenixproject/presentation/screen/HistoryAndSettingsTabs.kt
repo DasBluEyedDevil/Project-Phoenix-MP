@@ -334,6 +334,7 @@ fun WorkoutHistoryCard(
                             formatWeight = formatWeight,
                             onContinue = { },
                             autoplayEnabled = false,
+                            summaryCountdownSeconds = 0,  // History view - no auto-continue
                             isHistoryView = true,
                             savedRpe = session.rpe
                         )
@@ -721,6 +722,7 @@ fun GroupedRoutineCard(
                                 formatWeight = formatWeight,
                                 onContinue = { },
                                 autoplayEnabled = false,
+                                summaryCountdownSeconds = 0,  // History view - no auto-continue
                                 isHistoryView = true,
                                 savedRpe = session.rpe
                             )
