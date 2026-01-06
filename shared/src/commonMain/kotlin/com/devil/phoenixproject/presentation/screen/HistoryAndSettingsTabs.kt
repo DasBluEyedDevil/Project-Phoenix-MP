@@ -928,7 +928,7 @@ fun SettingsTab(
     stallDetectionEnabled: Boolean = true,
     audioRepCountEnabled: Boolean = false,
     summaryCountdownSeconds: Int = 10,
-    autoStartCountdownSeconds: Int = 3,
+    autoStartCountdownSeconds: Int = 5,
     selectedColorSchemeIndex: Int = 0,
     onWeightUnitChange: (WeightUnit) -> Unit,
     onAutoplayChange: (Boolean) -> Unit,
