@@ -518,6 +518,30 @@ class MainViewModel constructor(
             }
         }
 
+        // Issue #98: Deload event collector for firmware-based auto-stop detection
+        // The official Vitruvian app uses DELOAD_OCCURRED status flag (0x8000) for release detection,
+        // which is more reliable than position-based detection. When the machine's firmware detects
+        // cables have been released/deloaded, it sets this flag and we trigger auto-stop.
+        viewModelScope.launch {
+            bleRepository.deloadOccurredEvents.collect {
+                val params = _workoutParameters.value
+                val currentState = _workoutState.value
+
+                // Only trigger auto-stop in Just Lift or AMRAP modes when workout is active
+                if ((params.isJustLift || params.isAMRAP) && currentState is WorkoutState.Active) {
+                    Logger.d("🛑 DELOAD_OCCURRED: Machine detected cable release - starting auto-stop timer")
+
+                    // Start the stall timer for velocity-based auto-stop countdown
+                    // This uses the 5-second STALL_DURATION_SECONDS timer
+                    if (stallStartTime == null) {
+                        stallStartTime = currentTimeMillis()
+                        isCurrentlyStalled = true
+                        Logger.d("🛑 Auto-stop stall timer STARTED via DELOAD_OCCURRED flag")
+                    }
+                }
+            }
+        }
+
         // Rep events collector for handling machine rep notifications
         repEventsCollectionJob = viewModelScope.launch {
             bleRepository.repEvents.collect { notification ->
