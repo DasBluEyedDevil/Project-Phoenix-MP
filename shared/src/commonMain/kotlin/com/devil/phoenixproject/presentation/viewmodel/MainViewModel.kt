@@ -420,10 +420,11 @@ class MainViewModel constructor(
             }
         }
 
-        // Load routines
+        // Load routines (filter out cycle template routines that shouldn't show in Daily Routines)
         viewModelScope.launch {
             workoutRepository.getAllRoutines().collect { routinesList ->
-                _routines.value = routinesList
+                // Exclude routines created by template cycles (prefixed with cycle_routine_)
+                _routines.value = routinesList.filter { !it.id.startsWith("cycle_routine_") }
             }
         }
 

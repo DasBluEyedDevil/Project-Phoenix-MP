@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -47,70 +46,41 @@ fun AddDaySheet(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Quick action buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            // Quick action: Rest day button
+            FilledTonalButton(
+                onClick = {
+                    onAddRestDay()
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Workout button
-                OutlinedCard(
-                    modifier = Modifier.weight(1f),
-                    onClick = { /* Scroll to routines */ }
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FitnessCenter,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Workout",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                // Rest day button
-                OutlinedCard(
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        onAddRestDay()
-                        onDismiss()
-                    }
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.NightsStay,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = MaterialTheme.colorScheme.tertiary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Rest Day",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Default.NightsStay,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Add Rest Day",
+                    fontWeight = FontWeight.Medium
+                )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalDivider()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Section header for workouts
+            Text(
+                text = "Select a Workout",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
 
             // Routine list
             BoxWithConstraints {

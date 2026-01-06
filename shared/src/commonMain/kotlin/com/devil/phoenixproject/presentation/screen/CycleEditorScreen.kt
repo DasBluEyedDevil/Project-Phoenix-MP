@@ -57,7 +57,10 @@ fun CycleEditorScreen(
         scope.launch {
             val savedId = cycleEditorViewModel.saveCycle()
             if (savedId != null) {
-                navController.navigate(NavigationRoutes.CycleReview.createRoute(savedId))
+                // Pop CycleEditor from backstack so back from Preview goes to TrainingCycles
+                navController.navigate(NavigationRoutes.CycleReview.createRoute(savedId)) {
+                    popUpTo(NavigationRoutes.TrainingCycles.route) { inclusive = false }
+                }
             } else {
                 uiState.saveError?.let {
                     snackbarHostState.showSnackbar("Failed to save: $it")

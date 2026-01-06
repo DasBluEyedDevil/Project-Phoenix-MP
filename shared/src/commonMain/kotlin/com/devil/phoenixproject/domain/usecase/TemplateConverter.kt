@@ -79,7 +79,8 @@ class TemplateConverter(
                 )
             } else {
                 // Create a training day with a routine
-                val routineId = generateUUID()
+                // Use cycle_routine_ prefix so these don't show in Daily Routines list
+                val routineId = "cycle_routine_${generateUUID()}"
                 val routineTemplate = dayTemplate.routine
                     ?: error("Training day ${dayTemplate.dayNumber} has no routine")
 
