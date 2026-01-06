@@ -3,7 +3,7 @@ package com.devil.phoenixproject.testutil
 import com.devil.phoenixproject.data.preferences.JustLiftDefaults
 import com.devil.phoenixproject.data.preferences.PreferencesManager
 import com.devil.phoenixproject.data.preferences.SingleExerciseDefaults
-import com.devil.phoenixproject.data.preferences.UserPreferences
+import com.devil.phoenixproject.domain.model.UserPreferences
 import com.devil.phoenixproject.domain.model.WeightUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

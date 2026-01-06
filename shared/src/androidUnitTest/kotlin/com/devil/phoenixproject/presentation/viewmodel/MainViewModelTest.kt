@@ -1,7 +1,7 @@
 package com.devil.phoenixproject.presentation.viewmodel
 
 import app.cash.turbine.test
-import com.devil.phoenixproject.data.preferences.UserPreferences
+import com.devil.phoenixproject.domain.model.UserPreferences
 import com.devil.phoenixproject.data.repository.ScannedDevice
 import com.devil.phoenixproject.domain.model.ConnectionState
 import com.devil.phoenixproject.domain.model.ProgramMode

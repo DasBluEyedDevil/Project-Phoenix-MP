@@ -1,5 +1,6 @@
 package com.devil.phoenixproject.data.preferences
 
+import com.devil.phoenixproject.domain.model.UserPreferences
 import com.devil.phoenixproject.domain.model.WeightUnit
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.Flow
@@ -8,21 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-
-/**
- * User preferences data class
- */
-data class UserPreferences(
-    val weightUnit: WeightUnit = WeightUnit.LB,
-    val autoplayEnabled: Boolean = true,
-    val stopAtTop: Boolean = false,
-    val enableVideoPlayback: Boolean = true,
-    val beepsEnabled: Boolean = true,
-    val colorScheme: Int = 0,
-    val stallDetectionEnabled: Boolean = true,  // NEW - default enabled
-    val discoModeUnlocked: Boolean = false,  // Easter egg - unlocked by tapping LED header 7 times
-    val audioRepCountEnabled: Boolean = false  // Audio rep count announcements during workout
-)
 
 /**
  * Single exercise defaults for saving/loading exercise configurations
