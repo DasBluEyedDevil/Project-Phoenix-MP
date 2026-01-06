@@ -2125,7 +2125,7 @@ class MainViewModel constructor(
     // ==================== AUTO-START FUNCTIONS ====================
 
     /**
-     * Start the auto-start countdown timer (5 seconds).
+     * Start the auto-start countdown timer (configurable via user preferences, default 5 seconds).
      * When user grabs handles while in Idle or SetSummary state, this starts
      * a countdown and automatically begins the workout.
      */
@@ -2138,8 +2138,9 @@ class MainViewModel constructor(
         }
 
         autoStartJob = viewModelScope.launch {
-            // 5-second countdown with visible progress
-            for (i in 5 downTo 1) {
+            // Countdown with visible progress (configurable seconds)
+            val countdownSeconds = userPreferences.value.autoStartCountdownSeconds
+            for (i in countdownSeconds downTo 1) {
                 _autoStartCountdown.value = i
                 delay(1000)
             }
