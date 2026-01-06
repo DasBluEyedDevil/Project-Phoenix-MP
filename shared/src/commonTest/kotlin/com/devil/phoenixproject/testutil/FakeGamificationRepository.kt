@@ -103,6 +103,18 @@ class FakeGamificationRepository : GamificationRepository {
         updateFlows()
     }
 
+    override suspend fun markBadgesCelebrated(badgeIds: List<String>) {
+        if (badgeIds.isEmpty()) return
+        val now = currentTimeMillis()
+        badgeIds.forEach { badgeId ->
+            uncelebratedBadgeIds.remove(badgeId)
+            earnedBadges[badgeId]?.let { badge ->
+                earnedBadges[badgeId] = badge.copy(celebratedAt = now)
+            }
+        }
+        updateFlows()
+    }
+
     override suspend fun updateStats() {
         // No-op in fake - stats are set directly via setGamificationStats
     }

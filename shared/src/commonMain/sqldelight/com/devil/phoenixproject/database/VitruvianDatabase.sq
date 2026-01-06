@@ -697,6 +697,9 @@ INSERT OR IGNORE INTO EarnedBadge (badgeId, earnedAt) VALUES (?, ?);
 markBadgeCelebrated:
 UPDATE EarnedBadge SET celebratedAt = ? WHERE badgeId = ?;
 
+markBadgesCelebrated:
+UPDATE EarnedBadge SET celebratedAt = ? WHERE badgeId IN ?;
+
 -- Streak History Queries
 selectAllStreakHistory:
 SELECT * FROM StreakHistory ORDER BY length DESC;
