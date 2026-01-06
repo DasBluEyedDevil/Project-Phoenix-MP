@@ -310,7 +310,9 @@ fun BatchedBadgeCelebrationDialog(
     )
 
     // Selected badge for expanded details
-    val selectedBadge = badges.find { it.id == selectedBadgeId }
+    val selectedBadge = remember(selectedBadgeId, badges) {
+        badges.find { it.id == selectedBadgeId }
+    }
 
     Dialog(
         onDismissRequest = {
@@ -366,6 +368,8 @@ fun BatchedBadgeCelebrationDialog(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 // Badge grid (3 columns)
+                // Grid row height ~= 80dp (56dp icon + 16dp tier text + padding) + 12dp vertical spacing
+                // 1 row (1-3 badges): 110dp, 2 rows (4-6 badges): 220dp, 3+ rows: 280dp with scroll
                 val gridHeight = when {
                     badges.size <= 3 -> 110.dp
                     badges.size <= 6 -> 220.dp
@@ -521,19 +525,23 @@ private fun BadgeGridItem(
         label = "itemScale"
     )
 
-    // Pulse animation for selected badge
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    )
+    // Pulse animation only for selected badge (avoids wasteful infinite transitions on unselected items)
+    val pulseScale = if (isSelected) {
+        val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+        infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.08f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulseScale"
+        ).value
+    } else {
+        1f
+    }
 
-    val displayScale = if (isSelected) itemScale * pulseScale else itemScale
+    val displayScale = itemScale * pulseScale
 
     Column(
         modifier = Modifier
