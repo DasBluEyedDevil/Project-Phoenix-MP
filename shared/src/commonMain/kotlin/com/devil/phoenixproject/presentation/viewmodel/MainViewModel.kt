@@ -2673,29 +2673,45 @@ class MainViewModel constructor(
         Logger.d("Saved workout session: $sessionId with ${metricsSnapshot.size} metrics")
 
         // Check for personal record (skip for Just Lift and Echo modes)
+        // Uses mode-specific PR lookup to track PRs separately per workout mode (#111)
         params.selectedExerciseId?.let { exerciseId ->
             if (working > 0 && !params.isJustLift && !params.isEchoMode) {
                 try {
-                    workoutRepository.updatePRIfBetter(
+                    val workoutMode = params.programMode.displayName
+                    val timestamp = currentTimeMillis()
+
+                    // Use personalRecordRepository for mode-specific PR tracking
+                    // This returns which PR types were actually broken (weight, volume, or both)
+                    val result = personalRecordRepository.updatePRsIfBetter(
                         exerciseId = exerciseId,
-                        weightKg = measuredPerCableKg,
+                        weightPerCableKg = measuredPerCableKg,
                         reps = working,
-                        mode = params.programMode.displayName
+                        workoutMode = workoutMode,
+                        timestamp = timestamp
                     )
 
-                    // Check if this was a new PR by querying existing records
-                    // For now, emit celebration event optimistically for good performance
-                    if (measuredPerCableKg >= params.weightPerCableKg && working >= params.reps) {
-                        val exercise = exerciseRepository.getExerciseById(exerciseId)
-                        _prCelebrationEvent.emit(
-                            PRCelebrationEvent(
-                                exerciseName = exercise?.name ?: "Unknown Exercise",
-                                weightPerCableKg = measuredPerCableKg,
-                                reps = working,
-                                workoutMode = params.programMode.displayName
+                    // Only celebrate if an actual PR was broken
+                    result.onSuccess { brokenPRs ->
+                        if (brokenPRs.isNotEmpty()) {
+                            val exercise = exerciseRepository.getExerciseById(exerciseId)
+                            val prTypeDescription = when {
+                                brokenPRs.contains(PRType.MAX_WEIGHT) && brokenPRs.contains(PRType.MAX_VOLUME) -> "Weight & Volume"
+                                brokenPRs.contains(PRType.MAX_WEIGHT) -> "Weight"
+                                brokenPRs.contains(PRType.MAX_VOLUME) -> "Volume"
+                                else -> ""
+                            }
+                            _prCelebrationEvent.emit(
+                                PRCelebrationEvent(
+                                    exerciseName = exercise?.name ?: "Unknown Exercise",
+                                    weightPerCableKg = measuredPerCableKg,
+                                    reps = working,
+                                    workoutMode = workoutMode
+                                )
                             )
-                        )
-                        Logger.d("Potential PR: ${exercise?.name} - $measuredPerCableKg kg x $working reps")
+                            Logger.d("NEW PR ($prTypeDescription): ${exercise?.name} - $measuredPerCableKg kg x $working reps in $workoutMode mode")
+                        }
+                    }.onFailure { e ->
+                        Logger.e(e) { "Error updating PR: ${e.message}" }
                     }
                 } catch (e: Exception) {
                     Logger.e(e) { "Error checking PR: ${e.message}" }

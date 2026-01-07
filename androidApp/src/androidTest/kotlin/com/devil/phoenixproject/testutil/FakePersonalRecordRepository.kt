@@ -134,6 +134,24 @@ class FakePersonalRecordRepository : PersonalRecordRepository {
             .maxByOrNull { it.volume }
     }
 
+    override suspend fun getBestWeightPR(exerciseId: String, workoutMode: String): PersonalRecord? {
+        return records.values
+            .filter { it.exerciseId == exerciseId && it.workoutMode == workoutMode }
+            .maxByOrNull { it.weightPerCableKg }
+    }
+
+    override suspend fun getBestVolumePR(exerciseId: String, workoutMode: String): PersonalRecord? {
+        return records.values
+            .filter { it.exerciseId == exerciseId && it.workoutMode == workoutMode }
+            .maxByOrNull { it.volume }
+    }
+
+    override suspend fun getAllPRsForExercise(exerciseId: String): List<PersonalRecord> {
+        return records.values
+            .filter { it.exerciseId == exerciseId }
+            .sortedByDescending { it.timestamp }
+    }
+
     override suspend fun updatePRsIfBetter(
         exerciseId: String,
         weightPerCableKg: Float,
