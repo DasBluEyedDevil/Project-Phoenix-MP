@@ -930,19 +930,14 @@ class KableBleRepository : BleRepository {
     /**
      * Send heartbeat no-op write as fallback when read fails.
      * Uses 4-byte no-op command (MUST be exactly 4 bytes).
-     * Tries WriteWithResponse first, then WithoutResponse.
+     * V-Form devices only support WriteWithResponse.
      */
     private suspend fun sendHeartbeatNoOp(p: Peripheral) {
         try {
             p.write(txCharacteristic, HEARTBEAT_NO_OP, WriteType.WithResponse)
-            log.v { "Heartbeat no-op write sent (WithResponse)" }
-        } catch (_: Exception) {
-            try {
-                p.write(txCharacteristic, HEARTBEAT_NO_OP, WriteType.WithoutResponse)
-                log.v { "Heartbeat no-op write sent (WithoutResponse)" }
-            } catch (e2: Exception) {
-                log.w { "Heartbeat no-op write failed: ${e2.message}" }
-            }
+            log.v { "Heartbeat no-op write sent" }
+        } catch (e: Exception) {
+            log.w { "Heartbeat no-op write failed: ${e.message}" }
         }
     }
 
@@ -1446,21 +1441,14 @@ class KableBleRepository : BleRepository {
 
         val commandHex = command.joinToString(" ") { it.toHexString() }
 
-        // Send to NUS TX - try WithResponse first (device may not advertise WithoutResponse property)
-        // Even though parent repo uses WRITE_TYPE_NO_RESPONSE, Kable requires the property to be advertised
+        // Send to NUS TX using WriteWithResponse (V-Form only supports this mode)
+        // Note: V-Form devices do NOT advertise WriteWithoutResponse property
         return try {
             log.d { "Sending ${command.size}-byte command to NUS TX" }
             log.d { "Command hex: $commandHex" }
 
-            // Try WriteWithResponse first (more compatible), fall back to WithoutResponse
-            try {
-                p.write(txCharacteristic, command, WriteType.WithResponse)
-                log.i { "✅ Command sent via NUS TX (WithResponse): ${command.size} bytes" }
-            } catch (e: Exception) {
-                log.d { "WithResponse failed, trying WithoutResponse: ${e.message}" }
-                p.write(txCharacteristic, command, WriteType.WithoutResponse)
-                log.i { "✅ Command sent via NUS TX (WithoutResponse): ${command.size} bytes" }
-            }
+            p.write(txCharacteristic, command, WriteType.WithResponse)
+            log.i { "✅ Command sent via NUS TX: ${command.size} bytes" }
 
             logRepo.debug(
                 LogEventType.COMMAND_SENT,

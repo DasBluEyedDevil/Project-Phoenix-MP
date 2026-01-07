@@ -812,6 +812,10 @@ class MainViewModel constructor(
                 // Continue anyway - init is optional
             }
 
+            // Issue #110: Add delay between commands to prevent BLE congestion
+            // V-Form devices can fault when commands are sent too rapidly
+            delay(50)
+
             // 3. Send Configuration Command (0x04 header, 96 bytes)
             // This sets the workout parameters but does NOT engage the motors
             try {
@@ -825,6 +829,9 @@ class MainViewModel constructor(
                 _connectionError.value = "Failed to send command: ${e.message}"
                 return@launch
             }
+
+            // Issue #110: Add delay between commands to prevent BLE congestion
+            delay(50)
 
             // 4. Send START Command (0x03) - ENABLES THE MOTORS!
             // Per parent repo protocol analysis: Config (0x04) sets params, START (0x03) engages

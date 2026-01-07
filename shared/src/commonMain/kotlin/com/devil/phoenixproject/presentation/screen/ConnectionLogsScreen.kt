@@ -17,6 +17,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,10 +49,13 @@ fun ConnectionLogsScreen(
     val isLoggingEnabled by logsViewModel.isLoggingEnabled.collectAsState()
 
     val listState = rememberLazyListState()
+    val clipboardManager = LocalClipboardManager.current
 
     var showExportDialog by remember { mutableStateOf(false) }
     var showClearDialog by remember { mutableStateOf(false) }
     var exportContent by remember { mutableStateOf("") }
+    var showCopiedMessage by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Auto-scroll to top when new logs arrive
     LaunchedEffect(logs.size, isAutoScrollEnabled) {
@@ -59,9 +64,21 @@ fun ConnectionLogsScreen(
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    // Show snackbar when content is copied
+    LaunchedEffect(showCopiedMessage) {
+        if (showCopiedMessage) {
+            snackbarHostState.showSnackbar(
+                message = "Logs copied to clipboard",
+                duration = SnackbarDuration.Short
+            )
+            showCopiedMessage = false
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
         // Search bar
         OutlinedTextField(
             value = filter.searchQuery,
@@ -200,6 +217,13 @@ fun ConnectionLogsScreen(
                 }
             }
         }
+        }
+
+        // Snackbar for clipboard confirmation
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 
     // Export dialog
@@ -235,7 +259,9 @@ fun ConnectionLogsScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    // In real app, trigger platform-specific share sheet
+                    // Issue #112 fix: Actually copy to clipboard
+                    clipboardManager.setText(AnnotatedString(exportContent))
+                    showCopiedMessage = true
                     showExportDialog = false
                 }) {
                     Text("Copy to Clipboard")
