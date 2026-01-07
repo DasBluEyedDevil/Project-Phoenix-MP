@@ -1,5 +1,6 @@
 package com.devil.phoenixproject.presentation.viewmodel
 
+import app.cash.turbine.test
 import com.devil.phoenixproject.data.repository.ConnectionLogRepository
 import com.devil.phoenixproject.data.repository.LogEventType
 import com.devil.phoenixproject.data.repository.LogLevel
@@ -30,25 +31,57 @@ class ConnectionLogsViewModelTest {
 
     @Test
     fun `filters logs by level`() = runTest {
-        repository.debug(LogEventType.SCAN_START, "Debug log")
-        repository.error(LogEventType.CONNECT_FAIL, "Error log")
+        viewModel.logs.test {
+            // Initial empty state
+            assertEquals(emptyList(), awaitItem())
 
-        viewModel.toggleLevel(LogLevel.DEBUG)
-        advanceUntilIdle()
+            // Add logs
+            repository.debug(LogEventType.SCAN_START, "Debug log")
+            repository.error(LogEventType.CONNECT_FAIL, "Error log")
+            advanceUntilIdle()
 
-        assertEquals(1, viewModel.logs.value.size)
-        assertEquals(LogLevel.ERROR.name, viewModel.logs.value.first().level)
+            // Should have both logs initially
+            val withBothLogs = awaitItem()
+            assertEquals(2, withBothLogs.size)
+
+            // Toggle off DEBUG level
+            viewModel.toggleLevel(LogLevel.DEBUG)
+            advanceUntilIdle()
+
+            // Should only have ERROR log now
+            val filtered = awaitItem()
+            assertEquals(1, filtered.size)
+            assertEquals(LogLevel.ERROR.name, filtered.first().level)
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
     fun `filters logs by search query`() = runTest {
-        repository.info(LogEventType.CONNECT_SUCCESS, "Connected to DeviceA")
-        repository.info(LogEventType.CONNECT_SUCCESS, "Connected to DeviceB")
+        viewModel.logs.test {
+            // Initial empty state
+            assertEquals(emptyList(), awaitItem())
 
-        viewModel.setSearchQuery("DeviceA")
-        advanceUntilIdle()
+            // Add logs
+            repository.info(LogEventType.CONNECT_SUCCESS, "Connected to DeviceA")
+            repository.info(LogEventType.CONNECT_SUCCESS, "Connected to DeviceB")
+            advanceUntilIdle()
 
-        assertEquals(1, viewModel.logs.value.size)
-        assertTrue(viewModel.logs.value.first().message.contains("DeviceA"))
+            // Should have both logs initially
+            val withBothLogs = awaitItem()
+            assertEquals(2, withBothLogs.size)
+
+            // Filter by search query
+            viewModel.setSearchQuery("DeviceA")
+            advanceUntilIdle()
+
+            // Should only have DeviceA log now
+            val filtered = awaitItem()
+            assertEquals(1, filtered.size)
+            assertTrue(filtered.first().message.contains("DeviceA"))
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }

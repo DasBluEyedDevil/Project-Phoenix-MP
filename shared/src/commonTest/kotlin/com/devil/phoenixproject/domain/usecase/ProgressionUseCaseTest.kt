@@ -6,6 +6,7 @@ import com.devil.phoenixproject.domain.model.SetType
 import com.devil.phoenixproject.testutil.FakeCompletedSetRepository
 import com.devil.phoenixproject.testutil.FakeProgressionRepository
 import kotlinx.coroutines.test.runTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -13,13 +14,19 @@ import kotlin.test.assertTrue
 
 class ProgressionUseCaseTest {
 
-    private val completedSetRepository = FakeCompletedSetRepository()
-    private val progressionRepository = FakeProgressionRepository()
-    private val useCase = ProgressionUseCase(completedSetRepository, progressionRepository)
+    private lateinit var completedSetRepository: FakeCompletedSetRepository
+    private lateinit var progressionRepository: FakeProgressionRepository
+    private lateinit var useCase: ProgressionUseCase
+
+    @BeforeTest
+    fun setup() {
+        completedSetRepository = FakeCompletedSetRepository()
+        progressionRepository = FakeProgressionRepository()
+        useCase = ProgressionUseCase(completedSetRepository, progressionRepository)
+    }
 
     @Test
     fun `returns null when pending progression already exists`() = runTest {
-        resetRepos()
         val pending = com.devil.phoenixproject.domain.model.ProgressionEvent.create(
             exerciseId = "bench",
             previousWeightKg = 50f,
@@ -35,7 +42,6 @@ class ProgressionUseCaseTest {
     @Test
     fun `returns null when not enough history`() = runTest {
         val now = 1_000_000_000L
-        resetRepos()
         completedSetRepository.setSessionExercise("session-1", "bench")
         completedSetRepository.saveCompletedSet(
             completedSet(
@@ -56,7 +62,6 @@ class ProgressionUseCaseTest {
     @Test
     fun `suggests progression for low RPE`() = runTest {
         val now = 1_000_000_000L
-        resetRepos()
         completedSetRepository.setSessionExercise("session-1", "bench")
         completedSetRepository.saveCompletedSets(
             listOf(
@@ -74,20 +79,20 @@ class ProgressionUseCaseTest {
     @Test
     fun `suggests progression when target reps achieved across sessions`() = runTest {
         val now = 1_000_000_000L
-        resetRepos()
         completedSetRepository.setSessionExercise("session-1", "bench")
         completedSetRepository.setSessionExercise("session-2", "bench")
 
+        // Use null RPE to skip RPE-based progression check and test rep-based only
         completedSetRepository.saveCompletedSets(
             listOf(
-                completedSet("set-1", "session-1", reps = 10, weight = 40f, rpe = 9, completedAt = now),
-                completedSet("set-2", "session-1", reps = 10, weight = 40f, rpe = 9, completedAt = now - 500),
+                completedSet("set-1", "session-1", reps = 10, weight = 40f, rpe = null, completedAt = now),
+                completedSet("set-2", "session-1", reps = 10, weight = 40f, rpe = null, completedAt = now - 500),
                 completedSet(
                     id = "set-3",
                     sessionId = "session-2",
                     reps = 10,
                     weight = 40f,
-                    rpe = 9,
+                    rpe = null,
                     completedAt = now - (3 * 60 * 60 * 1000L)
                 )
             )
@@ -119,10 +124,5 @@ class ProgressionUseCaseTest {
             isPr = false,
             completedAt = completedAt
         )
-    }
-
-    private fun resetRepos() {
-        completedSetRepository.reset()
-        progressionRepository.reset()
     }
 }
