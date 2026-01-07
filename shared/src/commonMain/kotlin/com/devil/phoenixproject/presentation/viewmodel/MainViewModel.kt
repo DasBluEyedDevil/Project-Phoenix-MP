@@ -3220,7 +3220,8 @@ class MainViewModel constructor(
                 reps = targetReps ?: 0,
                 weightPerCableKg = setWeight,
                 isAMRAP = targetReps == null,
-                stallDetectionEnabled = currentExercise.stallDetectionEnabled
+                stallDetectionEnabled = currentExercise.stallDetectionEnabled,
+                progressionRegressionKg = currentExercise.progressionKg  // Issue #110: Reset to prevent stale values
             )
 
             repCounter.resetCountsOnly()
@@ -3398,7 +3399,8 @@ class MainViewModel constructor(
                 reps = targetReps ?: 0,
                 weightPerCableKg = setWeight,
                 isAMRAP = targetReps == null,
-                stallDetectionEnabled = currentExercise.stallDetectionEnabled
+                stallDetectionEnabled = currentExercise.stallDetectionEnabled,
+                progressionRegressionKg = currentExercise.progressionKg  // Issue #110: Reset to prevent stale values
             )
 
             repCounter.resetCountsOnly()
