@@ -52,8 +52,8 @@ fun ExerciseEditBottomSheet(
     onDismiss: () -> Unit,
     buttonText: String = "Save"
 ) {
-    // Create local ViewModel instance
-    val viewModel = remember { ExerciseConfigViewModel() }
+    // Create local ViewModel instance with PersonalRecordRepository for PR lookups
+    val viewModel = remember { ExerciseConfigViewModel(personalRecordRepository) }
 
     // Fetch videos for exercise
     var videos by remember { mutableStateOf<List<ExerciseVideoEntity>>(emptyList()) }
@@ -68,34 +68,9 @@ fun ExerciseEditBottomSheet(
     }
     val preferredVideo = videos.firstOrNull { it.angle == "FRONT" } ?: videos.firstOrNull()
 
-    // Fetch initial PR for exercise
-    var initialPR by remember { mutableStateOf<PersonalRecord?>(null) }
-    LaunchedEffect(exercise.exercise.id, exercise.programMode) {
-        exercise.exercise.id?.let { exerciseId ->
-            val workoutMode = exercise.programMode.toWorkoutMode(exercise.echoLevel)
-            if (workoutMode !is WorkoutMode.Echo) {
-                try {
-                    val modeString = when (workoutMode) {
-                        is WorkoutMode.OldSchool -> "Old School"
-                        is WorkoutMode.Pump -> "Pump"
-                        is WorkoutMode.TUT -> "TUT"
-                        is WorkoutMode.TUTBeast -> "TUT Beast"
-                        is WorkoutMode.EccentricOnly -> "Eccentric Only"
-                        else -> null
-                    }
-                    modeString?.let { mode ->
-                        initialPR = personalRecordRepository.getLatestPR(exerciseId, mode)
-                    }
-                } catch (_: Exception) {
-                    initialPR = null
-                }
-            }
-        }
-    }
-
-    // Initialize the ViewModel
-    LaunchedEffect(exercise, weightUnit, initialPR) {
-        viewModel.initialize(exercise, weightUnit, kgToDisplay, displayToKg, initialPR?.weightPerCableKg)
+    // Initialize the ViewModel - PR loading is now handled internally by the ViewModel
+    LaunchedEffect(exercise, weightUnit) {
+        viewModel.initialize(exercise, weightUnit, kgToDisplay, displayToKg)
     }
 
     // Collect state from the ViewModel
@@ -110,31 +85,8 @@ fun ExerciseEditBottomSheet(
     val echoLevel by viewModel.echoLevel.collectAsState()
     val stallDetectionEnabled by viewModel.stallDetectionEnabled.collectAsState()
 
-    // Fetch current PR for selected mode
-    var currentPR by remember { mutableStateOf<PersonalRecord?>(null) }
-    LaunchedEffect(exercise.exercise.id, selectedMode) {
-        exercise.exercise.id?.let { exerciseId ->
-            if (selectedMode !is WorkoutMode.Echo) {
-                try {
-                    val modeString = when (selectedMode) {
-                        is WorkoutMode.OldSchool -> "Old School"
-                        is WorkoutMode.Pump -> "Pump"
-                        is WorkoutMode.TUT -> "TUT"
-                        is WorkoutMode.TUTBeast -> "TUT Beast"
-                        is WorkoutMode.EccentricOnly -> "Eccentric Only"
-                        else -> null
-                    }
-                    modeString?.let { mode ->
-                        currentPR = personalRecordRepository.getLatestPR(exerciseId, mode)
-                    }
-                } catch (_: Exception) {
-                    currentPR = null
-                }
-            } else {
-                currentPR = null
-            }
-        }
-    }
+    // PR weight from ViewModel - automatically updates when mode changes
+    val currentExercisePR by viewModel.currentExercisePR.collectAsState()
 
     val weightSuffix = if (weightUnit == WeightUnit.LB) "lbs" else "kg"
     val maxWeight = if (weightUnit == WeightUnit.LB) 242f else 110f  // 110kg per cable max
@@ -226,7 +178,7 @@ fun ExerciseEditBottomSheet(
                 }
 
                 // Personal Record Display
-                currentPR?.let { pr ->
+                currentExercisePR?.let { pr ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),

@@ -1,6 +1,9 @@
 package com.devil.phoenixproject.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.devil.phoenixproject.data.repository.PersonalRecordRepository
+import com.devil.phoenixproject.domain.model.PersonalRecord
 import com.devil.phoenixproject.domain.model.EccentricLoad
 import com.devil.phoenixproject.domain.model.EchoLevel
 import com.devil.phoenixproject.domain.model.RoutineExercise
@@ -12,6 +15,7 @@ import com.devil.phoenixproject.domain.model.toWorkoutMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import com.devil.phoenixproject.util.KmpUtils
 import co.touchlab.kermit.Logger
 
@@ -37,7 +41,9 @@ data class SetConfiguration(
     val restSeconds: Int = 60 // Add this
 )
 
-class ExerciseConfigViewModel constructor() : ViewModel() {
+class ExerciseConfigViewModel constructor(
+    private val personalRecordRepository: PersonalRecordRepository? = null
+) : ViewModel() {
 
     private val log = Logger.withTag("ExerciseConfigViewModel")
     private val _initialized = MutableStateFlow(false)
@@ -47,6 +53,14 @@ class ExerciseConfigViewModel constructor() : ViewModel() {
     private lateinit var weightUnit: WeightUnit
     private lateinit var kgToDisplay: (Float, WeightUnit) -> Float
     private lateinit var displayToKg: (Float, WeightUnit) -> Float
+
+    // PR state for the current exercise/mode combination
+    private val _currentExercisePR = MutableStateFlow<PersonalRecord?>(null)
+    val currentExercisePR: StateFlow<PersonalRecord?> = _currentExercisePR.asStateFlow()
+
+    // Convenience accessor for just the PR weight (useful for PRIndicator component)
+    val currentExercisePRWeight: Float?
+        get() = _currentExercisePR.value?.weightPerCableKg
 
     private val _exerciseType = MutableStateFlow(ExerciseType.STANDARD)
     val exerciseType: StateFlow<ExerciseType> = _exerciseType.asStateFlow()
@@ -171,6 +185,11 @@ class ExerciseConfigViewModel constructor() : ViewModel() {
         _echoLevel.value = exercise.echoLevel
         _stallDetectionEnabled.value = exercise.stallDetectionEnabled
 
+        // Load PR for the current exercise and mode
+        exercise.exercise.id?.let { exerciseId ->
+            loadPRForExercise(exerciseId, _selectedMode.value.displayName)
+        }
+
         _initialized.value = true
     }
 
@@ -185,6 +204,33 @@ class ExerciseConfigViewModel constructor() : ViewModel() {
 
     fun onSelectedModeChange(mode: WorkoutMode) {
         _selectedMode.value = mode
+        // Load PR for the new mode
+        if (::originalExercise.isInitialized) {
+            originalExercise.exercise.id?.let { exerciseId ->
+                loadPRForExercise(exerciseId, mode.displayName)
+            }
+        }
+    }
+
+    /**
+     * Load the personal record for the given exercise and workout mode.
+     * This updates currentExercisePR which can be used by PRIndicator components.
+     */
+    fun loadPRForExercise(exerciseId: String, workoutMode: String) {
+        if (personalRecordRepository == null) {
+            logDebug("No PersonalRecordRepository available - skipping PR lookup")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val pr = personalRecordRepository.getBestWeightPR(exerciseId, workoutMode)
+                _currentExercisePR.value = pr
+                logDebug("Loaded PR for exercise=$exerciseId, mode=$workoutMode: ${pr?.weightPerCableKg ?: "none"}")
+            } catch (e: Exception) {
+                logWarning("Failed to load PR for exercise=$exerciseId, mode=$workoutMode: ${e.message}")
+                _currentExercisePR.value = null
+            }
+        }
     }
 
     fun onWeightChange(change: Int) {
