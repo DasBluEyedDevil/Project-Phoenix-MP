@@ -112,7 +112,7 @@ data class RoutineExercise(
      * @return The resolved weight in kg, rounded to nearest 0.5kg increment
      */
     fun resolveWeight(currentPR: Float?): Float {
-        return if (usePercentOfPR && currentPR != null && currentPR > 0) {
+        return if (usePercentOfPR && currentPR != null && currentPR > 0 && weightPercentOfPR > 0) {
             (currentPR * weightPercentOfPR / 100f).roundToHalfKg()
         } else {
             weightPerCableKg
@@ -130,10 +130,10 @@ data class RoutineExercise(
     fun resolveSetWeights(currentPR: Float?): List<Float> {
         return if (usePercentOfPR && currentPR != null && currentPR > 0 && setWeightsPercentOfPR.isNotEmpty()) {
             setWeightsPercentOfPR.map { percent ->
-                (currentPR * percent / 100f).roundToHalfKg()
+                if (percent > 0) (currentPR * percent / 100f).roundToHalfKg() else weightPerCableKg
             }
         } else {
-            setWeightsPerCableKg
+            setWeightsPerCableKg.ifEmpty { List(sets) { weightPerCableKg } }
         }
     }
 }
