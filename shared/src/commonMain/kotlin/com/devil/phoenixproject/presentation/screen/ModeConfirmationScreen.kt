@@ -27,6 +27,7 @@ import com.devil.phoenixproject.ui.theme.Spacing
  *
  * @param template The cycle template being configured
  * @param oneRepMaxValues Map of exercise name to 1RM value in kg (if available)
+ * @param prWeightValues Map of exercise name to best PR weight in kg (for PR indicator)
  * @param onConfirm Callback with exercise name to ExerciseConfig mapping when user confirms
  * @param onCancel Callback when user cancels
  */
@@ -35,6 +36,7 @@ import com.devil.phoenixproject.ui.theme.Spacing
 fun ModeConfirmationScreen(
     template: CycleTemplate,
     oneRepMaxValues: Map<String, Float> = emptyMap(),
+    prWeightValues: Map<String, Float> = emptyMap(),
     onConfirm: (Map<String, ExerciseConfig>) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -203,6 +205,7 @@ fun ModeConfirmationScreen(
                                 oneRepMaxKg = oneRepMaxValues[exercise.exerciseName]
                             ),
                             oneRepMaxKg = oneRepMaxValues[exercise.exerciseName],
+                            prWeight = prWeightValues[exercise.exerciseName],
                             onConfigUpdated = { newConfig ->
                                 exerciseConfigs[exercise.exerciseName] = newConfig
                             }
@@ -228,6 +231,7 @@ private fun ConfigurableExerciseCard(
     exercise: TemplateExercise,
     config: ExerciseConfig,
     oneRepMaxKg: Float?,
+    prWeight: Float? = null,
     onConfigUpdated: (ExerciseConfig) -> Unit
 ) {
     var showConfigModal by remember { mutableStateOf(false) }
@@ -312,6 +316,7 @@ private fun ConfigurableExerciseCard(
             templateSets = exercise.sets,
             templateReps = exercise.reps,
             oneRepMaxKg = oneRepMaxKg,
+            prWeight = prWeight,
             initialConfig = config,
             onConfirm = { newConfig ->
                 onConfigUpdated(newConfig)

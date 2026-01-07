@@ -56,7 +56,8 @@ sealed class CycleCreationState {
     data class OneRepMaxInput(val template: CycleTemplate) : CycleCreationState()
     data class ModeConfirmation(
         val template: CycleTemplate,
-        val oneRepMaxValues: Map<String, Float>
+        val oneRepMaxValues: Map<String, Float>,
+        val prWeightValues: Map<String, Float> = emptyMap()
     ) : CycleCreationState()
     data class Creating(val template: CycleTemplate) : CycleCreationState()
 }
@@ -308,7 +309,9 @@ fun TrainingCyclesScreen(
             val mainLiftNames = percentageBasedExercises + otherCableExercises
 
             // Load existing 1RM values - prioritize PR value over stored 1RM
+            // Also load PR weight values for showing PR indicators in ModeConfirmation
             val existingOneRepMaxValues = remember { mutableStateMapOf<String, Float>() }
+            val existingPrWeightValues = remember { mutableStateMapOf<String, Float>() }
             LaunchedEffect(mainLiftNames) {
                 mainLiftNames.forEach { exerciseName ->
                     exerciseRepository.findByName(exerciseName)?.let { exercise ->
@@ -325,6 +328,11 @@ fun TrainingCyclesScreen(
                         valueToUse?.let { oneRepMax ->
                             existingOneRepMaxValues[exerciseName] = oneRepMax
                         }
+
+                        // Store the actual PR weight for indicator display
+                        pr?.weightPerCableKg?.takeIf { it > 0f }?.let { weight ->
+                            existingPrWeightValues[exerciseName] = weight
+                        }
                     }
                 }
             }
@@ -336,7 +344,11 @@ fun TrainingCyclesScreen(
                 kgToDisplay = viewModel::kgToDisplay,
                 displayToKg = viewModel::displayToKg,
                 onConfirm = { oneRepMaxValues ->
-                    creationState = CycleCreationState.ModeConfirmation(state.template, oneRepMaxValues)
+                    creationState = CycleCreationState.ModeConfirmation(
+                        template = state.template,
+                        oneRepMaxValues = oneRepMaxValues,
+                        prWeightValues = existingPrWeightValues.toMap()
+                    )
                 },
                 onCancel = {
                     creationState = CycleCreationState.Idle
@@ -347,6 +359,7 @@ fun TrainingCyclesScreen(
             ModeConfirmationScreen(
                 template = state.template,
                 oneRepMaxValues = state.oneRepMaxValues,
+                prWeightValues = state.prWeightValues,
                 onConfirm = { exerciseConfigs ->
                     creationState = CycleCreationState.Creating(state.template)
                     scope.launch {
