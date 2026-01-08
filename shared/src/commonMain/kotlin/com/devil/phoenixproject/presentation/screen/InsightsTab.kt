@@ -13,11 +13,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.devil.phoenixproject.data.repository.ExerciseRepository
 import com.devil.phoenixproject.domain.model.PersonalRecord
+import com.devil.phoenixproject.domain.model.VolumeDataPoint
+import com.devil.phoenixproject.domain.model.VolumePeriod
 import com.devil.phoenixproject.domain.model.WeightUnit
 import com.devil.phoenixproject.domain.model.WorkoutSession
 import com.devil.phoenixproject.ui.theme.Spacing
 import com.devil.phoenixproject.presentation.components.*
+import com.devil.phoenixproject.presentation.components.charts.VolumeChartCard
 import com.devil.phoenixproject.presentation.util.ResponsiveDimensions
+import com.devil.phoenixproject.presentation.viewmodel.AnalyticsViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 /**
  * Wrapper composable that constrains card width on tablets to prevent over-stretching.
@@ -55,8 +60,12 @@ fun InsightsTab(
     exerciseRepository: ExerciseRepository,
     modifier: Modifier = Modifier,
     weightUnit: WeightUnit = WeightUnit.KG,
-    formatWeight: (Float, WeightUnit) -> String = { w, u -> "${w.toInt()} ${u.name.lowercase()}" }
+    formatWeight: (Float, WeightUnit) -> String = { w, u -> "${w.toInt()} ${u.name.lowercase()}" },
+    analyticsViewModel: AnalyticsViewModel = koinViewModel()
 ) {
+    // Collect volume data state from AnalyticsViewModel
+    val volumeData by analyticsViewModel.volumeData.collectAsState()
+    val selectedVolumePeriod by analyticsViewModel.selectedVolumePeriod.collectAsState()
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -140,8 +149,20 @@ fun InsightsTab(
                 }
             }
         }
-        
-        // 5. Mode Distribution Donut Chart (New Metric)
+
+        // 5. Volume Chart with Period Selection (Issue #104)
+        item {
+            ResponsiveCardWrapper {
+                VolumeChartCard(
+                    volumeData = volumeData,
+                    selectedPeriod = selectedVolumePeriod,
+                    onPeriodChange = { analyticsViewModel.setVolumePeriod(it) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // 6. Mode Distribution Donut Chart (New Metric)
         if (workoutSessions.isNotEmpty()) {
             item {
                 ResponsiveCardWrapper {
