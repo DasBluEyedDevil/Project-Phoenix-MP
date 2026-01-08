@@ -15,5 +15,7 @@ data class UserPreferences(
     val audioRepCountEnabled: Boolean = false,  // Audio rep count announcements during workout
     // Countdown settings
     val summaryCountdownSeconds: Int = 10,  // 0-30 in 5s intervals, default 10. Value 0 = Off (no auto-advance)
-    val autoStartCountdownSeconds: Int = 5  // 2-10 in 1s intervals, default 5
+    val autoStartCountdownSeconds: Int = 5,  // 2-10 in 1s intervals, default 5
+    // Just Lift rest timer
+    val justLiftRestSeconds: Int = 0  // 0 = Off, otherwise seconds (30, 60, 90, 120, etc.)
 )

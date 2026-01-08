@@ -99,4 +99,8 @@ class FakePreferencesManager : PreferencesManager {
     override suspend fun setAutoStartCountdownSeconds(seconds: Int) {
         _preferencesFlow.value = _preferencesFlow.value.copy(autoStartCountdownSeconds = seconds)
     }
+
+    override suspend fun setJustLiftRestSeconds(seconds: Int) {
+        _preferencesFlow.value = _preferencesFlow.value.copy(justLiftRestSeconds = seconds)
+    }
 }
