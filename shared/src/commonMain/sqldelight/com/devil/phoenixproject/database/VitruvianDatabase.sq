@@ -611,6 +611,46 @@ WHERE id = ?;
 selectVolumeHistory:
 SELECT timestamp, totalReps, weightPerCableKg FROM WorkoutSession ORDER BY timestamp ASC;
 
+-- Get weekly volume totals (for analytics charts)
+selectWeeklyVolume:
+SELECT
+    strftime('%Y-%W', datetime(timestamp/1000, 'unixepoch')) AS weekKey,
+    strftime('%Y', datetime(timestamp/1000, 'unixepoch')) AS year,
+    strftime('%W', datetime(timestamp/1000, 'unixepoch')) AS week,
+    SUM(totalVolumeKg) AS totalVolume,
+    COUNT(*) AS workoutCount
+FROM WorkoutSession
+WHERE totalVolumeKg IS NOT NULL AND duration > 0
+GROUP BY weekKey
+ORDER BY weekKey DESC
+LIMIT :limit;
+
+-- Get monthly volume totals (for analytics charts)
+selectMonthlyVolume:
+SELECT
+    strftime('%Y-%m', datetime(timestamp/1000, 'unixepoch')) AS monthKey,
+    strftime('%Y', datetime(timestamp/1000, 'unixepoch')) AS year,
+    strftime('%m', datetime(timestamp/1000, 'unixepoch')) AS month,
+    SUM(totalVolumeKg) AS totalVolume,
+    COUNT(*) AS workoutCount
+FROM WorkoutSession
+WHERE totalVolumeKg IS NOT NULL AND duration > 0
+GROUP BY monthKey
+ORDER BY monthKey DESC
+LIMIT :limit;
+
+-- Get yearly volume totals (for analytics charts)
+selectYearlyVolume:
+SELECT
+    strftime('%Y', datetime(timestamp/1000, 'unixepoch')) AS year,
+    SUM(totalVolumeKg) AS totalVolume,
+    COUNT(*) AS workoutCount
+FROM WorkoutSession
+WHERE totalVolumeKg IS NOT NULL AND duration > 0
+GROUP BY year
+ORDER BY year DESC
+LIMIT :limit;
+
 -- ==================== CONNECTION LOG QUERIES ====================
 
 insertConnectionLog:
