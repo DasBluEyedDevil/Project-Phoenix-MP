@@ -87,6 +87,38 @@ actual class DriverFactory(private val context: Context) {
                  */
                 private fun getMigrationStatements(version: Int): List<String> {
                     return when (version) {
+                        1 -> listOf(
+                            "ALTER TABLE Exercise ADD COLUMN one_rep_max_kg REAL DEFAULT NULL"
+                        )
+                        2 -> listOf(
+                            """CREATE TABLE IF NOT EXISTS UserProfile (
+                                id TEXT PRIMARY KEY NOT NULL,
+                                name TEXT NOT NULL,
+                                colorIndex INTEGER NOT NULL DEFAULT 0,
+                                createdAt INTEGER NOT NULL,
+                                isActive INTEGER NOT NULL DEFAULT 0
+                            )"""
+                        )
+                        3 -> listOf(
+                            "ALTER TABLE RoutineExercise ADD COLUMN supersetGroupId TEXT",
+                            "ALTER TABLE RoutineExercise ADD COLUMN supersetOrder INTEGER NOT NULL DEFAULT 0",
+                            "ALTER TABLE RoutineExercise ADD COLUMN supersetRestSeconds INTEGER NOT NULL DEFAULT 10"
+                        )
+                        4 -> listOf(
+                            """CREATE TABLE IF NOT EXISTS Superset (
+                                id TEXT PRIMARY KEY NOT NULL,
+                                routineId TEXT NOT NULL,
+                                name TEXT NOT NULL,
+                                colorIndex INTEGER NOT NULL DEFAULT 0,
+                                restBetweenSeconds INTEGER NOT NULL DEFAULT 10,
+                                orderIndex INTEGER NOT NULL,
+                                FOREIGN KEY (routineId) REFERENCES Routine(id) ON DELETE CASCADE
+                            )""",
+                            "CREATE INDEX IF NOT EXISTS idx_superset_routine ON Superset(routineId)",
+                            "ALTER TABLE RoutineExercise ADD COLUMN supersetId TEXT",
+                            "ALTER TABLE RoutineExercise ADD COLUMN orderInSuperset INTEGER NOT NULL DEFAULT 0",
+                            "CREATE INDEX IF NOT EXISTS idx_routine_exercise_superset ON RoutineExercise(supersetId)"
+                        )
                         5 -> listOf(
                             "ALTER TABLE WorkoutSession ADD COLUMN peakForceConcentricA REAL",
                             "ALTER TABLE WorkoutSession ADD COLUMN peakForceConcentricB REAL",
@@ -188,7 +220,7 @@ actual class DriverFactory(private val context: Context) {
                             "CREATE INDEX IF NOT EXISTS idx_cycle_progress_cycle ON CycleProgress(cycle_id)",
                             "CREATE INDEX IF NOT EXISTS idx_planned_set_exercise ON PlannedSet(routine_exercise_id)",
                             "CREATE INDEX IF NOT EXISTS idx_completed_set_session ON CompletedSet(session_id)",
-                            "CREATE INDEX IF NOT EXISTS idx_progression_event_exercise ON ProgressionEvent(exercise_id)",
+                            "CREATE INDEX IF NOT EXISTS idx_progression_exercise ON ProgressionEvent(exercise_id)",
                             // Fallback: Add missing columns to CycleDay if table existed without them
                             // CREATE TABLE IF NOT EXISTS won't add columns to existing tables
                             "ALTER TABLE CycleDay ADD COLUMN echo_level TEXT",
@@ -203,6 +235,14 @@ actual class DriverFactory(private val context: Context) {
                             "ALTER TABLE RoutineExercise ADD COLUMN weightPercentOfPR INTEGER NOT NULL DEFAULT 80",
                             "ALTER TABLE RoutineExercise ADD COLUMN prTypeForScaling TEXT NOT NULL DEFAULT 'MAX_WEIGHT'",
                             "ALTER TABLE RoutineExercise ADD COLUMN setWeightsPercentOfPR TEXT"
+                        )
+                        8 -> listOf(
+                            // Schema healing: clean up empty string artifacts from legacy data
+                            "UPDATE RoutineExercise SET supersetId = NULL WHERE supersetId = ''",
+                            "DELETE FROM Superset WHERE id = ''",
+                            // Fix index name inconsistency (was idx_progression_event_exercise in some migrations)
+                            "DROP INDEX IF EXISTS idx_progression_event_exercise",
+                            "CREATE INDEX IF NOT EXISTS idx_progression_exercise ON ProgressionEvent(exercise_id)"
                         )
                         else -> emptyList()
                     }
