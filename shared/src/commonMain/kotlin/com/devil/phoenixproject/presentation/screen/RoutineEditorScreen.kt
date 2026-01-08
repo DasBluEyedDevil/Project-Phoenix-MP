@@ -29,6 +29,7 @@ import com.devil.phoenixproject.domain.model.*
 import com.devil.phoenixproject.presentation.components.ConnectorPosition
 import com.devil.phoenixproject.presentation.components.ExercisePickerDialog
 import com.devil.phoenixproject.presentation.components.ExerciseRowWithConnector
+import com.devil.phoenixproject.presentation.components.SelectionActionBar
 import com.devil.phoenixproject.ui.theme.SupersetTheme
 import org.koin.compose.koinInject
 import sh.calvin.reorderable.ReorderableItem
@@ -101,6 +102,10 @@ fun RoutineEditorScreen(
     var supersetToEditRest by remember { mutableStateOf<Superset?>(null) }
     var supersetToChangeColor by remember { mutableStateOf<Superset?>(null) }
     var supersetToDelete by remember { mutableStateOf<Superset?>(null) } // Delete All confirmation
+
+    // Selection mode dialogs
+    var showBatchDeleteDialog by remember { mutableStateOf(false) }
+    var showSupersetPickerDialog by remember { mutableStateOf(false) }
 
     // Get PersonalRecordRepository for the bottom sheet
     val personalRecordRepository: PersonalRecordRepository = koinInject()
@@ -295,141 +300,179 @@ fun RoutineEditorScreen(
             )
         }
     ) { padding ->
-        LazyColumn(
-            state = lazyListState,
-            contentPadding = PaddingValues(
-                bottom = 100.dp,
-                top = padding.calculateTopPadding(),
-                start = 16.dp,
-                end = 16.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(4.dp), // Tighter spacing for connected items
-            modifier = Modifier.fillMaxSize()
-        ) {
-            val flatItems = state.routine?.flattenWithConnectors() ?: emptyList()
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                state = lazyListState,
+                contentPadding = PaddingValues(
+                    bottom = 100.dp,
+                    top = padding.calculateTopPadding(),
+                    start = 16.dp,
+                    end = 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(4.dp), // Tighter spacing for connected items
+                modifier = Modifier.fillMaxSize()
+            ) {
+                val flatItems = state.routine?.flattenWithConnectors() ?: emptyList()
 
-            if (flatItems.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(top = 100.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "Tap + to add your first exercise",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                if (flatItems.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(top = 100.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Tap + to add your first exercise",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
-            }
 
-            flatItems.forEachIndexed { index, flatItem ->
-                item(key = flatItem.exercise.id) {
-                    ReorderableItem(
-                        state = reorderState,
-                        key = flatItem.exercise.id
-                    ) { isDragging ->
-                        val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
+                flatItems.forEachIndexed { index, flatItem ->
+                    item(key = flatItem.exercise.id) {
+                        ReorderableItem(
+                            state = reorderState,
+                            key = flatItem.exercise.id
+                        ) { isDragging ->
+                            val elevation by animateDpAsState(if (isDragging) 8.dp else 0.dp)
 
-                        Box {
-                            ExerciseRowWithConnector(
-                                exercise = flatItem.exercise,
-                                elevation = elevation,
-                                weightUnit = weightUnit,
-                                kgToDisplay = kgToDisplay,
-                                supersetColorIndex = flatItem.supersetColorIndex,
-                                connectorPosition = flatItem.connectorPosition,
-                                onClick = {
-                                    if (!selectionMode) {
-                                        exerciseToConfig = flatItem.exercise
-                                        isNewExercise = false
-                                        editingIndex = state.exercises.indexOf(flatItem.exercise)
-                                    }
-                                },
-                                onMenuClick = {
-                                    if (!selectionMode) {
-                                        exerciseMenuFor = flatItem.exercise.id
-                                    }
-                                },
-                                dragModifier = if (selectionMode) Modifier else Modifier.draggableHandle(
-                                    interactionSource = remember { MutableInteractionSource() }
-                                ),
-                                // Selection mode props
-                                isSelectionMode = selectionMode,
-                                isSelected = selectedExerciseIds.contains(flatItem.exercise.id),
-                                onLongPress = {
-                                    selectionMode = true
-                                    selectedExerciseIds.add(flatItem.exercise.id)
-                                },
-                                onSelectionToggle = {
-                                    if (selectedExerciseIds.contains(flatItem.exercise.id)) {
-                                        selectedExerciseIds.remove(flatItem.exercise.id)
-                                        if (selectedExerciseIds.isEmpty()) {
-                                            selectionMode = false
-                                        }
-                                    } else {
-                                        selectedExerciseIds.add(flatItem.exercise.id)
-                                    }
-                                }
-                            )
-
-                            // Context menu (placeholder - will be refactored in Task 12)
-                            DropdownMenu(
-                                expanded = exerciseMenuFor == flatItem.exercise.id,
-                                onDismissRequest = { exerciseMenuFor = null }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Edit") },
+                            Box {
+                                ExerciseRowWithConnector(
+                                    exercise = flatItem.exercise,
+                                    elevation = elevation,
+                                    weightUnit = weightUnit,
+                                    kgToDisplay = kgToDisplay,
+                                    supersetColorIndex = flatItem.supersetColorIndex,
+                                    connectorPosition = flatItem.connectorPosition,
                                     onClick = {
-                                        exerciseToConfig = flatItem.exercise
-                                        isNewExercise = false
-                                        editingIndex = state.exercises.indexOf(flatItem.exercise)
-                                        exerciseMenuFor = null
+                                        if (!selectionMode) {
+                                            exerciseToConfig = flatItem.exercise
+                                            isNewExercise = false
+                                            editingIndex = state.exercises.indexOf(flatItem.exercise)
+                                        }
                                     },
-                                    leadingIcon = { Icon(Icons.Default.Edit, null) }
+                                    onMenuClick = {
+                                        if (!selectionMode) {
+                                            exerciseMenuFor = flatItem.exercise.id
+                                        }
+                                    },
+                                    dragModifier = if (selectionMode) Modifier else Modifier.draggableHandle(
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ),
+                                    // Selection mode props
+                                    isSelectionMode = selectionMode,
+                                    isSelected = selectedExerciseIds.contains(flatItem.exercise.id),
+                                    onLongPress = {
+                                        selectionMode = true
+                                        selectedExerciseIds.add(flatItem.exercise.id)
+                                    },
+                                    onSelectionToggle = {
+                                        if (selectedExerciseIds.contains(flatItem.exercise.id)) {
+                                            selectedExerciseIds.remove(flatItem.exercise.id)
+                                            if (selectedExerciseIds.isEmpty()) {
+                                                selectionMode = false
+                                            }
+                                        } else {
+                                            selectedExerciseIds.add(flatItem.exercise.id)
+                                        }
+                                    }
                                 )
 
-                                // Show "Create Superset" or "Unlink" based on superset state
-                                if (flatItem.exercise.supersetId == null) {
-                                    val currentIndex = state.exercises.indexOfFirst { it.id == flatItem.exercise.id }
-                                    val hasNext = currentIndex >= 0 && currentIndex < state.exercises.lastIndex
-                                    val nextExercise = if (hasNext) state.exercises[currentIndex + 1] else null
-                                    val canSuperset = hasNext && nextExercise?.supersetId == null
-
-                                    if (canSuperset) {
-                                        DropdownMenuItem(
-                                            text = { Text("Create Superset") },
-                                            onClick = {
-                                                createSupersetWithNext(flatItem.exercise.id)
-                                                exerciseMenuFor = null
-                                            },
-                                            leadingIcon = { Icon(Icons.Default.Link, null) }
-                                        )
-                                    }
-                                } else {
+                                // Context menu (placeholder - will be refactored in Task 12)
+                                DropdownMenu(
+                                    expanded = exerciseMenuFor == flatItem.exercise.id,
+                                    onDismissRequest = { exerciseMenuFor = null }
+                                ) {
                                     DropdownMenuItem(
-                                        text = { Text("Remove from Superset") },
+                                        text = { Text("Edit") },
                                         onClick = {
-                                            unlinkFromSuperset(flatItem.exercise.id)
+                                            exerciseToConfig = flatItem.exercise
+                                            isNewExercise = false
+                                            editingIndex = state.exercises.indexOf(flatItem.exercise)
                                             exerciseMenuFor = null
                                         },
-                                        leadingIcon = { Icon(Icons.Default.LinkOff, null) }
+                                        leadingIcon = { Icon(Icons.Default.Edit, null) }
+                                    )
+
+                                    // Show "Create Superset" or "Unlink" based on superset state
+                                    if (flatItem.exercise.supersetId == null) {
+                                        val currentIndex = state.exercises.indexOfFirst { it.id == flatItem.exercise.id }
+                                        val hasNext = currentIndex >= 0 && currentIndex < state.exercises.lastIndex
+                                        val nextExercise = if (hasNext) state.exercises[currentIndex + 1] else null
+                                        val canSuperset = hasNext && nextExercise?.supersetId == null
+
+                                        if (canSuperset) {
+                                            DropdownMenuItem(
+                                                text = { Text("Create Superset") },
+                                                onClick = {
+                                                    createSupersetWithNext(flatItem.exercise.id)
+                                                    exerciseMenuFor = null
+                                                },
+                                                leadingIcon = { Icon(Icons.Default.Link, null) }
+                                            )
+                                        }
+                                    } else {
+                                        DropdownMenuItem(
+                                            text = { Text("Remove from Superset") },
+                                            onClick = {
+                                                unlinkFromSuperset(flatItem.exercise.id)
+                                                exerciseMenuFor = null
+                                            },
+                                            leadingIcon = { Icon(Icons.Default.LinkOff, null) }
+                                        )
+                                    }
+
+                                    DropdownMenuItem(
+                                        text = { Text("Delete") },
+                                        onClick = {
+                                            val remaining = state.exercises.filter { it.id != flatItem.exercise.id }
+                                            updateExercises(remaining)
+                                            exerciseMenuFor = null
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.Delete, null) }
                                     )
                                 }
-
-                                DropdownMenuItem(
-                                    text = { Text("Delete") },
-                                    onClick = {
-                                        val remaining = state.exercises.filter { it.id != flatItem.exercise.id }
-                                        updateExercises(remaining)
-                                        exerciseMenuFor = null
-                                    },
-                                    leadingIcon = { Icon(Icons.Default.Delete, null) }
-                                )
                             }
                         }
                     }
                 }
             }
+
+            // Selection mode action bar
+            SelectionActionBar(
+                visible = selectionMode,
+                selectedCount = selectedExerciseIds.size,
+                canAddToSuperset = selectedExerciseIds.size >= 2,
+                canRemoveFromSuperset = anySelectedInSuperset(),
+                hasExistingSupersets = state.supersets.isNotEmpty(),
+                onCancel = { clearSelection() },
+                onDelete = { showBatchDeleteDialog = true },
+                onAddToSuperset = { showSupersetPickerDialog = true },
+                onRemoveFromSuperset = {
+                    // Remove all selected exercises from their supersets
+                    val updatedExercises = state.exercises.map { ex ->
+                        if (ex.id in selectedExerciseIds && ex.supersetId != null) {
+                            ex.copy(supersetId = null, orderInSuperset = 0)
+                        } else ex
+                    }
+                    updateExercises(updatedExercises)
+
+                    // Auto-dissolve empty supersets
+                    val supersetIds = state.supersets.map { it.id }.toSet()
+                    val occupiedSupersets = updatedExercises
+                        .mapNotNull { it.supersetId }
+                        .toSet()
+                    val emptySupersets = supersetIds - occupiedSupersets
+                    if (emptySupersets.isNotEmpty()) {
+                        updateRoutine { routine ->
+                            routine.copy(supersets = routine.supersets.filter { it.id !in emptySupersets })
+                        }
+                    }
+
+                    clearSelection()
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 
