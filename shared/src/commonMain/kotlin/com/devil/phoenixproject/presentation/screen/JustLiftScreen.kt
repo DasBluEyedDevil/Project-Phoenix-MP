@@ -1023,17 +1023,17 @@ fun JustLiftRestTimerCard(
 
             Spacer(modifier = Modifier.height(Spacing.medium))
 
-            // Skip Rest button
+            // Skip Rest button (consistent with ActiveStatusCard styling)
             Button(
                 onClick = onSkip,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 elevation = ButtonDefaults.buttonElevation(
                     defaultElevation = 4.dp,
                     pressedElevation = 2.dp
@@ -1056,10 +1056,12 @@ fun JustLiftRestTimerCard(
 }
 
 /**
- * Formats rest time in seconds to MM:SS format for Just Lift
+ * Formats rest time in seconds to MM:SS format for Just Lift.
+ * Handles edge case of negative values defensively.
  */
 private fun formatJustLiftRestTime(seconds: Int): String {
-    val minutes = seconds / 60
-    val remainingSeconds = seconds % 60
+    val validSeconds = seconds.coerceAtLeast(0)
+    val minutes = validSeconds / 60
+    val remainingSeconds = validSeconds % 60
     return "$minutes:${remainingSeconds.toString().padStart(2, '0')}"
 }
