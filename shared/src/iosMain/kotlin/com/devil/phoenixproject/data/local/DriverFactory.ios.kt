@@ -39,8 +39,10 @@ actual class DriverFactory {
 
         ensureTrainingCycleTablesExist(driver)
         verifyCriticalTablesExist(driver)
+        ensureWorkoutSessionColumnsExist(driver)
         ensureRoutineExercisePRColumnsExist(driver)
         ensureRoutineExerciseSupersetColumnsExist(driver)
+        migrateLegacySupersetData(driver)
 
         // Now enable foreign keys for normal operation
         try {
@@ -427,6 +429,141 @@ actual class DriverFactory {
             NSLog("iOS DB: Added $columnsAdded missing superset columns to RoutineExercise")
         } else {
             NSLog("iOS DB: All RoutineExercise superset columns present")
+        }
+    }
+
+    /**
+     * Ensure WorkoutSession has all columns from migration 5.
+     * These are summary metrics columns that may be missing if migration 5 failed.
+     */
+    private fun ensureWorkoutSessionColumnsExist(driver: SqlDriver) {
+        val columns = listOf(
+            // Peak force measurements
+            "peakForceConcentricA" to "ALTER TABLE WorkoutSession ADD COLUMN peakForceConcentricA REAL",
+            "peakForceConcentricB" to "ALTER TABLE WorkoutSession ADD COLUMN peakForceConcentricB REAL",
+            "peakForceEccentricA" to "ALTER TABLE WorkoutSession ADD COLUMN peakForceEccentricA REAL",
+            "peakForceEccentricB" to "ALTER TABLE WorkoutSession ADD COLUMN peakForceEccentricB REAL",
+            // Average force measurements
+            "avgForceConcentricA" to "ALTER TABLE WorkoutSession ADD COLUMN avgForceConcentricA REAL",
+            "avgForceConcentricB" to "ALTER TABLE WorkoutSession ADD COLUMN avgForceConcentricB REAL",
+            "avgForceEccentricA" to "ALTER TABLE WorkoutSession ADD COLUMN avgForceEccentricA REAL",
+            "avgForceEccentricB" to "ALTER TABLE WorkoutSession ADD COLUMN avgForceEccentricB REAL",
+            // Summary statistics
+            "heaviestLiftKg" to "ALTER TABLE WorkoutSession ADD COLUMN heaviestLiftKg REAL",
+            "totalVolumeKg" to "ALTER TABLE WorkoutSession ADD COLUMN totalVolumeKg REAL",
+            "estimatedCalories" to "ALTER TABLE WorkoutSession ADD COLUMN estimatedCalories REAL",
+            // Average weights by workout phase
+            "warmupAvgWeightKg" to "ALTER TABLE WorkoutSession ADD COLUMN warmupAvgWeightKg REAL",
+            "workingAvgWeightKg" to "ALTER TABLE WorkoutSession ADD COLUMN workingAvgWeightKg REAL",
+            "burnoutAvgWeightKg" to "ALTER TABLE WorkoutSession ADD COLUMN burnoutAvgWeightKg REAL",
+            "peakWeightKg" to "ALTER TABLE WorkoutSession ADD COLUMN peakWeightKg REAL",
+            // Rate of Perceived Exertion
+            "rpe" to "ALTER TABLE WorkoutSession ADD COLUMN rpe INTEGER"
+        )
+
+        var columnsAdded = 0
+        for ((columnName, sql) in columns) {
+            try {
+                if (!checkColumnExists(driver, "WorkoutSession", columnName)) {
+                    driver.execute(null, sql, 0)
+                    columnsAdded++
+                    NSLog("iOS DB: Added missing column '$columnName' to WorkoutSession")
+                }
+            } catch (e: Exception) {
+                val msg = e.message ?: ""
+                if (msg.contains("duplicate column", ignoreCase = true)) {
+                    // Column already exists - OK
+                } else {
+                    NSLog("iOS DB ERROR: Failed to add column '$columnName': $msg")
+                }
+            }
+        }
+
+        if (columnsAdded > 0) {
+            NSLog("iOS DB: Added $columnsAdded missing columns to WorkoutSession")
+        } else {
+            NSLog("iOS DB: All WorkoutSession columns present")
+        }
+    }
+
+    /**
+     * Migrate legacy superset data from old columns to new container model.
+     * Migration 3 added: supersetGroupId, supersetOrder, supersetRestSeconds
+     * Migration 4 converted to: supersetId, orderInSuperset + Superset table
+     *
+     * If migration 4 failed, users may have data in the old columns that needs
+     * to be migrated to the new model.
+     */
+    private fun migrateLegacySupersetData(driver: SqlDriver) {
+        // Check if legacy columns exist
+        val hasLegacyColumns = checkColumnExists(driver, "RoutineExercise", "supersetGroupId")
+        if (!hasLegacyColumns) {
+            NSLog("iOS DB: No legacy superset columns found, skipping migration")
+            return
+        }
+
+        // Check if there's any data to migrate
+        var hasLegacyData = false
+        try {
+            driver.executeQuery(
+                null,
+                "SELECT 1 FROM RoutineExercise WHERE supersetGroupId IS NOT NULL LIMIT 1",
+                { cursor ->
+                    hasLegacyData = cursor.next().value
+                    app.cash.sqldelight.db.QueryResult.Value(Unit)
+                },
+                0
+            )
+        } catch (e: Exception) {
+            NSLog("iOS DB: Error checking legacy superset data: ${e.message}")
+            return
+        }
+
+        if (!hasLegacyData) {
+            NSLog("iOS DB: No legacy superset data to migrate")
+            return
+        }
+
+        NSLog("iOS DB: Found legacy superset data, attempting migration...")
+
+        try {
+            // Step 1: Create Superset entries from distinct supersetGroupIds
+            // Only create if not already exists (idempotent)
+            val createSupersetsSQL = """
+                INSERT OR IGNORE INTO Superset (id, routineId, name, colorIndex, restBetweenSeconds, orderIndex)
+                SELECT
+                    supersetGroupId,
+                    routineId,
+                    supersetGroupId,
+                    0,
+                    COALESCE(MAX(supersetRestSeconds), 10),
+                    MIN(orderIndex)
+                FROM RoutineExercise
+                WHERE supersetGroupId IS NOT NULL AND supersetGroupId != ''
+                GROUP BY supersetGroupId, routineId
+            """.trimIndent()
+
+            driver.execute(null, createSupersetsSQL, 0)
+            NSLog("iOS DB: Created Superset entries from legacy data")
+
+            // Step 2: Update RoutineExercise to link to Superset table
+            // Copy supersetGroupId to supersetId where supersetId is null
+            val linkSupersetsSQL = """
+                UPDATE RoutineExercise
+                SET supersetId = supersetGroupId,
+                    orderInSuperset = COALESCE(supersetOrder, 0)
+                WHERE supersetGroupId IS NOT NULL
+                  AND supersetGroupId != ''
+                  AND (supersetId IS NULL OR supersetId = '')
+            """.trimIndent()
+
+            driver.execute(null, linkSupersetsSQL, 0)
+            NSLog("iOS DB: Linked RoutineExercise to Superset entries")
+
+            NSLog("iOS DB: Legacy superset data migration complete")
+        } catch (e: Exception) {
+            NSLog("iOS DB ERROR: Failed to migrate legacy superset data: ${e.message}")
+            // Don't throw - app should still work, just without legacy superset data
         }
     }
 }
