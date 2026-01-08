@@ -52,6 +52,7 @@ import com.devil.phoenixproject.presentation.components.CompactNumberPicker
 import com.devil.phoenixproject.presentation.components.ExpressiveSlider
 import com.devil.phoenixproject.presentation.components.ProfileSidePanel
 import com.devil.phoenixproject.presentation.components.ProgressionSlider
+import com.devil.phoenixproject.presentation.components.RestTimerPicker
 import com.devil.phoenixproject.presentation.navigation.NavigationRoutes
 import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
 import com.devil.phoenixproject.ui.theme.Spacing
@@ -453,6 +454,25 @@ fun JustLiftScreen(
                                 }
                             }
                         }
+                    }
+                }
+
+                // Rest Timer Card (only shown when idle, applicable to all modes)
+                if (workoutState is WorkoutState.Idle) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        RestTimerPicker(
+                            currentSeconds = userPreferences.justLiftRestSeconds,
+                            onSecondsChanged = { seconds ->
+                                viewModel.setJustLiftRestSeconds(seconds)
+                            },
+                            modifier = Modifier.padding(Spacing.medium)
+                        )
                     }
                 }
 

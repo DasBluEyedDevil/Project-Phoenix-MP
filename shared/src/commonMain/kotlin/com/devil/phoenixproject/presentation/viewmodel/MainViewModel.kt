@@ -1123,6 +1123,10 @@ class MainViewModel constructor(
         viewModelScope.launch { preferencesManager.setAutoStartCountdownSeconds(seconds) }
     }
 
+    fun setJustLiftRestSeconds(seconds: Int) {
+        viewModelScope.launch { preferencesManager.setJustLiftRestSeconds(seconds) }
+    }
+
     fun setColorScheme(schemeIndex: Int) {
         viewModelScope.launch {
             bleRepository.setColorScheme(schemeIndex)
