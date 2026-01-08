@@ -12,6 +12,7 @@ import com.devil.phoenixproject.domain.model.Exercise
 import com.devil.phoenixproject.domain.model.PRType
 import com.devil.phoenixproject.domain.model.ProgramMode
 import com.devil.phoenixproject.domain.model.Routine
+import com.devil.phoenixproject.domain.model.VolumeDataPoint
 import com.devil.phoenixproject.domain.model.RoutineExercise
 import com.devil.phoenixproject.domain.model.Superset
 import com.devil.phoenixproject.domain.model.WorkoutSession
@@ -781,5 +782,49 @@ class SqlDelightWorkoutRepository(
                 timestamp = timestamp
             )
         }.asFlow().mapToList(Dispatchers.IO)
+    }
+
+    // ========== Volume aggregation methods for analytics ==========
+
+    override suspend fun getWeeklyVolume(limit: Int): List<VolumeDataPoint> {
+        return withContext(Dispatchers.IO) {
+            queries.selectWeeklyVolume(limit.toLong()) { weekKey, year, week, totalVolume, workoutCount ->
+                VolumeDataPoint(
+                    periodKey = weekKey,
+                    year = year.toIntOrNull() ?: 0,
+                    period = week.toIntOrNull() ?: 0,
+                    totalVolume = totalVolume?.toFloat() ?: 0f,
+                    workoutCount = workoutCount.toInt()
+                )
+            }.executeAsList()
+        }
+    }
+
+    override suspend fun getMonthlyVolume(limit: Int): List<VolumeDataPoint> {
+        return withContext(Dispatchers.IO) {
+            queries.selectMonthlyVolume(limit.toLong()) { monthKey, year, month, totalVolume, workoutCount ->
+                VolumeDataPoint(
+                    periodKey = monthKey,
+                    year = year.toIntOrNull() ?: 0,
+                    period = month.toIntOrNull() ?: 0,
+                    totalVolume = totalVolume?.toFloat() ?: 0f,
+                    workoutCount = workoutCount.toInt()
+                )
+            }.executeAsList()
+        }
+    }
+
+    override suspend fun getYearlyVolume(limit: Int): List<VolumeDataPoint> {
+        return withContext(Dispatchers.IO) {
+            queries.selectYearlyVolume(limit.toLong()) { year, totalVolume, workoutCount ->
+                VolumeDataPoint(
+                    periodKey = year,
+                    year = year.toIntOrNull() ?: 0,
+                    period = 0, // Yearly aggregation doesn't have a sub-period
+                    totalVolume = totalVolume?.toFloat() ?: 0f,
+                    workoutCount = workoutCount.toInt()
+                )
+            }.executeAsList()
+        }
     }
 }

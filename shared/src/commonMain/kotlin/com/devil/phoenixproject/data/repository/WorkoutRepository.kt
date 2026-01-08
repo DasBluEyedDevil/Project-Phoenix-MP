@@ -2,6 +2,7 @@ package com.devil.phoenixproject.data.repository
 
 import com.devil.phoenixproject.domain.model.PersonalRecord
 import com.devil.phoenixproject.domain.model.Routine
+import com.devil.phoenixproject.domain.model.VolumeDataPoint
 import com.devil.phoenixproject.domain.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
 
@@ -83,6 +84,25 @@ interface WorkoutRepository {
      * Get all phase statistics
      */
     fun getAllPhaseStatistics(): Flow<List<PhaseStatisticsData>>
+
+    // Volume aggregation for analytics
+    /**
+     * Get weekly volume aggregation data
+     * @param limit Maximum number of weeks to return (default 12)
+     */
+    suspend fun getWeeklyVolume(limit: Int = 12): List<VolumeDataPoint>
+
+    /**
+     * Get monthly volume aggregation data
+     * @param limit Maximum number of months to return (default 12)
+     */
+    suspend fun getMonthlyVolume(limit: Int = 12): List<VolumeDataPoint>
+
+    /**
+     * Get yearly volume aggregation data
+     * @param limit Maximum number of years to return (default 5)
+     */
+    suspend fun getYearlyVolume(limit: Int = 5): List<VolumeDataPoint>
 }
 
 /**

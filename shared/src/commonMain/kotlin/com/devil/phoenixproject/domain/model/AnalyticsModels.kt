@@ -1,6 +1,27 @@
 package com.devil.phoenixproject.domain.model
 
 /**
+ * Aggregated volume data point for analytics charts.
+ * Represents workout volume for a specific time period (week, month, or year).
+ */
+data class VolumeDataPoint(
+    val periodKey: String,       // e.g., "2026-01", "2026-W03", "2026"
+    val year: Int,               // Year as integer
+    val period: Int,             // Week number (1-52) or month number (1-12), 0 for yearly
+    val totalVolume: Float,      // Total volume in kg
+    val workoutCount: Int        // Number of workouts in this period
+)
+
+/**
+ * Time period for volume aggregation
+ */
+enum class VolumePeriod {
+    WEEKLY,
+    MONTHLY,
+    YEARLY
+}
+
+/**
  * Trend analysis result for a metric over time
  */
 data class TrendData(
