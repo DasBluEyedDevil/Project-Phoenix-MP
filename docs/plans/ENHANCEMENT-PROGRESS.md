@@ -88,16 +88,35 @@
 
 ---
 
+### Issue #104: Analytics Volume Chart ✅
+**Commits:** a725a3c8, 47dfd0cb, deae1467, 1a5ffe13, 25a57a25
+
+**What was implemented:**
+- SQL aggregation queries for weekly/monthly/yearly volume totals
+- VolumeDataPoint and VolumePeriod data classes
+- Repository methods with proper IO threading
+- Canvas-based VolumeChartCard component (KMP compatible)
+- AnalyticsViewModel with period selection state
+- Integration into InsightsTab
+
+**Key files:**
+- `VitruvianDatabase.sq` - Aggregation queries
+- `AnalyticsModels.kt` - Data classes
+- `VolumeChartCard.kt` - Chart component
+- `AnalyticsViewModel.kt` - State management
+- `InsightsTab.kt` - Screen integration
+
+---
+
 ## Remaining Issues (In Priority Order)
 
 | # | Issue | Description | Plan File |
 |---|-------|-------------|-----------|
-| 1 | #104 | Analytics Volume Chart | `2026-01-07-issue-104-analytics-volume-chart.md` |
-| 2 | #113 | Just Lift Rest Timer | `2026-01-07-issue-113-just-lift-rest-timer.md` |
-| 3 | #100 | Sound Improvements | `2026-01-07-issue-100-sound-improvements.md` |
-| 4 | #30 | Variable Warm-up | `2026-01-07-issue-30-variable-warmup.md` |
-| 5 | #29 | Echo Level Per Set | `2026-01-07-issue-29-echo-level-per-set.md` |
-| 6 | #103 | Published Workouts (Phase 1) | `2026-01-07-issue-103-published-workouts.md` |
+| 1 | #113 | Just Lift Rest Timer | `2026-01-07-issue-113-just-lift-rest-timer.md` |
+| 2 | #100 | Sound Improvements | `2026-01-07-issue-100-sound-improvements.md` |
+| 3 | #30 | Variable Warm-up | `2026-01-07-issue-30-variable-warmup.md` |
+| 4 | #29 | Echo Level Per Set | `2026-01-07-issue-29-echo-level-per-set.md` |
+| 5 | #103 | Published Workouts (Phase 1) | `2026-01-07-issue-103-published-workouts.md` |
 
 ## Implementation Approach
 
