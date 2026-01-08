@@ -2596,20 +2596,31 @@ class MainViewModel constructor(
                 enableHandleDetection()
                 bleRepository.enableJustLiftWaitingMode()
 
-                Logger.d("⏱️ Just Lift: Machine armed & ready. Showing summary for 5s...")
-
-                // 4. Show summary for 5 seconds (User preference)
-                // Note: If user grabs handles during this delay, auto-start logic in handleState collector
-                // will interrupt this and start the next set immediately.
-                delay(5000)
-
-                // 4. Transition UI to Idle (only if we haven't already started a new set)
-                if (_workoutState.value is WorkoutState.SetSummary) {
-                    Logger.d("⏱️ Just Lift: Summary complete, UI transitioning to Idle")
-                    resetForNewWorkout() // Ensures clean state
-                    _workoutState.value = WorkoutState.Idle
+                // 4. Check if rest timer is configured
+                val restSeconds = userPreferences.value.justLiftRestSeconds
+                if (restSeconds > 0) {
+                    Logger.d("⏱️ Just Lift: Starting rest timer for ${restSeconds}s")
+                    // Show summary briefly, then start rest timer
+                    delay(2000)
+                    if (_workoutState.value is WorkoutState.SetSummary) {
+                        startJustLiftRestTimer(restSeconds)
+                    }
                 } else {
-                    Logger.d("⏱️ Just Lift: Summary interrupted by user action (state is ${_workoutState.value})")
+                    Logger.d("⏱️ Just Lift: Machine armed & ready. Showing summary for 5s...")
+
+                    // Show summary for 5 seconds (default behavior when rest timer is off)
+                    // Note: If user grabs handles during this delay, auto-start logic in handleState collector
+                    // will interrupt this and start the next set immediately.
+                    delay(5000)
+
+                    // Transition UI to Idle (only if we haven't already started a new set)
+                    if (_workoutState.value is WorkoutState.SetSummary) {
+                        Logger.d("⏱️ Just Lift: Summary complete, UI transitioning to Idle")
+                        resetForNewWorkout() // Ensures clean state
+                        _workoutState.value = WorkoutState.Idle
+                    } else {
+                        Logger.d("⏱️ Just Lift: Summary interrupted by user action (state is ${_workoutState.value})")
+                    }
                 }
             } else if (params.isAMRAP) {
                 // AMRAP mode: Auto-advance to rest timer and next set (like Just Lift)
@@ -3219,6 +3230,56 @@ class MainViewModel constructor(
     }
 
     /**
+     * Start a rest timer specifically for Just Lift mode.
+     * Unlike routine rest timers, this returns to Idle state when complete (not next set).
+     * Emits REST_ENDING haptic at 5 seconds remaining.
+     */
+    private fun startJustLiftRestTimer(restSeconds: Int) {
+        restTimerJob?.cancel()
+
+        restTimerJob = viewModelScope.launch {
+            Logger.d("⏱️ Just Lift Rest Timer: Starting ${restSeconds}s countdown")
+
+            // Countdown using elapsed-time calculation to prevent drift
+            val startTime = currentTimeMillis()
+            val endTimeMs = startTime + (restSeconds * 1000L)
+            var hapticFired = false
+
+            while (currentTimeMillis() < endTimeMs && isActive) {
+                val remainingMs = endTimeMs - currentTimeMillis()
+                val remainingSeconds = (remainingMs / 1000L).toInt().coerceAtLeast(0)
+
+                // Show resting state - simplified for Just Lift (no exercise transitions)
+                _workoutState.value = WorkoutState.Resting(
+                    restSecondsRemaining = remainingSeconds,
+                    nextExerciseName = "Next Set",
+                    isLastExercise = false,
+                    currentSet = 0,
+                    totalSets = 0,
+                    isSupersetTransition = false,
+                    supersetLabel = null
+                )
+
+                // Emit haptic at 5 seconds remaining (once)
+                if (remainingSeconds == 5 && !hapticFired) {
+                    hapticFired = true
+                    _hapticEvents.emit(HapticEvent.REST_ENDING)
+                    Logger.d("⏱️ Just Lift Rest Timer: 5 seconds remaining - haptic fired")
+                }
+
+                delay(100) // Update 10x per second for smooth display
+            }
+
+            // Rest complete - transition to Idle for next set
+            if (_workoutState.value is WorkoutState.Resting && isActive) {
+                Logger.d("⏱️ Just Lift Rest Timer: Complete, transitioning to Idle")
+                resetForNewWorkout()
+                _workoutState.value = WorkoutState.Idle
+            }
+        }
+    }
+
+    /**
      * Calculate the name of the next exercise/set for display during rest.
      */
     private fun calculateNextExerciseName(
@@ -3524,13 +3585,19 @@ class MainViewModel constructor(
 
     /**
      * Skip the current rest timer and immediately start the next set/exercise.
+     * For Just Lift mode, transitions to Idle state (ready for next manual set).
      */
     fun skipRest() {
         if (_workoutState.value is WorkoutState.Resting) {
             restTimerJob?.cancel()
             restTimerJob = null
 
-            if (isSingleExerciseMode()) {
+            // Just Lift mode: return to Idle state (user manually starts next set)
+            if (_workoutParameters.value.isJustLift) {
+                Logger.d("⏱️ Just Lift: Rest skipped, transitioning to Idle")
+                resetForNewWorkout()
+                _workoutState.value = WorkoutState.Idle
+            } else if (isSingleExerciseMode()) {
                 advanceToNextSetInSingleExercise()
             } else {
                 startNextSetOrExercise()
