@@ -34,8 +34,20 @@ CREATE TABLE RoutineExercise_new (
     FOREIGN KEY (exerciseId) REFERENCES Exercise(id) ON DELETE SET NULL
 );
 
--- Copy data from old table
-INSERT INTO RoutineExercise_new SELECT * FROM RoutineExercise;
+-- Copy data with explicit columns (old table has 21 columns, new has 24)
+-- New columns get their DEFAULT values
+INSERT INTO RoutineExercise_new (
+    id, routineId, exerciseName, exerciseMuscleGroup, exerciseEquipment,
+    exerciseDefaultCableConfig, exerciseId, cableConfig, orderIndex, setReps,
+    weightPerCableKg, setWeights, mode, eccentricLoad, echoLevel, progressionKg,
+    restSeconds, duration, setRestSeconds, perSetRestTime, isAMRAP
+)
+SELECT
+    id, routineId, exerciseName, exerciseMuscleGroup, exerciseEquipment,
+    exerciseDefaultCableConfig, exerciseId, cableConfig, orderIndex, setReps,
+    weightPerCableKg, setWeights, mode, eccentricLoad, echoLevel, progressionKg,
+    restSeconds, duration, setRestSeconds, perSetRestTime, isAMRAP
+FROM RoutineExercise;
 
 -- Drop old table
 DROP TABLE RoutineExercise;
