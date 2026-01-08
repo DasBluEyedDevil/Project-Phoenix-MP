@@ -835,6 +835,14 @@ class MainViewModel constructor(
             }
             Logger.d { "Built ${command.size}-byte workout command for ${params.programMode}" }
 
+            // Task 3: Set cable configuration for handle release detection
+            // This affects whether release requires ONE cable at rest (SINGLE/EITHER)
+            // or BOTH cables at rest (DOUBLE)
+            val cableConfig = currentExercise?.cableConfig
+                ?: com.devil.phoenixproject.domain.model.CableConfiguration.DOUBLE
+            bleRepository.setCableConfiguration(cableConfig)
+            Logger.d { "Cable configuration set to: $cableConfig" }
+
             // 2. Send INIT Command (0x0A) - ensures clean state
             // Per parent repo protocol: "Sometimes sent before start to ensure clean state"
             try {
@@ -845,6 +853,10 @@ class MainViewModel constructor(
                 Logger.w(e) { "INIT command failed (non-fatal): ${e.message}" }
                 // Continue anyway - init is optional
             }
+
+            // Issue #110: Add delay between commands to prevent BLE congestion
+            // V-Form devices can fault when commands are sent too rapidly
+            delay(50)
 
             // 3. Send Configuration Command (0x04 header, 96 bytes)
             // This sets the workout parameters but does NOT engage the motors
@@ -859,6 +871,9 @@ class MainViewModel constructor(
                 _connectionError.value = "Failed to send command: ${e.message}"
                 return@launch
             }
+
+            // Issue #110: Add delay between commands to prevent BLE congestion
+            delay(50)
 
             // 4. Send START Command (0x03) - ENABLES THE MOTORS!
             // Per parent repo protocol analysis: Config (0x04) sets params, START (0x03) engages
@@ -2742,7 +2757,8 @@ class MainViewModel constructor(
                                     exerciseName = exercise?.name ?: "Unknown Exercise",
                                     weightPerCableKg = measuredPerCableKg,
                                     reps = working,
-                                    workoutMode = workoutMode
+                                    workoutMode = workoutMode,
+                                    brokenPRTypes = brokenPRs
                                 )
                             )
                             Logger.d("NEW PR ($prTypeDescription): ${exercise?.name} - $measuredPerCableKg kg x $working reps in $workoutMode mode")

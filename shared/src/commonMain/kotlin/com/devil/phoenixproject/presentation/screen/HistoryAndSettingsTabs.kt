@@ -41,7 +41,11 @@ import com.devil.phoenixproject.domain.model.toSetSummary
 import com.devil.phoenixproject.presentation.viewmodel.HistoryItem
 import com.devil.phoenixproject.util.ColorScheme
 import com.devil.phoenixproject.util.ColorSchemes
+import com.devil.phoenixproject.util.DataBackupManager
+import com.devil.phoenixproject.util.ImportResult
+import com.devil.phoenixproject.util.rememberFilePicker
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import com.devil.phoenixproject.presentation.components.CountdownDropdown
 import com.devil.phoenixproject.presentation.components.EmptyState
 import com.devil.phoenixproject.ui.theme.*
@@ -962,6 +966,16 @@ fun SettingsTab(
     modifier: Modifier = Modifier
 ) {
     var showDeleteAllDialog by remember { mutableStateOf(false) }
+    // Backup/Restore state
+    var showBackupDialog by remember { mutableStateOf(false) }
+    var showRestoreDialog by remember { mutableStateOf(false) }
+    var backupInProgress by remember { mutableStateOf(false) }
+    var restoreInProgress by remember { mutableStateOf(false) }
+    var backupResult by remember { mutableStateOf<String?>(null) }
+    var restoreResult by remember { mutableStateOf<ImportResult?>(null) }
+    var showResultDialog by remember { mutableStateOf(false) }
+    var launchFilePicker by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     // Easter egg tap counter for disco mode
     var easterEggTapCount by remember { mutableStateOf(0) }
     var lastTapTime by remember { mutableStateOf(0L) }
@@ -969,6 +983,9 @@ fun SettingsTab(
     var showDiscoUnlockDialog by remember { mutableStateOf(false) }
     // Optimistic UI state for immediate visual feedback
     var localWeightUnit by remember(weightUnit) { mutableStateOf(weightUnit) }
+
+    // Inject DataBackupManager
+    val backupManager: DataBackupManager = koinInject()
 
     // Set global title
     LaunchedEffect(Unit) {
@@ -1706,6 +1723,60 @@ fun SettingsTab(
             }
                 Spacer(modifier = Modifier.height(Spacing.small))
 
+                // Backup Button
+                OutlinedButton(
+                    onClick = { showBackupDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(
+                        Icons.Default.CloudUpload,
+                        contentDescription = "Backup data",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(Spacing.small))
+                    Text(
+                        "Backup All Data",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(Spacing.small))
+
+                // Restore Button
+                OutlinedButton(
+                    onClick = { showRestoreDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.secondary
+                    ),
+                    border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary)
+                ) {
+                    Icon(
+                        Icons.Default.CloudDownload,
+                        contentDescription = "Restore data",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(Spacing.small))
+                    Text(
+                        "Restore from Backup",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(Spacing.medium))
+
                 Button(
                     onClick = { showDeleteAllDialog = true },
                     modifier = Modifier
@@ -1967,7 +2038,7 @@ fun SettingsTab(
                 )
             }
                 Spacer(modifier = Modifier.height(Spacing.small))
-                Text("Version: 0.3.0", color = MaterialTheme.colorScheme.onSurface)
+                Text("Version: 0.3.1", color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(Spacing.small))
                 Text(
                     "Open source community project to control Vitruvian Trainer machines locally.",
@@ -2044,6 +2115,147 @@ fun SettingsTab(
         DiscoModeUnlockDialog(
             onDismiss = { showDiscoUnlockDialog = false }
         )
+    }
+
+    // Backup confirmation dialog
+    if (showBackupDialog) {
+        AlertDialog(
+            onDismissRequest = { showBackupDialog = false },
+            title = { Text("Backup All Data", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) },
+            text = {
+                Text("This will export all your workout history, routines, training cycles, achievements, and settings to a JSON file.\n\nYou can use this file to restore your data later or transfer to another device.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showBackupDialog = false
+                        backupInProgress = true
+                        scope.launch {
+                            try {
+                                val backup = backupManager.exportAllData()
+                                val result = backupManager.saveToFile(backup)
+                                result.onSuccess { path ->
+                                    backupResult = path
+                                    showResultDialog = true
+                                }.onFailure { error ->
+                                    backupResult = "Error: ${error.message}"
+                                    showResultDialog = true
+                                }
+                            } finally {
+                                backupInProgress = false
+                            }
+                        }
+                    }
+                ) {
+                    Text("Create Backup")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackupDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Restore confirmation dialog
+    if (showRestoreDialog) {
+        AlertDialog(
+            onDismissRequest = { showRestoreDialog = false },
+            title = { Text("Restore from Backup", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) },
+            text = {
+                Text("Select a backup file to restore your data.\n\nExisting data will NOT be overwritten - only new records will be imported.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showRestoreDialog = false
+                        launchFilePicker = true
+                    }
+                ) {
+                    Text("Select File")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestoreDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Result dialog
+    if (showResultDialog) {
+        AlertDialog(
+            onDismissRequest = { showResultDialog = false },
+            title = { Text(if (backupResult != null) "Backup Complete" else "Restore Complete", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) },
+            text = {
+                if (backupResult != null) {
+                    Text("Backup saved successfully to:\n$backupResult")
+                } else {
+                    restoreResult?.let { result ->
+                        Column {
+                            Text("Import completed!")
+                            Spacer(modifier = Modifier.height(Spacing.small))
+                            Text("Records imported: ${result.totalImported}")
+                            Text("Records skipped (duplicates): ${result.totalSkipped}")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showResultDialog = false
+                    backupResult = null
+                    restoreResult = null
+                }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    // Loading indicator dialog
+    if (backupInProgress || restoreInProgress) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text(if (backupInProgress) "Creating Backup..." else "Restoring Data...", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) },
+            text = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.medium)
+                ) {
+                    CircularProgressIndicator()
+                    Text("Please wait...")
+                }
+            },
+            confirmButton = { }
+        )
+    }
+
+    // File picker for restore operation
+    if (launchFilePicker) {
+        val filePicker = rememberFilePicker()
+        filePicker.LaunchFilePicker { selectedFile ->
+            launchFilePicker = false
+            if (selectedFile != null) {
+                restoreInProgress = true
+                scope.launch {
+                    try {
+                        val result = backupManager.importFromFile(selectedFile)
+                        result.onSuccess { importResult ->
+                            restoreResult = importResult
+                            showResultDialog = true
+                        }.onFailure { error ->
+                            backupResult = "Import failed: ${error.message}"
+                            showResultDialog = true
+                        }
+                    } finally {
+                        restoreInProgress = false
+                    }
+                }
+            }
+        }
     }
 }
 

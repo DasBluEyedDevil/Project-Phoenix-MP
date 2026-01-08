@@ -205,6 +205,9 @@ object BlePacketFactory {
 
     /**
      * Build Echo mode control frame (32 bytes) with full parameters.
+     *
+     * @param eccentricPct Eccentric load percentage (0-150%). Values outside this range
+     *                     are clamped for safety - machine hardware limit is 150%.
      */
     fun createEchoControl(
         level: EchoLevel,
@@ -214,6 +217,15 @@ object BlePacketFactory {
         isAMRAP: Boolean = false,
         eccentricPct: Int = 75
     ): ByteArray {
+        // Defensive clamping: Machine hardware limit is 150% eccentric load
+        // Values > 150% can cause machine faults (yellow light)
+        val safeEccentricPct = eccentricPct.coerceIn(0, 150)
+        if (eccentricPct != safeEccentricPct) {
+            Logger.w("BlePacketFactory") {
+                "⚠️ Eccentric load $eccentricPct% clamped to $safeEccentricPct% (hardware limit)"
+            }
+        }
+
         val frame = ByteArray(32)
 
         // Command ID at 0x00 (u32) = 0x4E (78 decimal)
@@ -224,9 +236,9 @@ object BlePacketFactory {
 
         putShortLE(frame, 0x06, 0)
 
-        val echoParams = getEchoParams(level, eccentricPct)
+        val echoParams = getEchoParams(level, safeEccentricPct)
 
-        Logger.d("BlePacketFactory") { "=== ECHO: ${level.displayName}, eccentric: $eccentricPct% ===" }
+        Logger.d("BlePacketFactory") { "=== ECHO: ${level.displayName}, eccentric: $safeEccentricPct% ===" }
 
         putShortLE(frame, 0x08, echoParams.eccentricPct)
         putShortLE(frame, 0x0a, echoParams.concentricPct)

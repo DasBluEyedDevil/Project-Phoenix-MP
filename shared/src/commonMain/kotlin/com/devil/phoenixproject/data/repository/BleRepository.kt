@@ -1,5 +1,6 @@
 package com.devil.phoenixproject.data.repository
 
+import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.ConnectionState
 import com.devil.phoenixproject.domain.model.WorkoutMetric
 import kotlinx.coroutines.flow.Flow
@@ -184,6 +185,17 @@ interface BleRepository {
 
     // Handle detection for auto-start (arms the state machine in WaitingForRest)
     fun enableHandleDetection(enabled: Boolean)
+
+    /**
+     * Set the cable configuration for handle detection.
+     * This affects release detection logic:
+     * - SINGLE: Only ONE cable needs to be at rest to detect release (OR logic)
+     * - DOUBLE: BOTH cables must be at rest to detect release (AND logic)
+     * - EITHER: Treated as SINGLE for release detection (user may use either cable)
+     *
+     * Call this before enabling handle detection or starting a workout.
+     */
+    fun setCableConfiguration(config: CableConfiguration)
 
     // Reset handle state machine to initial state (for re-arming Just Lift)
     fun resetHandleState()
