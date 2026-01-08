@@ -477,15 +477,27 @@ fun JustLiftScreen(
                 }
 
                 // Active workout status (replaces mode cards when active)
-                if (workoutState !is WorkoutState.Idle) {
-                    ActiveStatusCard(
-                        workoutState = workoutState,
-                        currentMetric = currentMetric,
-                        repCount = repCount,
-                        weightUnit = weightUnit,
-                        formatWeight = viewModel::formatWeight,
-                        onStopWorkout = { viewModel.stopWorkout() }
-                    )
+                when (workoutState) {
+                    is WorkoutState.Resting -> {
+                        JustLiftRestTimerCard(
+                            secondsRemaining = (workoutState as WorkoutState.Resting).restSecondsRemaining,
+                            onSkip = { viewModel.skipRest() }
+                        )
+                    }
+                    is WorkoutState.Idle -> {
+                        // Idle state handled above with config UI
+                    }
+                    else -> {
+                        // Active, Countdown, Completed states
+                        ActiveStatusCard(
+                            workoutState = workoutState,
+                            currentMetric = currentMetric,
+                            repCount = repCount,
+                            weightUnit = weightUnit,
+                            formatWeight = viewModel::formatWeight,
+                            onStopWorkout = { viewModel.stopWorkout() }
+                        )
+                    }
                 }
             }
 
@@ -932,4 +944,122 @@ fun AutoStartStopCard(
             )
         }
     }
+}
+
+/**
+ * Simplified Rest Timer Card for Just Lift mode.
+ * Shows countdown timer and skip button between sets.
+ */
+@Composable
+fun JustLiftRestTimerCard(
+    secondsRemaining: Int,
+    onSkip: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Pulsing animation for countdown
+    val infiniteTransition = rememberInfiniteTransition(label = "rest-pulse")
+    val pulse by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = EaseInOutQuad),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.large),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // REST header
+            Text(
+                text = "REST",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                letterSpacing = 2.sp
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.medium))
+
+            // Large countdown timer with pulsing background
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .scale(pulse)
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = formatJustLiftRestTime(secondsRemaining),
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.small))
+
+            // "Next Set" label
+            Text(
+                text = "Next Set",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.medium))
+
+            // Skip Rest button
+            Button(
+                onClick = onSkip,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(16.dp),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 2.dp
+                )
+            ) {
+                Icon(
+                    Icons.Default.SkipNext,
+                    contentDescription = "Skip rest",
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(Spacing.small))
+                Text(
+                    text = "Skip Rest",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Formats rest time in seconds to MM:SS format for Just Lift
+ */
+private fun formatJustLiftRestTime(seconds: Int): String {
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return "$minutes:${remainingSeconds.toString().padStart(2, '0')}"
 }
