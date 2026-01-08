@@ -1,7 +1,7 @@
 # Enhancement Implementation Progress
 
-**Last Updated:** 2026-01-07
-**Branch:** `enhancements` (16 commits ahead of origin)
+**Last Updated:** 2026-01-08
+**Branch:** `enhancements`
 
 ## Completed Issues
 
@@ -69,17 +69,35 @@
 
 ---
 
+### Issue #114: Import/Export Data UI ✅
+**Commits:** ac2f2b4c, cbdaae2f, 71a01d58, c50f82d0, 9ed28e32, 2d2a7a15, a63d7640, 66ecd603, 4087d2b6
+
+**What was implemented:**
+- Complete backup/restore for all database tables (WorkoutSession, MetricSample, PersonalRecord, Exercise, Routine, RoutineExercise, TrainingCycle, CycleWeek, CycleDay)
+- Platform-specific file picker interfaces (Android/iOS)
+- Material 3 Expressive styled backup dialogs
+- Export/Import buttons in Settings screen
+- DataBackupManager with full SQL queries for backup/restore
+- Koin DI wiring
+
+**Key files:**
+- `BackupModels.kt` - Data models for backup
+- `DataBackupManager.kt` - Backup/restore logic
+- `VitruvianDatabase.sq` - Backup queries
+- `SettingsScreen.kt` - UI integration
+
+---
+
 ## Remaining Issues (In Priority Order)
 
 | # | Issue | Description | Plan File |
 |---|-------|-------------|-----------|
-| 1 | #114 | Import/Export Data UI | `2026-01-07-issue-114-import-export-ui.md` |
-| 2 | #104 | Analytics Volume Chart | `2026-01-07-issue-104-analytics-volume-chart.md` |
-| 3 | #113 | Just Lift Rest Timer | `2026-01-07-issue-113-just-lift-rest-timer.md` |
-| 4 | #100 | Sound Improvements | `2026-01-07-issue-100-sound-improvements.md` |
-| 5 | #30 | Variable Warm-up | `2026-01-07-issue-30-variable-warmup.md` |
-| 6 | #29 | Echo Level Per Set | `2026-01-07-issue-29-echo-level-per-set.md` |
-| 7 | #103 | Published Workouts (Phase 1) | `2026-01-07-issue-103-published-workouts.md` |
+| 1 | #104 | Analytics Volume Chart | `2026-01-07-issue-104-analytics-volume-chart.md` |
+| 2 | #113 | Just Lift Rest Timer | `2026-01-07-issue-113-just-lift-rest-timer.md` |
+| 3 | #100 | Sound Improvements | `2026-01-07-issue-100-sound-improvements.md` |
+| 4 | #30 | Variable Warm-up | `2026-01-07-issue-30-variable-warmup.md` |
+| 5 | #29 | Echo Level Per Set | `2026-01-07-issue-29-echo-level-per-set.md` |
+| 6 | #103 | Published Workouts (Phase 1) | `2026-01-07-issue-103-published-workouts.md` |
 
 ## Implementation Approach
 
