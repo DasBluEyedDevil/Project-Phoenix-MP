@@ -105,7 +105,7 @@ sealed class WorkoutState {
  */
 sealed class RoutineFlowState {
     /** Not in a routine flow (e.g., Just Lift, Single Exercise) */
-    object NotInRoutine : RoutineFlowState()
+    data object NotInRoutine : RoutineFlowState()
 
     /** Browsing routine exercises before starting (horizontal carousel) */
     data class Overview(
