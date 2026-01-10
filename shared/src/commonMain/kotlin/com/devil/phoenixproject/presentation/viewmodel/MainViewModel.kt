@@ -1715,7 +1715,7 @@ class MainViewModel constructor(
      */
     fun selectExerciseInOverview(index: Int) {
         val state = _routineFlowState.value
-        if (state is RoutineFlowState.Overview) {
+        if (state is RoutineFlowState.Overview && index in state.routine.exercises.indices) {
             _routineFlowState.value = state.copy(selectedExerciseIndex = index)
         }
     }
@@ -1862,11 +1862,16 @@ class MainViewModel constructor(
      */
     fun showRoutineComplete() {
         val routine = _loadedRoutine.value ?: return
+        val duration = if (workoutStartTime > 0) {
+            currentTimeMillis() - workoutStartTime
+        } else {
+            0L
+        }
         _routineFlowState.value = RoutineFlowState.Complete(
             routineName = routine.name,
             totalSets = routine.exercises.sumOf { it.setReps.size },
             totalExercises = routine.exercises.size,
-            totalDurationMs = currentTimeMillis() - workoutStartTime
+            totalDurationMs = duration
         )
     }
 
