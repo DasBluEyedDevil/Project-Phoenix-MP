@@ -121,6 +121,9 @@ class MainViewModel constructor(
     private val _workoutState = MutableStateFlow<WorkoutState>(WorkoutState.Idle)
     val workoutState: StateFlow<WorkoutState> = _workoutState.asStateFlow()
 
+    private val _routineFlowState = MutableStateFlow<RoutineFlowState>(RoutineFlowState.NotInRoutine)
+    val routineFlowState: StateFlow<RoutineFlowState> = _routineFlowState.asStateFlow()
+
     private val _currentMetric = MutableStateFlow<WorkoutMetric?>(null)
     val currentMetric: StateFlow<WorkoutMetric?> = _currentMetric.asStateFlow()
 
@@ -649,13 +652,17 @@ class MainViewModel constructor(
 
         // Use machine's ROM and Set counters directly (official app method)
         // Position values are in mm (Issue #197)
+        // CRITICAL: Pass isLegacyFormat to ensure correct counting method (Issue #123)
+        // Samsung devices send 6-byte legacy format where repsSetCount=0, requiring
+        // processLegacy() which tracks topCounter increments instead of repsSetCount
         repCounter.process(
             repsRomCount = notification.repsRomCount,
             repsSetCount = notification.repsSetCount,
             up = notification.topCounter,
             down = notification.completeCounter,
             posA = currentPositions?.positionA ?: 0f,
-            posB = currentPositions?.positionB ?: 0f
+            posB = currentPositions?.positionB ?: 0f,
+            isLegacyFormat = notification.isLegacyFormat
         )
 
         // Update rep count and ranges for UI
@@ -769,6 +776,12 @@ class MainViewModel constructor(
 
         // Reset stopWorkout guard for new workout (Issue #97)
         stopWorkoutInProgress = false
+
+        // Reset any stale workout state immediately (before launching coroutine)
+        // This ensures UI doesn't briefly show Resting/SetSummary from previous workout
+        if (_workoutState.value !is WorkoutState.Idle && _workoutState.value !is WorkoutState.Countdown) {
+            _workoutState.value = WorkoutState.Idle
+        }
 
         // NOTE: No connection guard here - caller (ensureConnection) ensures connection
         // Parent repo doesn't check connection in startWorkout()
@@ -1429,12 +1442,19 @@ class MainViewModel constructor(
     /**
      * Navigate to a specific exercise in the routine.
      * Saves progress of current exercise if any reps completed.
-     * If workout is currently Active, stops the machine first and waits for completion.
+     * BLOCKS navigation if workout is currently Active (Issue #125) - user must stop first.
      * After navigation, auto-starts the next exercise with a brief countdown.
      */
     fun jumpToExercise(index: Int) {
         val routine = _loadedRoutine.value ?: return
         if (index < 0 || index >= routine.exercises.size) return
+
+        // Issue #125: Block exercise navigation during Active state - machine must be stopped first
+        // This matches official app behavior and prevents BLE command collisions that crash the machine
+        if (_workoutState.value is WorkoutState.Active) {
+            Logger.w("MainViewModel") { "Cannot jump to exercise $index while workout is Active - stop workout first" }
+            return
+        }
 
         // Save current exercise progress if we have any reps
         val currentRepCount = _repCount.value
@@ -1453,36 +1473,15 @@ class MainViewModel constructor(
         bodyweightTimerJob?.cancel()
         resetAutoStopState()
 
-        // If workout is Active, stop the machine before transitioning
-        // This prevents the machine from staying in an engaged state while UI shows idle
-        // IMPORTANT: Navigation must happen AFTER stop completes to avoid race conditions
-        // where the next startWorkout() sends commands while machine is still processing RESET
-        val wasActive = _workoutState.value is WorkoutState.Active
-        if (wasActive) {
-            viewModelScope.launch {
-                try {
-                    bleRepository.stopWorkout()
-                    Logger.d("MainViewModel") { "Stopped active workout before jumping to exercise $index" }
-                } catch (e: Exception) {
-                    Logger.w(e) { "Failed to stop workout before jump (non-fatal): ${e.message}" }
-                }
-                // Navigate AFTER stop completes to ensure machine is ready for new commands
-                navigateToExerciseInternal(routine, index)
-                // Auto-start the next exercise with countdown (Issue #93 fix)
-                // Show countdown to give user time to prepare for the next exercise
-                startWorkout(skipCountdown = false)
-            }
-        } else {
-            // Not active, navigate immediately and auto-start
-            navigateToExerciseInternal(routine, index)
-            // Auto-start the next exercise with countdown (Issue #93 fix)
-            startWorkout(skipCountdown = false)
-        }
+        // Navigate and auto-start (Active state is blocked above, so this is safe)
+        navigateToExerciseInternal(routine, index)
+        // Auto-start the next exercise with countdown (Issue #93 fix)
+        startWorkout(skipCountdown = false)
     }
 
     /**
      * Internal helper to perform the actual exercise navigation.
-     * Called either synchronously (when not active) or after stopWorkout completes (when active).
+     * Only called when workout is NOT Active (Issue #125 blocks navigation during Active state).
      */
     private fun navigateToExerciseInternal(routine: Routine, index: Int) {
         // Navigate to new exercise
@@ -1651,6 +1650,10 @@ class MainViewModel constructor(
         _skippedExercises.value = emptySet()
         _completedExercises.value = emptySet()
 
+        // Reset workout state to Idle when loading a routine
+        // This fixes the bug where stale Resting state persists from a previous workout
+        _workoutState.value = WorkoutState.Idle
+
         // Load parameters from first exercise (matching parent repo behavior)
         val firstExercise = routine.exercises[0]
         val firstSetReps = firstExercise.setReps.firstOrNull() // Can be null for AMRAP sets
@@ -1685,6 +1688,186 @@ class MainViewModel constructor(
 
         Logger.d { "Created WorkoutParameters: isAMRAP=${params.isAMRAP}, isJustLift=${params.isJustLift}, stallDetection=${params.stallDetectionEnabled}" }
         updateWorkoutParameters(params)
+    }
+
+    /**
+     * Enter routine overview mode - called when starting a routine from list.
+     * This shows the horizontal carousel for browsing exercises.
+     */
+    fun enterRoutineOverview(routine: Routine) {
+        viewModelScope.launch {
+            val resolvedRoutine = resolveRoutineWeights(routine)
+            _loadedRoutine.value = resolvedRoutine
+            _currentExerciseIndex.value = 0
+            _currentSetIndex.value = 0
+            _skippedExercises.value = emptySet()
+            _completedExercises.value = emptySet()
+            _workoutState.value = WorkoutState.Idle
+            _routineFlowState.value = RoutineFlowState.Overview(
+                routine = resolvedRoutine,
+                selectedExerciseIndex = 0
+            )
+        }
+    }
+
+    /**
+     * Navigate to specific exercise in overview carousel.
+     */
+    fun selectExerciseInOverview(index: Int) {
+        val state = _routineFlowState.value
+        if (state is RoutineFlowState.Overview) {
+            _routineFlowState.value = state.copy(selectedExerciseIndex = index)
+        }
+    }
+
+    /**
+     * Enter set-ready state for specific exercise and set.
+     * Called when user taps "Start Exercise" from overview or navigates during rest.
+     */
+    fun enterSetReady(exerciseIndex: Int, setIndex: Int) {
+        val routine = _loadedRoutine.value ?: return
+        val exercise = routine.exercises.getOrNull(exerciseIndex) ?: return
+
+        _currentExerciseIndex.value = exerciseIndex
+        _currentSetIndex.value = setIndex
+
+        // Get weight for this set
+        val setWeight = exercise.setWeightsPerCableKg.getOrNull(setIndex)
+            ?: exercise.weightPerCableKg
+        val setReps = exercise.setReps.getOrNull(setIndex) ?: exercise.reps
+
+        _routineFlowState.value = RoutineFlowState.SetReady(
+            exerciseIndex = exerciseIndex,
+            setIndex = setIndex,
+            adjustedWeight = setWeight,
+            adjustedReps = setReps,
+            echoLevel = if (exercise.programMode is ProgramMode.Echo) exercise.echoLevel else null,
+            eccentricLoadPercent = if (exercise.programMode is ProgramMode.Echo) exercise.eccentricLoad.percentage else null
+        )
+
+        // Update workout parameters for this set
+        _workoutParameters.value = _workoutParameters.value.copy(
+            programMode = exercise.programMode,
+            weightPerCableKg = setWeight,
+            reps = setReps,
+            echoLevel = exercise.echoLevel,
+            eccentricLoad = exercise.eccentricLoad,
+            selectedExerciseId = exercise.exercise.id,
+            stallDetectionEnabled = exercise.stallDetectionEnabled
+        )
+    }
+
+    /**
+     * Update weight in set-ready state.
+     */
+    fun updateSetReadyWeight(weight: Float) {
+        val state = _routineFlowState.value
+        if (state is RoutineFlowState.SetReady) {
+            _routineFlowState.value = state.copy(adjustedWeight = weight)
+            _workoutParameters.value = _workoutParameters.value.copy(weightPerCableKg = weight)
+        }
+    }
+
+    /**
+     * Update reps in set-ready state.
+     */
+    fun updateSetReadyReps(reps: Int) {
+        val state = _routineFlowState.value
+        if (state is RoutineFlowState.SetReady) {
+            _routineFlowState.value = state.copy(adjustedReps = reps)
+            _workoutParameters.value = _workoutParameters.value.copy(reps = reps)
+        }
+    }
+
+    /**
+     * Navigate to previous set/exercise in set-ready.
+     */
+    fun setReadyPrev() {
+        val state = _routineFlowState.value
+        if (state !is RoutineFlowState.SetReady) return
+        val routine = _loadedRoutine.value ?: return
+
+        val newSetIndex = state.setIndex - 1
+        if (newSetIndex >= 0) {
+            // Previous set in same exercise
+            enterSetReady(state.exerciseIndex, newSetIndex)
+        } else if (state.exerciseIndex > 0) {
+            // Last set of previous exercise
+            val prevExercise = routine.exercises[state.exerciseIndex - 1]
+            val lastSetIndex = prevExercise.setReps.size - 1
+            enterSetReady(state.exerciseIndex - 1, lastSetIndex)
+        }
+        // else: at start, do nothing
+    }
+
+    /**
+     * Skip to next set/exercise in set-ready.
+     */
+    fun setReadySkip() {
+        val state = _routineFlowState.value
+        if (state !is RoutineFlowState.SetReady) return
+        val routine = _loadedRoutine.value ?: return
+        val currentExercise = routine.exercises.getOrNull(state.exerciseIndex) ?: return
+
+        val newSetIndex = state.setIndex + 1
+        if (newSetIndex < currentExercise.setReps.size) {
+            // Next set in same exercise
+            enterSetReady(state.exerciseIndex, newSetIndex)
+        } else if (state.exerciseIndex < routine.exercises.size - 1) {
+            // First set of next exercise
+            enterSetReady(state.exerciseIndex + 1, 0)
+        }
+        // else: at end, do nothing
+    }
+
+    /**
+     * Start the set from set-ready state.
+     */
+    fun startSetFromReady() {
+        val state = _routineFlowState.value
+        if (state !is RoutineFlowState.SetReady) return
+
+        // Apply the adjusted values to workout parameters
+        _workoutParameters.value = _workoutParameters.value.copy(
+            weightPerCableKg = state.adjustedWeight,
+            reps = state.adjustedReps
+        )
+
+        // Start the workout (goes to Countdown → Active)
+        startWorkout()
+    }
+
+    /**
+     * Return to routine overview from set-ready.
+     */
+    fun returnToOverview() {
+        val routine = _loadedRoutine.value ?: return
+        _routineFlowState.value = RoutineFlowState.Overview(
+            routine = routine,
+            selectedExerciseIndex = _currentExerciseIndex.value
+        )
+    }
+
+    /**
+     * Exit routine flow and return to routines list.
+     */
+    fun exitRoutineFlow() {
+        _routineFlowState.value = RoutineFlowState.NotInRoutine
+        _loadedRoutine.value = null
+        _workoutState.value = WorkoutState.Idle
+    }
+
+    /**
+     * Show routine complete screen.
+     */
+    fun showRoutineComplete() {
+        val routine = _loadedRoutine.value ?: return
+        _routineFlowState.value = RoutineFlowState.Complete(
+            routineName = routine.name,
+            totalSets = routine.exercises.sumOf { it.setReps.size },
+            totalExercises = routine.exercises.size,
+            totalDurationMs = currentTimeMillis() - workoutStartTime
+        )
     }
 
     fun loadRoutineById(routineId: String) {
