@@ -346,6 +346,7 @@ fun RoutineEditorScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.navigationBars,
         floatingActionButton = {
             AnimatedVisibility(
                 visible = !selectionMode,

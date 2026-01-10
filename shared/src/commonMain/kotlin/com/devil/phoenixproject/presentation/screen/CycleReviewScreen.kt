@@ -56,6 +56,7 @@ fun CycleReviewScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.navigationBars,
         bottomBar = {
             Surface(
                 tonalElevation = 3.dp,

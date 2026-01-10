@@ -24,6 +24,8 @@ actual class DriverFactory(private val context: Context) {
                 override fun onOpen(db: SupportSQLiteDatabase) {
                     // Enable foreign keys
                     db.execSQL("PRAGMA foreign_keys = ON;")
+                    // Ensure gamification tables exist (no migration was ever added for them)
+                    ensureGamificationTablesExist(db)
                 }
 
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -330,6 +332,52 @@ actual class DriverFactory(private val context: Context) {
                     Log.e(TAG, "Database corruption detected")
                     // Let SQLite handle corruption - it will attempt recovery or recreate
                     super.onCorruption(db)
+                }
+
+                /**
+                 * Ensure gamification tables exist.
+                 * These tables were added to the schema but no migration was ever created for them.
+                 * This ensures they exist for users who upgraded from older versions.
+                 */
+                private fun ensureGamificationTablesExist(db: SupportSQLiteDatabase) {
+                    val statements = listOf(
+                        """CREATE TABLE IF NOT EXISTS EarnedBadge (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            badgeId TEXT NOT NULL UNIQUE,
+                            earnedAt INTEGER NOT NULL,
+                            celebratedAt INTEGER
+                        )""",
+                        """CREATE TABLE IF NOT EXISTS StreakHistory (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            startDate INTEGER NOT NULL,
+                            endDate INTEGER NOT NULL,
+                            length INTEGER NOT NULL
+                        )""",
+                        """CREATE TABLE IF NOT EXISTS GamificationStats (
+                            id INTEGER PRIMARY KEY,
+                            totalWorkouts INTEGER NOT NULL DEFAULT 0,
+                            totalReps INTEGER NOT NULL DEFAULT 0,
+                            totalVolumeKg INTEGER NOT NULL DEFAULT 0,
+                            longestStreak INTEGER NOT NULL DEFAULT 0,
+                            currentStreak INTEGER NOT NULL DEFAULT 0,
+                            uniqueExercisesUsed INTEGER NOT NULL DEFAULT 0,
+                            prsAchieved INTEGER NOT NULL DEFAULT 0,
+                            lastWorkoutDate INTEGER,
+                            streakStartDate INTEGER,
+                            lastUpdated INTEGER NOT NULL
+                        )"""
+                    )
+
+                    for (sql in statements) {
+                        try {
+                            db.execSQL(sql)
+                        } catch (e: SQLiteException) {
+                            // Table may already exist - that's fine
+                            Log.d(TAG, "Gamification table note: ${e.message}")
+                        }
+                    }
+
+                    Log.d(TAG, "Gamification tables verified/created")
                 }
             }
         )

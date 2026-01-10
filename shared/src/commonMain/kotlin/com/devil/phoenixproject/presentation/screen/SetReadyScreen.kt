@@ -117,6 +117,7 @@ fun SetReadyScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.navigationBars,
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = { showStopConfirmation = true },

@@ -68,6 +68,8 @@ actual class DriverFactory {
         fixProgressionEventIndex(driver)
         // Migration 9 fixes
         regenerateSupersetCompositeIds(driver)
+        // Gamification tables (may be missing - no migration was ever added for them)
+        ensureGamificationTablesExist(driver)
 
         // Now enable foreign keys for normal operation
         try {
@@ -838,5 +840,61 @@ actual class DriverFactory {
         } catch (e: Exception) {
             NSLog("iOS DB: Superset composite ID regeneration note: ${e.message}")
         }
+    }
+
+    /**
+     * Ensure gamification tables exist.
+     * These tables were added to the schema but no migration was ever created for them.
+     * This ensures they exist for users who upgraded from older versions.
+     */
+    private fun ensureGamificationTablesExist(driver: SqlDriver) {
+        val statements = listOf(
+            """
+            CREATE TABLE IF NOT EXISTS EarnedBadge (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                badgeId TEXT NOT NULL UNIQUE,
+                earnedAt INTEGER NOT NULL,
+                celebratedAt INTEGER
+            )
+            """.trimIndent(),
+
+            """
+            CREATE TABLE IF NOT EXISTS StreakHistory (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                startDate INTEGER NOT NULL,
+                endDate INTEGER NOT NULL,
+                length INTEGER NOT NULL
+            )
+            """.trimIndent(),
+
+            """
+            CREATE TABLE IF NOT EXISTS GamificationStats (
+                id INTEGER PRIMARY KEY,
+                totalWorkouts INTEGER NOT NULL DEFAULT 0,
+                totalReps INTEGER NOT NULL DEFAULT 0,
+                totalVolumeKg INTEGER NOT NULL DEFAULT 0,
+                longestStreak INTEGER NOT NULL DEFAULT 0,
+                currentStreak INTEGER NOT NULL DEFAULT 0,
+                uniqueExercisesUsed INTEGER NOT NULL DEFAULT 0,
+                prsAchieved INTEGER NOT NULL DEFAULT 0,
+                lastWorkoutDate INTEGER,
+                streakStartDate INTEGER,
+                lastUpdated INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+
+        var tablesCreated = 0
+        for (sql in statements) {
+            try {
+                driver.execute(null, sql, 0)
+                tablesCreated++
+            } catch (e: Exception) {
+                // Table may already exist - that's fine
+                NSLog("iOS DB: Gamification table note: ${e.message}")
+            }
+        }
+
+        NSLog("iOS DB: Gamification tables verified/created")
     }
 }

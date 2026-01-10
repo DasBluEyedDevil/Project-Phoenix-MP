@@ -75,6 +75,7 @@ fun CycleEditorScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.navigationBars,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { cycleEditorViewModel.showAddDaySheet(true) }
