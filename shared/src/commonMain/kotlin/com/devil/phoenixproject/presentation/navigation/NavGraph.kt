@@ -150,6 +150,32 @@ fun NavGraph(
             )
         }
 
+        // Routine Overview screen - browse exercises before starting
+        composable(NavigationRoutes.RoutineOverview.route) {
+            RoutineOverviewScreen(
+                navController = navController,
+                viewModel = viewModel,
+                exerciseRepository = exerciseRepository
+            )
+        }
+
+        // Set Ready screen - configure set before starting
+        composable(NavigationRoutes.SetReady.route) {
+            SetReadyScreen(
+                navController = navController,
+                viewModel = viewModel,
+                exerciseRepository = exerciseRepository
+            )
+        }
+
+        // Routine Complete screen - celebration after finishing
+        composable(NavigationRoutes.RoutineComplete.route) {
+            RoutineCompleteScreen(
+                navController = navController,
+                viewModel = viewModel
+            )
+        }
+
         // Training Cycles screen - new rolling schedule system
         composable(
             route = NavigationRoutes.TrainingCycles.route,
