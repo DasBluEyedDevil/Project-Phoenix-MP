@@ -1,29 +1,19 @@
 -- Migration 10: Comprehensive Schema Fix (Jan 2026)
---
--- This migration handles multiple issues that caused iOS crashes:
--- 1. FK Lock: iOS ignores PRAGMA foreign_keys = OFF, so DROP TABLE fails when
---    PlannedSet/CompletedSet reference RoutineExercise. Fix: "Rename-Aside" strategy.
--- 2. Missing Tables: Users who crashed during Migration 6 don't have CycleProgress,
---    CycleDay, or other Training Cycle tables. Fix: CREATE TABLE IF NOT EXISTS.
--- 3. Missing Columns: Users whose migrations 4/7 failed may be missing columns
---    that this migration's SELECT expects. Fix: iOS DriverFactory pre-adds them.
---
--- Strategy: "Rename-Aside" - move child tables out of the way before dropping parent
--- Chain: CompletedSet -> PlannedSet -> RoutineExercise
+-- Fixes FK Locks (RoutineExercise) AND Schema Drift (TrainingCycle tables)
 
 -- ============================================================
 -- STEP 1: Disable FKs and clean up temp tables
 -- ============================================================
 PRAGMA foreign_keys = OFF;
-
 DROP TABLE IF EXISTS RoutineExercise_new;
 DROP TABLE IF EXISTS RoutineExercise_v10;
 DROP TABLE IF EXISTS PlannedSet_backup;
 DROP TABLE IF EXISTS CompletedSet_backup;
+DROP TABLE IF EXISTS CycleDay_backup;
+DROP TABLE IF EXISTS CycleProgress_backup;
 
 -- ============================================================
 -- STEP 2: Ensure Superset table exists (dependency for RoutineExercise)
--- Must exist before we create the new RoutineExercise with FK to it
 -- ============================================================
 CREATE TABLE IF NOT EXISTS Superset (
     id TEXT PRIMARY KEY NOT NULL,
@@ -34,20 +24,11 @@ CREATE TABLE IF NOT EXISTS Superset (
     orderIndex INTEGER NOT NULL,
     FOREIGN KEY (routineId) REFERENCES Routine(id) ON DELETE CASCADE
 );
-
 CREATE INDEX IF NOT EXISTS idx_superset_routine ON Superset(routineId);
 
 -- ============================================================
 -- STEP 3: "Rename-Aside" - Move child tables out of the way
--- This bypasses the FK lock that causes crashes on iOS
---
--- CRITICAL: CREATE TABLE IF NOT EXISTS first ensures the RENAME always works.
--- If user crashed during Migration 6, they won't have these tables at all.
--- The dummy table is immediately renamed, then replaced with correct schema.
 -- ============================================================
-
--- Create full-schema dummy tables if they don't exist (so rename always works)
--- Must have all columns we SELECT from later, otherwise INSERT...SELECT fails
 CREATE TABLE IF NOT EXISTS PlannedSet (
     id TEXT PRIMARY KEY NOT NULL,
     routine_exercise_id TEXT NOT NULL DEFAULT '',
@@ -58,7 +39,6 @@ CREATE TABLE IF NOT EXISTS PlannedSet (
     target_rpe INTEGER,
     rest_seconds INTEGER
 );
-
 CREATE TABLE IF NOT EXISTS CompletedSet (
     id TEXT PRIMARY KEY NOT NULL,
     session_id TEXT NOT NULL DEFAULT '',
@@ -71,8 +51,6 @@ CREATE TABLE IF NOT EXISTS CompletedSet (
     is_pr INTEGER NOT NULL DEFAULT 0,
     completed_at INTEGER NOT NULL DEFAULT 0
 );
-
--- Now rename will always work
 ALTER TABLE CompletedSet RENAME TO CompletedSet_backup;
 ALTER TABLE PlannedSet RENAME TO PlannedSet_backup;
 
@@ -101,10 +79,8 @@ CREATE TABLE RoutineExercise_v10 (
     setRestSeconds TEXT NOT NULL DEFAULT '[]',
     perSetRestTime INTEGER NOT NULL DEFAULT 0,
     isAMRAP INTEGER NOT NULL DEFAULT 0,
-    -- Superset support (container model from migration 4)
     supersetId TEXT,
     orderInSuperset INTEGER NOT NULL DEFAULT 0,
-    -- PR percentage scaling (from migration 7)
     usePercentOfPR INTEGER NOT NULL DEFAULT 0,
     weightPercentOfPR INTEGER NOT NULL DEFAULT 80,
     prTypeForScaling TEXT NOT NULL DEFAULT 'MAX_WEIGHT',
@@ -116,7 +92,6 @@ CREATE TABLE RoutineExercise_v10 (
 
 -- ============================================================
 -- STEP 5: Copy data from old RoutineExercise
--- iOS DriverFactory pre-adds these columns before migration runs
 -- ============================================================
 INSERT INTO RoutineExercise_v10 (
     id, routineId, exerciseName, exerciseMuscleGroup, exerciseEquipment,
@@ -127,59 +102,34 @@ INSERT INTO RoutineExercise_v10 (
     usePercentOfPR, weightPercentOfPR, prTypeForScaling, setWeightsPercentOfPR
 )
 SELECT
-    id,
-    routineId,
-    exerciseName,
-    COALESCE(exerciseMuscleGroup, ''),
-    COALESCE(exerciseEquipment, ''),
+    id, routineId, exerciseName,
+    COALESCE(exerciseMuscleGroup, ''), COALESCE(exerciseEquipment, ''),
     COALESCE(exerciseDefaultCableConfig, 'DOUBLE'),
-    -- ORPHAN PROTECTION: Only copy exerciseId if it exists in Exercise table
-    CASE
-        WHEN exerciseId IS NOT NULL AND exerciseId IN (SELECT id FROM Exercise) THEN exerciseId
-        ELSE NULL
-    END,
-    COALESCE(cableConfig, 'DOUBLE'),
-    orderIndex,
-    COALESCE(setReps, '10,10,10'),
-    COALESCE(weightPerCableKg, 0.0),
-    COALESCE(setWeights, ''),
-    COALESCE(mode, 'OldSchool'),
-    COALESCE(eccentricLoad, 100),
-    COALESCE(echoLevel, 1),
-    COALESCE(progressionKg, 0.0),
-    COALESCE(restSeconds, 60),
-    duration,
-    COALESCE(setRestSeconds, '[]'),
-    COALESCE(perSetRestTime, 0),
-    COALESCE(isAMRAP, 0),
-    -- ORPHAN PROTECTION: Only copy supersetId if it exists in Superset table
-    CASE
-        WHEN supersetId IS NOT NULL AND supersetId != '' AND supersetId IN (SELECT id FROM Superset) THEN supersetId
-        ELSE NULL
-    END,
-    COALESCE(orderInSuperset, 0),
-    COALESCE(usePercentOfPR, 0),
-    COALESCE(weightPercentOfPR, 80),
-    COALESCE(prTypeForScaling, 'MAX_WEIGHT'),
+    CASE WHEN exerciseId IN (SELECT id FROM Exercise) THEN exerciseId ELSE NULL END,
+    COALESCE(cableConfig, 'DOUBLE'), orderIndex, COALESCE(setReps, '10,10,10'),
+    COALESCE(weightPerCableKg, 0.0), COALESCE(setWeights, ''),
+    COALESCE(mode, 'OldSchool'), COALESCE(eccentricLoad, 100),
+    COALESCE(echoLevel, 1), COALESCE(progressionKg, 0.0),
+    COALESCE(restSeconds, 60), duration, COALESCE(setRestSeconds, '[]'),
+    COALESCE(perSetRestTime, 0), COALESCE(isAMRAP, 0),
+    CASE WHEN supersetId IN (SELECT id FROM Superset) THEN supersetId ELSE NULL END,
+    COALESCE(orderInSuperset, 0), COALESCE(usePercentOfPR, 0),
+    COALESCE(weightPercentOfPR, 80), COALESCE(prTypeForScaling, 'MAX_WEIGHT'),
     setWeightsPercentOfPR
 FROM RoutineExercise
--- ORPHAN PROTECTION: Skip rows where routineId doesn't exist
 WHERE routineId IN (SELECT id FROM Routine);
 
 -- ============================================================
 -- STEP 6: Replace old table with new
--- Now safe because child tables have been renamed
 -- ============================================================
 DROP TABLE RoutineExercise;
-
 ALTER TABLE RoutineExercise_v10 RENAME TO RoutineExercise;
 
--- Recreate indexes
 CREATE INDEX IF NOT EXISTS idx_routine_exercise_routine ON RoutineExercise(routineId);
 CREATE INDEX IF NOT EXISTS idx_routine_exercise_superset ON RoutineExercise(supersetId);
 
 -- ============================================================
--- STEP 7: Restore PlannedSet with correct schema
+-- STEP 7: Restore PlannedSet
 -- ============================================================
 CREATE TABLE IF NOT EXISTS PlannedSet (
     id TEXT PRIMARY KEY NOT NULL,
@@ -192,22 +142,14 @@ CREATE TABLE IF NOT EXISTS PlannedSet (
     rest_seconds INTEGER,
     FOREIGN KEY (routine_exercise_id) REFERENCES RoutineExercise(id) ON DELETE CASCADE
 );
-
--- Copy data back from backup (if backup existed)
--- INSERT OR IGNORE handles case where PlannedSet_backup doesn't exist
 INSERT OR IGNORE INTO PlannedSet (id, routine_exercise_id, set_number, set_type, target_reps, target_weight_kg, target_rpe, rest_seconds)
-SELECT id, routine_exercise_id, set_number,
-       COALESCE(set_type, 'STANDARD'),
-       target_reps, target_weight_kg, target_rpe, rest_seconds
-FROM PlannedSet_backup
-WHERE routine_exercise_id IN (SELECT id FROM RoutineExercise);
-
+SELECT id, routine_exercise_id, set_number, COALESCE(set_type, 'STANDARD'), target_reps, target_weight_kg, target_rpe, rest_seconds
+FROM PlannedSet_backup WHERE routine_exercise_id IN (SELECT id FROM RoutineExercise);
 DROP TABLE IF EXISTS PlannedSet_backup;
-
 CREATE INDEX IF NOT EXISTS idx_planned_set_exercise ON PlannedSet(routine_exercise_id);
 
 -- ============================================================
--- STEP 8: Restore CompletedSet with correct schema
+-- STEP 8: Restore CompletedSet
 -- ============================================================
 CREATE TABLE IF NOT EXISTS CompletedSet (
     id TEXT PRIMARY KEY NOT NULL,
@@ -223,26 +165,19 @@ CREATE TABLE IF NOT EXISTS CompletedSet (
     FOREIGN KEY (session_id) REFERENCES WorkoutSession(id) ON DELETE CASCADE,
     FOREIGN KEY (planned_set_id) REFERENCES PlannedSet(id) ON DELETE SET NULL
 );
-
--- Copy data back from backup
 INSERT OR IGNORE INTO CompletedSet (id, session_id, planned_set_id, set_number, set_type, actual_reps, actual_weight_kg, logged_rpe, is_pr, completed_at)
-SELECT id, session_id, planned_set_id, set_number,
-       COALESCE(set_type, 'STANDARD'),
-       actual_reps, actual_weight_kg, logged_rpe,
-       COALESCE(is_pr, 0),
-       completed_at
-FROM CompletedSet_backup
-WHERE session_id IN (SELECT id FROM WorkoutSession);
-
+SELECT id, session_id, planned_set_id, set_number, COALESCE(set_type, 'STANDARD'), actual_reps, actual_weight_kg, logged_rpe, COALESCE(is_pr, 0), completed_at
+FROM CompletedSet_backup WHERE session_id IN (SELECT id FROM WorkoutSession);
 DROP TABLE IF EXISTS CompletedSet_backup;
-
 CREATE INDEX IF NOT EXISTS idx_completed_set_session ON CompletedSet(session_id);
 
 -- ============================================================
--- STEP 9: Create missing Training Cycle tables
--- For users who crashed during Migration 6
+-- STEP 9: Rebuild Training Cycle Tables (Fixes Crash 25/26)
+-- We use Rename-Aside here too because IF NOT EXISTS fails to
+-- fix missing columns in partial tables.
 -- ============================================================
 
+-- 9a. TrainingCycle (Assume stable)
 CREATE TABLE IF NOT EXISTS TrainingCycle (
     id TEXT PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
@@ -251,7 +186,15 @@ CREATE TABLE IF NOT EXISTS TrainingCycle (
     is_active INTEGER NOT NULL DEFAULT 0
 );
 
+-- 9b. CycleDay (Rebuild to ensure new columns exist)
+-- Create dummy base table if missing (so Rename works)
 CREATE TABLE IF NOT EXISTS CycleDay (
+    id TEXT PRIMARY KEY NOT NULL, cycle_id TEXT NOT NULL, day_number INTEGER NOT NULL,
+    name TEXT, routine_id TEXT, is_rest_day INTEGER NOT NULL DEFAULT 0
+);
+ALTER TABLE CycleDay RENAME TO CycleDay_backup;
+
+CREATE TABLE CycleDay (
     id TEXT PRIMARY KEY NOT NULL,
     cycle_id TEXT NOT NULL,
     day_number INTEGER NOT NULL,
@@ -266,8 +209,22 @@ CREATE TABLE IF NOT EXISTS CycleDay (
     FOREIGN KEY (cycle_id) REFERENCES TrainingCycle(id) ON DELETE CASCADE,
     FOREIGN KEY (routine_id) REFERENCES Routine(id) ON DELETE SET NULL
 );
+-- Copy BASE columns only (to prevent crash if backup is missing new columns)
+INSERT OR IGNORE INTO CycleDay (id, cycle_id, day_number, name, routine_id, is_rest_day)
+SELECT id, cycle_id, day_number, name, routine_id, is_rest_day FROM CycleDay_backup;
+DROP TABLE IF EXISTS CycleDay_backup;
+CREATE INDEX IF NOT EXISTS idx_cycle_day_cycle ON CycleDay(cycle_id);
 
+-- 9c. CycleProgress (Rebuild to ensure new columns exist)
+-- Create dummy base table if missing
 CREATE TABLE IF NOT EXISTS CycleProgress (
+    id TEXT PRIMARY KEY NOT NULL, cycle_id TEXT NOT NULL UNIQUE,
+    current_day_number INTEGER NOT NULL DEFAULT 1, last_completed_date INTEGER,
+    cycle_start_date INTEGER NOT NULL
+);
+ALTER TABLE CycleProgress RENAME TO CycleProgress_backup;
+
+CREATE TABLE CycleProgress (
     id TEXT PRIMARY KEY NOT NULL,
     cycle_id TEXT NOT NULL UNIQUE,
     current_day_number INTEGER NOT NULL DEFAULT 1,
@@ -279,7 +236,13 @@ CREATE TABLE IF NOT EXISTS CycleProgress (
     rotation_count INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (cycle_id) REFERENCES TrainingCycle(id) ON DELETE CASCADE
 );
+-- Copy BASE columns only
+INSERT OR IGNORE INTO CycleProgress (id, cycle_id, current_day_number, last_completed_date, cycle_start_date)
+SELECT id, cycle_id, current_day_number, last_completed_date, cycle_start_date FROM CycleProgress_backup;
+DROP TABLE IF EXISTS CycleProgress_backup;
+CREATE INDEX IF NOT EXISTS idx_cycle_progress_cycle ON CycleProgress(cycle_id);
 
+-- 9d. Tables without Data Risk
 CREATE TABLE IF NOT EXISTS CycleProgression (
     cycle_id TEXT PRIMARY KEY NOT NULL,
     frequency_cycles INTEGER NOT NULL DEFAULT 2,
@@ -288,7 +251,6 @@ CREATE TABLE IF NOT EXISTS CycleProgression (
     eccentric_load_increase_percent INTEGER,
     FOREIGN KEY (cycle_id) REFERENCES TrainingCycle(id) ON DELETE CASCADE
 );
-
 CREATE TABLE IF NOT EXISTS ProgressionEvent (
     id TEXT PRIMARY KEY NOT NULL,
     exercise_id TEXT NOT NULL,
@@ -300,20 +262,13 @@ CREATE TABLE IF NOT EXISTS ProgressionEvent (
     timestamp INTEGER NOT NULL,
     FOREIGN KEY (exercise_id) REFERENCES Exercise(id) ON DELETE CASCADE
 );
-
--- Create indexes for Training Cycle tables
-CREATE INDEX IF NOT EXISTS idx_cycle_day_cycle ON CycleDay(cycle_id);
-CREATE INDEX IF NOT EXISTS idx_cycle_progress_cycle ON CycleProgress(cycle_id);
 CREATE INDEX IF NOT EXISTS idx_progression_exercise ON ProgressionEvent(exercise_id);
 
 -- ============================================================
 -- STEP 10: Clean up orphaned references
 -- ============================================================
-
--- Clean up orphaned supersetId references
 UPDATE RoutineExercise SET supersetId = NULL
-WHERE supersetId IS NOT NULL
-  AND supersetId NOT IN (SELECT id FROM Superset);
+WHERE supersetId IS NOT NULL AND supersetId NOT IN (SELECT id FROM Superset);
 
 -- ============================================================
 -- STEP 11: Re-enable foreign keys

@@ -1005,6 +1005,12 @@ actual class DriverFactory {
                 NSLog("iOS DB Pre-migration: Superset table note: ${e.message}")
             }
 
+            // CRITICAL FIX (Jan 2026): Ensure Training Cycle tables exist BEFORE migrations
+            // For users whose DB is at version 10 with missing tables from failed Migration 6,
+            // SQLDelight won't run migrations again. Creating tables here ensures they exist
+            // regardless of migration state. CREATE TABLE IF NOT EXISTS is idempotent.
+            createTrainingCycleTablesPreMigration(preDriver)
+
             NSLog("iOS DB: Pre-migration column fixes complete")
         } catch (e: Exception) {
             NSLog("iOS DB ERROR: Pre-migration fixes failed: ${e.message}")
@@ -1051,6 +1057,238 @@ actual class DriverFactory {
                 !msg.contains("no such table", ignoreCase = true)) {
                 NSLog("iOS DB Pre-migration: $table.$column note: $msg")
             }
+        }
+    }
+
+    /**
+     * CRITICAL FIX (Jan 2026): Create/Rebuild Training Cycle tables BEFORE SQLDelight migrations.
+     *
+     * Problem: Users whose database was marked as version 10 from a previous failed migration
+     * won't have SQLDelight run migrations again - it sees version 10 and skips all migrations.
+     * But if Migration 6 (which creates these tables) crashed mid-way, the tables may not exist
+     * OR may exist with missing columns (schema drift).
+     *
+     * Solution: Use "Rename-Aside & Rebuild" pattern for CycleDay and CycleProgress tables.
+     * This handles:
+     * 1. Users at version 10 with missing tables (Migration 6 failed)
+     * 2. Users at version 10 with partial tables (missing columns)
+     * 3. Users at any version where Migration 6 will fail
+     * 4. Fresh installs (idempotent operations)
+     *
+     * Omits foreign keys during pre-migration to avoid FK constraint issues.
+     */
+    private fun createTrainingCycleTablesPreMigration(driver: SqlDriver) {
+        NSLog("iOS DB Pre-migration: Creating/Rebuilding Training Cycle tables...")
+
+        // Step 1: Ensure base TrainingCycle table exists (assumed stable)
+        try {
+            driver.execute(null, """
+                CREATE TABLE IF NOT EXISTS TrainingCycle (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    created_at INTEGER NOT NULL,
+                    is_active INTEGER NOT NULL DEFAULT 0
+                )
+            """.trimIndent(), 0)
+        } catch (e: Exception) {
+            NSLog("iOS DB Pre-migration: TrainingCycle note: ${e.message}")
+        }
+
+        // Step 2: Rebuild CycleDay using Rename-Aside pattern
+        // This fixes missing columns in partial tables from failed Migration 6
+        rebuildCycleDayTable(driver)
+
+        // Step 3: Rebuild CycleProgress using Rename-Aside pattern
+        rebuildCycleProgressTable(driver)
+
+        // Step 4: Create other tables that are safe with IF NOT EXISTS
+        val simpleStatements = listOf(
+            // CycleProgression (no column drift expected)
+            """
+            CREATE TABLE IF NOT EXISTS CycleProgression (
+                cycle_id TEXT PRIMARY KEY NOT NULL,
+                frequency_cycles INTEGER NOT NULL DEFAULT 2,
+                weight_increase_percent REAL,
+                echo_level_increase INTEGER NOT NULL DEFAULT 0,
+                eccentric_load_increase_percent INTEGER
+            )
+            """.trimIndent(),
+
+            // PlannedSet
+            """
+            CREATE TABLE IF NOT EXISTS PlannedSet (
+                id TEXT PRIMARY KEY NOT NULL,
+                routine_exercise_id TEXT NOT NULL,
+                set_number INTEGER NOT NULL,
+                set_type TEXT NOT NULL DEFAULT 'STANDARD',
+                target_reps INTEGER,
+                target_weight_kg REAL,
+                target_rpe INTEGER,
+                rest_seconds INTEGER
+            )
+            """.trimIndent(),
+
+            // CompletedSet
+            """
+            CREATE TABLE IF NOT EXISTS CompletedSet (
+                id TEXT PRIMARY KEY NOT NULL,
+                session_id TEXT NOT NULL,
+                planned_set_id TEXT,
+                set_number INTEGER NOT NULL,
+                set_type TEXT NOT NULL DEFAULT 'STANDARD',
+                actual_reps INTEGER NOT NULL,
+                actual_weight_kg REAL NOT NULL,
+                logged_rpe INTEGER,
+                is_pr INTEGER NOT NULL DEFAULT 0,
+                completed_at INTEGER NOT NULL
+            )
+            """.trimIndent(),
+
+            // ProgressionEvent
+            """
+            CREATE TABLE IF NOT EXISTS ProgressionEvent (
+                id TEXT PRIMARY KEY NOT NULL,
+                exercise_id TEXT NOT NULL,
+                suggested_weight_kg REAL NOT NULL,
+                previous_weight_kg REAL NOT NULL,
+                reason TEXT NOT NULL,
+                user_response TEXT,
+                actual_weight_kg REAL,
+                timestamp INTEGER NOT NULL
+            )
+            """.trimIndent(),
+
+            // Indexes
+            "CREATE INDEX IF NOT EXISTS idx_cycle_day_cycle ON CycleDay(cycle_id)",
+            "CREATE INDEX IF NOT EXISTS idx_cycle_progress_cycle ON CycleProgress(cycle_id)",
+            "CREATE INDEX IF NOT EXISTS idx_planned_set_exercise ON PlannedSet(routine_exercise_id)",
+            "CREATE INDEX IF NOT EXISTS idx_completed_set_session ON CompletedSet(session_id)",
+            "CREATE INDEX IF NOT EXISTS idx_progression_exercise ON ProgressionEvent(exercise_id)"
+        )
+
+        for (sql in simpleStatements) {
+            try {
+                driver.execute(null, sql, 0)
+            } catch (e: Exception) {
+                val preview = sql.take(60).replace("\n", " ")
+                NSLog("iOS DB Pre-migration: $preview... note: ${e.message}")
+            }
+        }
+
+        NSLog("iOS DB Pre-migration: Training Cycle tables creation/rebuild complete")
+    }
+
+    /**
+     * Rebuild CycleDay table using Rename-Aside pattern.
+     * This ensures all required columns exist, even if the table was created
+     * with an older schema that's missing new columns.
+     */
+    private fun rebuildCycleDayTable(driver: SqlDriver) {
+        try {
+            // Step 1: Create dummy table if missing (so rename always works)
+            driver.execute(null, """
+                CREATE TABLE IF NOT EXISTS CycleDay (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    cycle_id TEXT NOT NULL,
+                    day_number INTEGER NOT NULL,
+                    name TEXT,
+                    routine_id TEXT,
+                    is_rest_day INTEGER NOT NULL DEFAULT 0
+                )
+            """.trimIndent(), 0)
+
+            // Step 2: Rename existing to backup
+            driver.execute(null, "ALTER TABLE CycleDay RENAME TO CycleDay_premig_backup", 0)
+
+            // Step 3: Create new table with full schema
+            driver.execute(null, """
+                CREATE TABLE CycleDay (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    cycle_id TEXT NOT NULL,
+                    day_number INTEGER NOT NULL,
+                    name TEXT,
+                    routine_id TEXT,
+                    is_rest_day INTEGER NOT NULL DEFAULT 0,
+                    echo_level TEXT,
+                    eccentric_load_percent INTEGER,
+                    weight_progression_percent REAL,
+                    rep_modifier INTEGER,
+                    rest_time_override_seconds INTEGER
+                )
+            """.trimIndent(), 0)
+
+            // Step 4: Copy BASE columns only (prevent crash if backup missing new columns)
+            driver.execute(null, """
+                INSERT OR IGNORE INTO CycleDay (id, cycle_id, day_number, name, routine_id, is_rest_day)
+                SELECT id, cycle_id, day_number, name, routine_id, is_rest_day FROM CycleDay_premig_backup
+            """.trimIndent(), 0)
+
+            // Step 5: Drop backup
+            driver.execute(null, "DROP TABLE IF EXISTS CycleDay_premig_backup", 0)
+
+            NSLog("iOS DB Pre-migration: CycleDay table rebuilt successfully")
+        } catch (e: Exception) {
+            NSLog("iOS DB Pre-migration: CycleDay rebuild note: ${e.message}")
+            // Try cleanup in case we left backup behind
+            try {
+                driver.execute(null, "DROP TABLE IF EXISTS CycleDay_premig_backup", 0)
+            } catch (_: Exception) {}
+        }
+    }
+
+    /**
+     * Rebuild CycleProgress table using Rename-Aside pattern.
+     * This ensures all required columns exist, even if the table was created
+     * with an older schema that's missing new columns like rotation_count.
+     */
+    private fun rebuildCycleProgressTable(driver: SqlDriver) {
+        try {
+            // Step 1: Create dummy table if missing (so rename always works)
+            driver.execute(null, """
+                CREATE TABLE IF NOT EXISTS CycleProgress (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    cycle_id TEXT NOT NULL UNIQUE,
+                    current_day_number INTEGER NOT NULL DEFAULT 1,
+                    last_completed_date INTEGER,
+                    cycle_start_date INTEGER NOT NULL
+                )
+            """.trimIndent(), 0)
+
+            // Step 2: Rename existing to backup
+            driver.execute(null, "ALTER TABLE CycleProgress RENAME TO CycleProgress_premig_backup", 0)
+
+            // Step 3: Create new table with full schema
+            driver.execute(null, """
+                CREATE TABLE CycleProgress (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    cycle_id TEXT NOT NULL UNIQUE,
+                    current_day_number INTEGER NOT NULL DEFAULT 1,
+                    last_completed_date INTEGER,
+                    cycle_start_date INTEGER NOT NULL,
+                    last_advanced_at INTEGER,
+                    completed_days TEXT,
+                    missed_days TEXT,
+                    rotation_count INTEGER NOT NULL DEFAULT 0
+                )
+            """.trimIndent(), 0)
+
+            // Step 4: Copy BASE columns only (prevent crash if backup missing new columns)
+            driver.execute(null, """
+                INSERT OR IGNORE INTO CycleProgress (id, cycle_id, current_day_number, last_completed_date, cycle_start_date)
+                SELECT id, cycle_id, current_day_number, last_completed_date, cycle_start_date FROM CycleProgress_premig_backup
+            """.trimIndent(), 0)
+
+            // Step 5: Drop backup
+            driver.execute(null, "DROP TABLE IF EXISTS CycleProgress_premig_backup", 0)
+
+            NSLog("iOS DB Pre-migration: CycleProgress table rebuilt successfully")
+        } catch (e: Exception) {
+            NSLog("iOS DB Pre-migration: CycleProgress rebuild note: ${e.message}")
+            // Try cleanup in case we left backup behind
+            try {
+                driver.execute(null, "DROP TABLE IF EXISTS CycleProgress_premig_backup", 0)
+            } catch (_: Exception) {}
         }
     }
 }
