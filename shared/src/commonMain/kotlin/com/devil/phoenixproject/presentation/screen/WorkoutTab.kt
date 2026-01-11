@@ -92,6 +92,7 @@ fun WorkoutTab(
         onStartWorkout = actions::onStartWorkout,
         onStopWorkout = actions::onStopWorkout,
         onSkipRest = actions::onSkipRest,
+        onSkipCountdown = actions::onSkipCountdown,
         onProceedFromSummary = actions::onProceedFromSummary,
         onRpeLogged = actions::onRpeLogged,
         onResetForNewWorkout = actions::onResetForNewWorkout,
@@ -146,6 +147,7 @@ fun WorkoutTab(
     onStartWorkout: () -> Unit,
     onStopWorkout: () -> Unit,
     onSkipRest: () -> Unit,
+    onSkipCountdown: () -> Unit,
     onProceedFromSummary: () -> Unit = {},
     onRpeLogged: ((Int) -> Unit)? = null,  // Optional RPE callback for set summary
     onResetForNewWorkout: () -> Unit,
@@ -357,7 +359,7 @@ fun WorkoutTab(
                             currentExerciseIndex = if (loadedRoutine != null) currentExerciseIndex else null,
                             totalExercises = loadedRoutine?.exercises?.size,
                             formatWeight = { weight -> formatWeight(weight, weightUnit) },
-                            onSkipCountdown = onStartWorkout,
+                            onSkipCountdown = onSkipCountdown,
                             onEndWorkout = onStopWorkout
                         )
                     }

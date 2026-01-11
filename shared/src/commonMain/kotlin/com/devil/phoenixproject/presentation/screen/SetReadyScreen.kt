@@ -118,14 +118,88 @@ fun SetReadyScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets.navigationBars,
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showStopConfirmation = true },
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                icon = { Icon(Icons.Default.Close, "Stop") },
-                text = { Text("Stop") }
-            )
+        bottomBar = {
+            // Bottom navigation bar with all action buttons
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                tonalElevation = 3.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // PREV button - compact icon button
+                    FilledTonalIconButton(
+                        onClick = { viewModel.setReadyPrev() },
+                        enabled = canGoPrev,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                            contentDescription = "Previous"
+                        )
+                    }
+
+                    // START SET button - primary action, takes most space
+                    Button(
+                        onClick = {
+                            viewModel.ensureConnection(
+                                onConnected = { viewModel.startSetFromReady() },
+                                onFailed = {}
+                            )
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        enabled = connectionState is ConnectionState.Connected,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "START",
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                    }
+
+                    // NEXT button - compact icon button
+                    FilledTonalIconButton(
+                        onClick = { viewModel.setReadySkip() },
+                        enabled = canSkip,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Next"
+                        )
+                    }
+
+                    // STOP button - destructive action
+                    FilledTonalIconButton(
+                        onClick = { showStopConfirmation = true },
+                        modifier = Modifier.size(48.dp),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Stop"
+                        )
+                    }
+                }
+            }
         }
     ) { padding ->
         Column(
@@ -292,48 +366,6 @@ fun SetReadyScreen(
             }
 
             Spacer(Modifier.weight(1f))
-
-            // Navigation buttons row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // PREV button
-                OutlinedButton(
-                    onClick = { viewModel.setReadyPrev() },
-                    enabled = canGoPrev,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, null)
-                    Text("PREV")
-                }
-
-                // START SET button (primary)
-                Button(
-                    onClick = {
-                        viewModel.ensureConnection(
-                            onConnected = { viewModel.startSetFromReady() },
-                            onFailed = {}
-                        )
-                    },
-                    modifier = Modifier.weight(2f),
-                    enabled = connectionState is ConnectionState.Connected
-                ) {
-                    Icon(Icons.Default.PlayArrow, null)
-                    Spacer(Modifier.width(4.dp))
-                    Text("START SET", fontWeight = FontWeight.Bold)
-                }
-
-                // SKIP button
-                OutlinedButton(
-                    onClick = { viewModel.setReadySkip() },
-                    enabled = canSkip,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("SKIP")
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null)
-                }
-            }
         }
     }
 

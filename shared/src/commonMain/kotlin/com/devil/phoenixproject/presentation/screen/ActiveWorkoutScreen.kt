@@ -164,15 +164,27 @@ fun ActiveWorkoutScreen(
 
     // Watch for routine flow state changes to navigate to SetReady or Complete screens
     // This handles the autoplay OFF case where Summary -> SetReady (no rest timer)
-    LaunchedEffect(routineFlowState) {
+    // IMPORTANT: Only navigate when workout is Idle - otherwise we create a navigation loop
+    // because startSetFromReady() sets workoutState to Countdown/Active but keeps routineFlowState
+    // as SetReady. SetReadyScreen navigates here on workoutState change, and if we navigate back
+    // immediately based on routineFlowState still being SetReady, we get infinite flickering.
+    LaunchedEffect(routineFlowState, workoutState) {
         if (hasNavigatedAway) return@LaunchedEffect
+
+        // Only navigate to SetReady when workout has finished (Idle state)
+        // During Active/Countdown, we should stay on this screen even if routineFlowState is SetReady
+        val isWorkoutActive = workoutState is WorkoutState.Active ||
+                              workoutState is WorkoutState.Countdown ||
+                              workoutState is WorkoutState.Initializing
 
         when (routineFlowState) {
             is RoutineFlowState.SetReady -> {
-                Logger.d { "ActiveWorkoutScreen: RoutineFlowState.SetReady - navigating to SetReady" }
-                hasNavigatedAway = true
-                navController.navigate(NavigationRoutes.SetReady.route) {
-                    popUpTo(NavigationRoutes.RoutineOverview.route) { inclusive = false }
+                if (!isWorkoutActive) {
+                    Logger.d { "ActiveWorkoutScreen: RoutineFlowState.SetReady + Idle - navigating to SetReady" }
+                    hasNavigatedAway = true
+                    navController.navigate(NavigationRoutes.SetReady.route) {
+                        popUpTo(NavigationRoutes.RoutineOverview.route) { inclusive = false }
+                    }
                 }
             }
             is RoutineFlowState.Complete -> {
@@ -236,6 +248,7 @@ fun ActiveWorkoutScreen(
             },
             onStopWorkout = { showExitConfirmation = true },
             onSkipRest = { viewModel.skipRest() },
+            onSkipCountdown = { viewModel.skipCountdown() },
             onProceedFromSummary = { viewModel.proceedFromSummary() },
             onRpeLogged = { rpe -> viewModel.logRpeForCurrentSet(rpe) },
             onResetForNewWorkout = { viewModel.resetForNewWorkout() },

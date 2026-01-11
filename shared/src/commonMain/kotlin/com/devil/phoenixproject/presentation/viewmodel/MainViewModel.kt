@@ -411,6 +411,9 @@ class MainViewModel constructor(
     private var restTimerJob: Job? = null
     private var bodyweightTimerJob: Job? = null
     private var repEventsCollectionJob: Job? = null
+    private var workoutJob: Job? = null
+    // Flag to skip countdown - checked in countdown loop
+    private var skipCountdownRequested: Boolean = false
     // Track if current workout is duration-based (timed exercise) to skip ROM calibration and rep processing
     private var isCurrentWorkoutTimed: Boolean = false
     
@@ -776,17 +779,22 @@ class MainViewModel constructor(
 
         // Reset stopWorkout guard for new workout (Issue #97)
         stopWorkoutInProgress = false
+        // Reset skip countdown flag for new workout
+        skipCountdownRequested = skipCountdown
 
-        // Reset any stale workout state immediately (before launching coroutine)
-        // This ensures UI doesn't briefly show Resting/SetSummary from previous workout
-        if (_workoutState.value !is WorkoutState.Idle && _workoutState.value !is WorkoutState.Countdown) {
-            _workoutState.value = WorkoutState.Idle
-        }
+        // Cancel any previous workout job
+        workoutJob?.cancel()
+
+        // CRITICAL: Set Initializing state IMMEDIATELY (before launching coroutine)
+        // This prevents a race condition where ActiveWorkoutScreen navigates away
+        // before the coroutine sets Countdown. Without this, SingleExercise mode
+        // would navigate back to home because it sees workoutState=Idle + temp routine.
+        _workoutState.value = WorkoutState.Initializing
 
         // NOTE: No connection guard here - caller (ensureConnection) ensures connection
         // Parent repo doesn't check connection in startWorkout()
 
-        viewModelScope.launch {
+        workoutJob = viewModelScope.launch {
             val params = _workoutParameters.value
 
             // Check for bodyweight or timed exercise
@@ -804,9 +812,10 @@ class MainViewModel constructor(
                 // Bodyweight duration-based exercise (e.g., plank, wall sit)
                 Logger.d("Starting bodyweight exercise: ${currentExercise?.exercise?.name} for ${bodyweightDuration}s")
 
-                // Countdown
-                if (!skipCountdown) {
+                // Countdown (can be skipped via skipCountdownRequested flag)
+                if (!skipCountdownRequested) {
                     for (i in 5 downTo 1) {
+                        if (skipCountdownRequested) break
                         _workoutState.value = WorkoutState.Countdown(i)
                         delay(1000)
                     }
@@ -927,9 +936,10 @@ class MainViewModel constructor(
                 Logger.d { "Starting TIMED cable exercise: ${currentExercise?.exercise?.name} for ${exerciseDuration}s (no ROM calibration)" }
             }
 
-            // 6. Countdown (skipped for Just Lift auto-start)
-            if (!skipCountdown && !isJustLiftMode) {
+            // 6. Countdown (skipped for Just Lift auto-start, can be skipped mid-way via skipCountdownRequested)
+            if (!skipCountdownRequested && !isJustLiftMode) {
                 for (i in 5 downTo 1) {
+                    if (skipCountdownRequested) break
                     _workoutState.value = WorkoutState.Countdown(i)
                     delay(1000)
                 }
@@ -972,11 +982,24 @@ class MainViewModel constructor(
         }
     }
 
+    /**
+     * Skip the countdown and immediately transition to Active state.
+     * Called when user clicks "Skip Countdown" button during countdown phase.
+     */
+    fun skipCountdown() {
+        skipCountdownRequested = true
+        Logger.d { "skipCountdown: Countdown skip requested" }
+    }
+
     fun stopWorkout() {
         // Guard against race condition: handleMonitorMetric() can call this multiple times
         // before the coroutine completes and changes state (Issue #97)
         if (stopWorkoutInProgress) return
         stopWorkoutInProgress = true
+
+        // Cancel any running workout job (countdown or active workout)
+        workoutJob?.cancel()
+        workoutJob = null
 
         viewModelScope.launch {
              // Reset timed workout flag
@@ -2109,8 +2132,8 @@ class MainViewModel constructor(
             reps = state.adjustedReps
         )
 
-        // Start the workout (goes to Countdown → Active)
-        startWorkout()
+        // Start the workout directly (skip countdown since user already configured on SetReady)
+        startWorkout(skipCountdown = true)
     }
 
     /**
