@@ -254,7 +254,7 @@ class SimulatorBleRepository(
     }
 
     override suspend fun sendWorkoutCommand(command: ByteArray): Result<Unit> {
-        log.d { "Simulated command: ${command.joinToString(" ") { "%02X".format(it) }}" }
+        log.d { "Simulated command: ${command.joinToString(" ") { it.toInt().and(0xFF).toString(16).padStart(2, '0').uppercase() }}" }
         // No-op for simulator - just log the command
         return Result.success(Unit)
     }
