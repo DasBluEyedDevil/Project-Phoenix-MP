@@ -8,14 +8,19 @@
 -- STEP 0: "Pre-Flight" Schema Check
 -- Ensure RoutineExercise has all columns required for the SELECT below.
 -- This saves users who crashed during Migration 4 or 7 (missing superset/PR columns).
--- Uses 'IF NOT EXISTS' (Supported on iOS 15+ / SQLite 3.35+)
+--
+-- NOTE: Android handles these in DriverFactory.android.kt preflightMigration()
+-- because ALTER TABLE ADD COLUMN IF NOT EXISTS requires SQLite 3.35+ (iOS 15+)
+-- and Android devices typically have SQLite 3.28-3.32.
+--
+-- On iOS, these will fail with "duplicate column" if already present, which is OK.
 -- ============================================================
-ALTER TABLE RoutineExercise ADD COLUMN IF NOT EXISTS supersetId TEXT;
-ALTER TABLE RoutineExercise ADD COLUMN IF NOT EXISTS orderInSuperset INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE RoutineExercise ADD COLUMN IF NOT EXISTS usePercentOfPR INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE RoutineExercise ADD COLUMN IF NOT EXISTS weightPercentOfPR INTEGER NOT NULL DEFAULT 80;
-ALTER TABLE RoutineExercise ADD COLUMN IF NOT EXISTS prTypeForScaling TEXT NOT NULL DEFAULT 'MAX_WEIGHT';
-ALTER TABLE RoutineExercise ADD COLUMN IF NOT EXISTS setWeightsPercentOfPR TEXT;
+ALTER TABLE RoutineExercise ADD COLUMN supersetId TEXT;
+ALTER TABLE RoutineExercise ADD COLUMN orderInSuperset INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE RoutineExercise ADD COLUMN usePercentOfPR INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE RoutineExercise ADD COLUMN weightPercentOfPR INTEGER NOT NULL DEFAULT 80;
+ALTER TABLE RoutineExercise ADD COLUMN prTypeForScaling TEXT NOT NULL DEFAULT 'MAX_WEIGHT';
+ALTER TABLE RoutineExercise ADD COLUMN setWeightsPercentOfPR TEXT;
 
 -- ============================================================
 -- STEP 1: Clean up any leftover temp tables from failed migrations

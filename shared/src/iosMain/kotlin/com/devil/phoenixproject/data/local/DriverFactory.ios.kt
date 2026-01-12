@@ -1261,6 +1261,10 @@ actual class DriverFactory {
         var backupCreated = false
 
         try {
+            // Step 0: Clean up any leftover backup from previous failed migration
+            // Without this, RENAME TO backup will fail with "table already exists"
+            driver.execute(null, "DROP TABLE IF EXISTS CycleDay_premig_backup", 0)
+
             // Step 1: Create dummy table if missing (so rename always works)
             driver.execute(null, """
                 CREATE TABLE IF NOT EXISTS CycleDay (
@@ -1343,6 +1347,10 @@ actual class DriverFactory {
         var backupCreated = false
 
         try {
+            // Step 0: Clean up any leftover backup from previous failed migration
+            // Without this, RENAME TO backup will fail with "table already exists"
+            driver.execute(null, "DROP TABLE IF EXISTS CycleProgress_premig_backup", 0)
+
             // Step 1: Create dummy table if missing (so rename always works)
             driver.execute(null, """
                 CREATE TABLE IF NOT EXISTS CycleProgress (
