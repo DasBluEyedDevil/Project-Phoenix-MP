@@ -90,14 +90,19 @@ fun SetReadyScreen(
     }
 
     // Load video for exercise
-    var videoEntity by remember { mutableStateOf<ExerciseVideoEntity?>(null) }
-    LaunchedEffect(currentExercise.exercise.id) {
+    // Issue #142: Key the remember on exerciseIndex so state resets when exercise changes.
+    // This ensures the video entity is cleared and reloaded for each exercise.
+    var videoEntity by remember(setReadyState.exerciseIndex) { mutableStateOf<ExerciseVideoEntity?>(null) }
+    LaunchedEffect(setReadyState.exerciseIndex, currentExercise.exercise.id) {
+        // Clear any stale video first
+        videoEntity = null
+        // Load new video if exercise has an ID
         currentExercise.exercise.id?.let { exerciseId ->
             try {
                 val videos = exerciseRepository.getVideos(exerciseId)
                 videoEntity = videos.firstOrNull()
             } catch (_: Exception) {
-                // Video loading failed
+                // Video loading failed - videoEntity stays null
             }
         }
     }
@@ -232,11 +237,19 @@ fun SetReadyScreen(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Issue #142: Display exercise name prominently
                     Text(
-                        "Set ${setReadyState.setIndex + 1} of ${currentExercise.setReps.size}",
-                        style = MaterialTheme.typography.headlineSmall,
+                        currentExercise.exercise.name,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Set ${setReadyState.setIndex + 1} of ${currentExercise.setReps.size}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
                     )
                     Text(
                         currentExercise.programMode.displayName,

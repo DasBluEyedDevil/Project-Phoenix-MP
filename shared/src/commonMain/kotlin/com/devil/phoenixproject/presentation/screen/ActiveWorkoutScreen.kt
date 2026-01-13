@@ -172,10 +172,14 @@ fun ActiveWorkoutScreen(
         if (hasNavigatedAway) return@LaunchedEffect
 
         // Only navigate to SetReady when workout has finished (Idle state)
-        // During Active/Countdown, we should stay on this screen even if routineFlowState is SetReady
+        // During Active/Countdown/Summary/Resting, we should stay on this screen
+        // Issue #142: Added SetSummary and Resting to prevent immediate navigation away
+        // before user can see the set summary screen with countdown
         val isWorkoutActive = workoutState is WorkoutState.Active ||
                               workoutState is WorkoutState.Countdown ||
-                              workoutState is WorkoutState.Initializing
+                              workoutState is WorkoutState.Initializing ||
+                              workoutState is WorkoutState.SetSummary ||
+                              workoutState is WorkoutState.Resting
 
         when (routineFlowState) {
             is RoutineFlowState.SetReady -> {
@@ -282,6 +286,9 @@ fun ActiveWorkoutScreen(
                 Button(
                     onClick = {
                         viewModel.stopWorkout()
+                        // Issue #142: Reset routineFlowState to Overview before navigating
+                        // Otherwise RoutineOverviewScreen sees SetReady state and renders blank
+                        viewModel.returnToOverview()
                         showExitConfirmation = false
                         navController.navigateUp()
                     }
