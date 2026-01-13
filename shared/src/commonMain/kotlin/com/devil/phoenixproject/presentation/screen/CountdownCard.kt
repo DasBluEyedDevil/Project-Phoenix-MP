@@ -46,6 +46,7 @@ fun CountdownCard(
     currentExerciseIndex: Int? = null,
     totalExercises: Int? = null,
     formatWeight: ((Float) -> String)? = null,
+    isEchoMode: Boolean = false,
     onSkipCountdown: () -> Unit,
     onEndWorkout: () -> Unit,
     modifier: Modifier = Modifier
@@ -206,7 +207,15 @@ fun CountdownCard(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            if (nextExerciseWeight != null && formatWeight != null) {
+                            // Echo mode shows "Adaptive" instead of weight
+                            if (isEchoMode) {
+                                CountdownParamChip(
+                                    icon = Icons.Default.FitnessCenter,
+                                    label = "Weight",
+                                    value = "Adaptive",
+                                    modifier = Modifier.weight(1f)
+                                )
+                            } else if (nextExerciseWeight != null && formatWeight != null) {
                                 CountdownParamChip(
                                     icon = Icons.Default.FitnessCenter,
                                     label = "Weight",

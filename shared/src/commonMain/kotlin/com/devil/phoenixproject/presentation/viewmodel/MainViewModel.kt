@@ -846,6 +846,19 @@ class MainViewModel constructor(
                 // Bodyweight duration-based exercise (e.g., plank, wall sit)
                 Logger.d("Starting bodyweight exercise: ${currentExercise?.exercise?.name} for ${bodyweightDuration}s")
 
+                // Issue #151: Reset and configure repCounter for bodyweight exercises
+                // This ensures no stale state from previous cable exercises affects this exercise
+                // Set workingTarget to 0 since duration exercises don't have rep targets
+                repCounter.reset()
+                repCounter.configure(
+                    warmupTarget = 0,
+                    workingTarget = 0,
+                    isJustLift = false,
+                    stopAtTop = params.stopAtTop,
+                    isAMRAP = false
+                )
+                _repCount.value = RepCount()
+
                 // Countdown (can be skipped via skipCountdownRequested flag)
                 if (!skipCountdownRequested) {
                     for (i in 5 downTo 1) {
@@ -1034,6 +1047,11 @@ class MainViewModel constructor(
         // Cancel any running workout job (countdown or active workout)
         workoutJob?.cancel()
         workoutJob = null
+
+        // Issue #151: Cancel any running duration timer to prevent it from firing
+        // after transitioning to the next exercise (would cause premature completion)
+        bodyweightTimerJob?.cancel()
+        bodyweightTimerJob = null
 
         viewModelScope.launch {
              // Reset timed workout flag
@@ -3059,6 +3077,12 @@ class MainViewModel constructor(
      * This is DIFFERENT from user manually stopping.
      */
     private fun handleSetCompletion() {
+        // Issue #151: Cancel any running duration timer immediately to prevent double-completion
+        // This handles the case where handleSetCompletion is called from a different source
+        // (e.g., rep target reached) while a duration timer is still running
+        bodyweightTimerJob?.cancel()
+        bodyweightTimerJob = null
+
         viewModelScope.launch {
             val params = _workoutParameters.value
             val isJustLift = params.isJustLift
@@ -3862,6 +3886,11 @@ class MainViewModel constructor(
         val currentState = _workoutState.value
         if (currentState is WorkoutState.Completed) return
         if (currentState !is WorkoutState.Resting) return
+
+        // Issue #151: Cancel any stale duration timer from previous exercise
+        // This prevents premature completion of the next exercise
+        bodyweightTimerJob?.cancel()
+        bodyweightTimerJob = null
 
         val routine = _loadedRoutine.value ?: return
         val currentExercise = routine.exercises.getOrNull(_currentExerciseIndex.value) ?: return

@@ -359,6 +359,7 @@ fun WorkoutTab(
                             currentExerciseIndex = if (loadedRoutine != null) currentExerciseIndex else null,
                             totalExercises = loadedRoutine?.exercises?.size,
                             formatWeight = { weight -> formatWeight(weight, weightUnit) },
+                            isEchoMode = workoutParameters.isEchoMode,
                             onSkipCountdown = onSkipCountdown,
                             onEndWorkout = onStopWorkout
                         )

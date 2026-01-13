@@ -283,7 +283,7 @@ private fun HudBottomBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Weight Controls (Simulated for now, could be +/- buttons)
+            // Weight Controls - Echo mode shows "Adaptive" since weight is dynamic
             Column {
                 Text(
                     "Weight / Cable",
@@ -291,7 +291,7 @@ private fun HudBottomBar(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    formatWeight(workoutParameters.weightPerCableKg, weightUnit),
+                    if (workoutParameters.isEchoMode) "Adaptive" else formatWeight(workoutParameters.weightPerCableKg, weightUnit),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
