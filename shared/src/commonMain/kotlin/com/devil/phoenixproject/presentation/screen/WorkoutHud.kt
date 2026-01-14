@@ -20,7 +20,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.devil.phoenixproject.data.repository.ExerciseRepository
+import com.devil.phoenixproject.data.repository.ExerciseVideoEntity
 import com.devil.phoenixproject.domain.model.*
+import com.devil.phoenixproject.presentation.components.VideoPlayer
 import com.devil.phoenixproject.presentation.components.AnimatedRepCounter
 import com.devil.phoenixproject.presentation.components.CircularForceGauge
 import com.devil.phoenixproject.presentation.components.EnhancedCablePositionBar
@@ -132,8 +134,9 @@ fun WorkoutHud(
                         enableVideoPlayback = enableVideoPlayback
                     )
                     2 -> StatsPage(
-                        // Placeholder for detailed stats
-                        metric = metric
+                        metric = metric,
+                        weightUnit = weightUnit,
+                        formatWeight = formatWeight
                     )
                 }
             }
@@ -468,27 +471,290 @@ private fun InstructionPage(
     exerciseRepository: ExerciseRepository,
     enableVideoPlayback: Boolean
 ) {
-    // Logic to show video or instructions
-    val exerciseId = loadedRoutine?.exercises?.getOrNull(currentExerciseIndex)?.exercise?.id
-    
-    // In a real implementation we'd fetch the video URL
-    // For now, simple placeholder logic
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        if (enableVideoPlayback && exerciseId != null) {
-             // We need to fetch the exercise video entity... simplified for HUD prototype
-             // VideoPlayer(...) 
-             Text("Video Player Placeholder\nExercise: $exerciseId")
-        } else {
-            Text("No Video Available")
+    val currentExercise = loadedRoutine?.exercises?.getOrNull(currentExerciseIndex)
+    val exerciseId = currentExercise?.exercise?.id
+
+    // Load video for exercise - key on exerciseIndex to reset when exercise changes
+    var videoEntity by remember(currentExerciseIndex) { mutableStateOf<ExerciseVideoEntity?>(null) }
+    var isLoading by remember(currentExerciseIndex) { mutableStateOf(true) }
+
+    LaunchedEffect(currentExerciseIndex, exerciseId) {
+        isLoading = true
+        videoEntity = null
+        if (exerciseId != null) {
+            try {
+                val videos = exerciseRepository.getVideos(exerciseId)
+                videoEntity = videos.firstOrNull()
+            } catch (_: Exception) {
+                // Video loading failed - videoEntity stays null
+            }
+        }
+        isLoading = false
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        when {
+            !enableVideoPlayback -> {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.VideocamOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        "Video Playback Disabled",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "Enable in Settings",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            isLoading -> {
+                CircularProgressIndicator()
+            }
+            videoEntity != null -> {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Exercise name header
+                    currentExercise?.exercise?.name?.let { name ->
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                    }
+
+                    // Video player - takes most of the space
+                    VideoPlayer(
+                        videoUrl = videoEntity?.videoUrl,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                }
+            }
+            else -> {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.VideoLibrary,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        "No Video Available",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    currentExercise?.exercise?.name?.let { name ->
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
 private fun StatsPage(
-    metric: WorkoutMetric?
+    metric: WorkoutMetric?,
+    weightUnit: WeightUnit,
+    formatWeight: (Float, WeightUnit) -> String
 ) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Detailed Stats Graph Placeholder")
+    if (metric == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Analytics,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+                Text(
+                    "Waiting for Metrics...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        return
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Title
+        Text(
+            "Live Stats",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        // Load Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "LOAD",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 1.sp
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatColumn(
+                        label = "Left",
+                        value = formatWeight(metric.loadA, weightUnit),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    StatColumn(
+                        label = "Right",
+                        value = formatWeight(metric.loadB, weightUnit),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    StatColumn(
+                        label = "Total",
+                        value = formatWeight(metric.totalLoad, weightUnit),
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+        }
+
+        // Velocity Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "VELOCITY",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                    letterSpacing = 1.sp
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatColumn(
+                        label = "Left",
+                        value = "${metric.velocityA.toInt()} mm/s",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    StatColumn(
+                        label = "Right",
+                        value = "${metric.velocityB.toInt()} mm/s",
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
+        }
+
+        // Position Section
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "POSITION",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    letterSpacing = 1.sp
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatColumn(
+                        label = "Left",
+                        value = "${metric.positionA.toInt()} mm",
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    StatColumn(
+                        label = "Right",
+                        value = "${metric.positionB.toInt()} mm",
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+        }
+
+    }
+}
+
+@Composable
+private fun StatColumn(
+    label: String,
+    value: String,
+    color: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
     }
 }
