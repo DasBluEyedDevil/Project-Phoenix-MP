@@ -243,8 +243,11 @@ class MainViewModel constructor(
         .map { it.enableVideoPlayback }
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
+    // Issue #167: Autoplay is now derived from summaryCountdownSeconds
+    // - summaryCountdownSeconds == 0 (Unlimited) = autoplay OFF (manual control)
+    // - summaryCountdownSeconds != 0 (-1 or 5-30) = autoplay ON (auto-advance)
     val autoplayEnabled: StateFlow<Boolean> = userPreferences
-        .map { it.autoplayEnabled }
+        .map { it.summaryCountdownSeconds != 0 }
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     // Feature 4: Routine Management
@@ -410,6 +413,8 @@ class MainViewModel constructor(
     // Guard to prevent race condition where multiple stopWorkout() calls create duplicate sessions
     // Issue #97: handleMonitorMetric() can call stopWorkout() multiple times before state changes
     private var stopWorkoutInProgress = false
+    // Guard to prevent duplicate auto-completion when rep target is reached
+    private var setCompletionInProgress = false
     private var currentHandleState: HandleState = HandleState.WaitingForRest
 
     // Velocity-based stall detection state (Issue #204, #214)
@@ -762,7 +767,7 @@ class MainViewModel constructor(
 
             // Standard Auto-Stop (rep target reached)
             if (repCounter.shouldStopWorkout()) {
-                stopWorkout()
+                handleSetCompletion()
             }
         } else {
             resetAutoStopTimer()
@@ -820,6 +825,7 @@ class MainViewModel constructor(
 
         // Reset stopWorkout guard for new workout (Issue #97)
         stopWorkoutInProgress = false
+        setCompletionInProgress = false
         // Reset skip countdown flag for new workout
         skipCountdownRequested = skipCountdown
 
@@ -1045,11 +1051,22 @@ class MainViewModel constructor(
         Logger.d { "skipCountdown: Countdown skip requested" }
     }
 
-    fun stopWorkout() {
+    /**
+     * Stop the current workout, save session, and optionally reset state.
+     *
+     * @param exitingWorkout When true, sets state to Idle instead of SetSummary.
+     *                       Use this when user is exiting the workout screen entirely
+     *                       (e.g., clicking "Exit" in confirmation dialog) to prevent
+     *                       stale SetSummary state from blocking editing.
+     */
+    fun stopWorkout(exitingWorkout: Boolean = false) {
         // Guard against race condition: handleMonitorMetric() can call this multiple times
         // before the coroutine completes and changes state (Issue #97)
         if (stopWorkoutInProgress) return
         stopWorkoutInProgress = true
+
+        // Capture this before entering coroutine
+        val shouldExitToIdle = exitingWorkout
 
         // Cancel any running workout job (countdown or active workout)
         workoutJob?.cancel()
@@ -1059,6 +1076,11 @@ class MainViewModel constructor(
         // after transitioning to the next exercise (would cause premature completion)
         bodyweightTimerJob?.cancel()
         bodyweightTimerJob = null
+
+        // Cancel any running rest timer to prevent it from starting the next set
+        // after user has manually stopped the workout (fixes haptic firing and edit-blocking bugs)
+        restTimerJob?.cancel()
+        restTimerJob = null
 
         viewModelScope.launch {
              // Reset timed workout flag
@@ -1140,8 +1162,16 @@ class MainViewModel constructor(
                  saveSingleExerciseDefaultsFromWorkout()
              }
 
-             // Show Summary
-             _workoutState.value = summary
+             // Set final state based on how we're stopping
+             if (shouldExitToIdle) {
+                 // User is exiting the workout screen - reset to Idle to allow editing
+                 _workoutState.value = WorkoutState.Idle
+                 _routineFlowState.value = RoutineFlowState.NotInRoutine
+                 _loadedRoutine.value = null
+             } else {
+                 // Normal stop - show summary so user can see workout results
+                 _workoutState.value = summary
+             }
         }
     }
 
@@ -1199,9 +1229,8 @@ class MainViewModel constructor(
         viewModelScope.launch { preferencesManager.setEnableVideoPlayback(enabled) }
     }
 
-    fun setAutoplayEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferencesManager.setAutoplayEnabled(enabled) }
-    }
+    // Issue #167: setAutoplayEnabled removed - autoplay now derived from summaryCountdownSeconds
+
     fun setStallDetectionEnabled(enabled: Boolean) {
         viewModelScope.launch { preferencesManager.setStallDetectionEnabled(enabled) }
     }
@@ -1211,6 +1240,7 @@ class MainViewModel constructor(
     }
 
     fun setSummaryCountdownSeconds(seconds: Int) {
+        Logger.d("setSummaryCountdownSeconds: Setting value to $seconds")
         viewModelScope.launch { preferencesManager.setSummaryCountdownSeconds(seconds) }
     }
 
@@ -3086,6 +3116,11 @@ class MainViewModel constructor(
      * This is DIFFERENT from user manually stopping.
      */
     private fun handleSetCompletion() {
+        if (setCompletionInProgress) {
+            Logger.d("handleSetCompletion: already in progress - ignoring")
+            return
+        }
+        setCompletionInProgress = true
         // Issue #151: Cancel any running duration timer immediately to prevent double-completion
         // This handles the case where handleSetCompletion is called from a different source
         // (e.g., rep target reached) while a duration timer is still running
@@ -3125,15 +3160,23 @@ class MainViewModel constructor(
                 workingRepsCount = completedReps
             )
 
-            // Show set summary
-            _workoutState.value = summary
-
             Logger.d("Set summary: heaviest=${summary.heaviestLiftKgPerCable}kg, reps=$completedReps, duration=${summary.durationMs}ms")
 
             // Handle based on workout mode
-            // Get user's summary countdown preference (0 = Off/no auto-advance)
+            // Get user's summary countdown preference: -1 = Off (skip), 0 = Unlimited, 5-30 = auto-advance
             val summaryCountdownSeconds = userPreferences.value.summaryCountdownSeconds
-            val summaryDelayMs = summaryCountdownSeconds * 1000L
+            val skipSummary = summaryCountdownSeconds < 0
+            val summaryDelayMs = if (skipSummary) 0L else summaryCountdownSeconds * 1000L
+
+            Logger.d("handleSetCompletion: summaryCountdownSeconds=$summaryCountdownSeconds, skipSummary=$skipSummary, isJustLift=$isJustLift, isAMRAP=${params.isAMRAP}")
+
+            // Show set summary (unless user has summary set to "Off")
+            if (!skipSummary) {
+                Logger.d("handleSetCompletion: Setting state to SetSummary (skipSummary=false)")
+                _workoutState.value = summary
+            } else {
+                Logger.d("handleSetCompletion: Skipping SetSummary state (skipSummary=true)")
+            }
 
             if (isJustLift) {
                 // Just Lift mode: Auto-advance to next set after showing summary
@@ -3150,15 +3193,21 @@ class MainViewModel constructor(
                 enableHandleDetection()
                 bleRepository.enableJustLiftWaitingMode()
 
-                Logger.d("⏱️ Just Lift: Machine armed & ready. Showing summary for ${summaryCountdownSeconds}s...")
+                Logger.d("⏱️ Just Lift: Machine armed & ready. summaryCountdownSeconds=$summaryCountdownSeconds, skipSummary=$skipSummary")
 
-                // 4. Show summary for user's configured duration (0 = no auto-advance)
+                // 4. Handle summary based on user preference
                 // Note: If user grabs handles during this delay, auto-start logic in handleState collector
                 // will interrupt this and start the next set immediately.
-                if (summaryDelayMs > 0) {
+                if (skipSummary) {
+                    // Summary is "Off" (-1): Skip summary entirely, immediately ready for next set
+                    Logger.d("⏱️ Just Lift: Summary OFF - skipping summary, immediately ready")
+                    resetForNewWorkout() // Ensures clean state
+                    _workoutState.value = WorkoutState.Idle
+                } else if (summaryDelayMs > 0) {
+                    // Show summary for configured duration (5-30s), then auto-transition
                     delay(summaryDelayMs)
 
-                    // 5. Transition UI to Idle (only if we haven't already started a new set)
+                    // Transition UI to Idle (only if we haven't already started a new set)
                     if (_workoutState.value is WorkoutState.SetSummary) {
                         Logger.d("⏱️ Just Lift: Summary complete, UI transitioning to Idle")
                         resetForNewWorkout() // Ensures clean state
@@ -3167,7 +3216,8 @@ class MainViewModel constructor(
                         Logger.d("⏱️ Just Lift: Summary interrupted by user action (state is ${_workoutState.value})")
                     }
                 } else {
-                    Logger.d("⏱️ Just Lift: Summary countdown disabled (0s), waiting for user action")
+                    // Summary is "Unlimited" (0): Show summary, wait for user action
+                    Logger.d("⏱️ Just Lift: Summary Unlimited - waiting for user action")
                 }
             } else if (params.isAMRAP) {
                 // AMRAP mode: Auto-advance to rest timer and next set (like Just Lift)
@@ -3185,10 +3235,15 @@ class MainViewModel constructor(
                 enableHandleDetection()
                 bleRepository.enableJustLiftWaitingMode()
 
-                Logger.d("AMRAP: Machine armed & ready. Showing summary for ${summaryCountdownSeconds}s...")
+                Logger.d("AMRAP: Machine armed & ready. summaryCountdownSeconds=$summaryCountdownSeconds, skipSummary=$skipSummary")
 
-                // Show summary for user's configured duration (0 = no auto-advance)
-                if (summaryDelayMs > 0) {
+                // Handle summary based on user preference
+                if (skipSummary) {
+                    // Summary is "Off" (-1): Skip summary entirely, proceed to rest timer
+                    Logger.d("AMRAP: Summary OFF - skipping summary, proceeding to rest timer")
+                    startRestTimer()
+                } else if (summaryDelayMs > 0) {
+                    // Show summary for configured duration (5-30s), then auto-advance
                     delay(summaryDelayMs)
 
                     // Auto-start rest timer if we haven't already started a new set
@@ -3196,14 +3251,37 @@ class MainViewModel constructor(
                         startRestTimer()
                     }
                 } else {
-                    Logger.d("AMRAP: Summary countdown disabled (0s), waiting for user action")
+                    // Summary is "Unlimited" (0): Show summary, wait for user action
+                    Logger.d("AMRAP: Summary Unlimited - waiting for user action")
                 }
             } else {
-                // Routine/Program mode: Let UI countdown handle progression
-                // Issue #139: Removed hardcoded delay(2000) that raced with UI's summaryCountdownSeconds
-                // The SetSummaryCard's countdown calls proceedFromSummary() when complete,
-                // or user can tap the button manually. This respects user's countdown preference.
-                Logger.d("Routine mode: Waiting for UI countdown or user action to proceed from summary")
+                // Routine/Program mode (includes Single Exercise)
+                Logger.d("Routine/SingleExercise mode: skipSummary=$skipSummary, summaryCountdownSeconds=$summaryCountdownSeconds")
+                if (skipSummary) {
+                    // Issue #167: Summary is "Off" (-1) - skip summary screen entirely
+                    // Proceed directly to rest timer or next set, similar to Just Lift flow
+                    Logger.d("Routine mode: Summary OFF - skipping summary, calling startRestTimer()")
+
+                    // Reset logical state for next set
+                    repCounter.reset()
+                    resetAutoStopState()
+
+                    // Restart monitor polling to clear machine fault state (red lights)
+                    bleRepository.restartMonitorPolling()
+
+                    // Enable handle detection for auto-start during rest
+                    enableHandleDetection()
+                    bleRepository.enableJustLiftWaitingMode()
+
+                    // Proceed to rest timer (which handles 0 rest time correctly now)
+                    startRestTimer()
+                } else {
+                    // Normal flow: Let UI countdown handle progression
+                    // Issue #139: Removed hardcoded delay(2000) that raced with UI's summaryCountdownSeconds
+                    // The SetSummaryCard's countdown calls proceedFromSummary() when complete,
+                    // or user can tap the button manually. This respects user's countdown preference.
+                    Logger.d("Routine mode: Waiting for UI countdown or user action to proceed from summary")
+                }
             }
         }
     }
@@ -3678,6 +3756,9 @@ class MainViewModel constructor(
                 currentExercise?.getRestForSet(completedSetIndex) ?: 90
             }
             val autoplay = autoplayEnabled.value
+            val isSingleExercise = isSingleExerciseMode()
+
+            Logger.d("startRestTimer: restDuration=$restDuration, autoplay=$autoplay, isSingleExercise=$isSingleExercise, summaryCountdownSeconds=${userPreferences.value.summaryCountdownSeconds}")
 
             // Handle 0 rest time: skip rest timer entirely and advance immediately
             // This supports use cases like alternating arms where user wants no rest between sides
@@ -3690,8 +3771,6 @@ class MainViewModel constructor(
                 }
                 return@launch
             }
-
-            val isSingleExercise = isSingleExerciseMode()
 
             // Determine superset label for display
             val supersetLabel = if (isInSupersetTransition) {
@@ -3895,7 +3974,15 @@ class MainViewModel constructor(
     private fun startNextSetOrExercise() {
         val currentState = _workoutState.value
         if (currentState is WorkoutState.Completed) return
-        if (currentState !is WorkoutState.Resting) return
+        // Issue #167: Accept Resting, SetSummary, AND Active states.
+        // - Resting: Normal flow when rest timer completes
+        // - SetSummary: Zero rest time path (restDuration == 0) when summary is shown
+        // - Active: SkipSummary path where summary is OFF (-1) - state never transitions
+        //   to SetSummary, so we must allow Active state for immediate progression.
+        // This enables seamless set-to-set transitions when both summary is OFF and rest is 0.
+        if (currentState !is WorkoutState.Resting &&
+            currentState !is WorkoutState.SetSummary &&
+            currentState !is WorkoutState.Active) return
 
         // Issue #151: Cancel any stale duration timer from previous exercise
         // This prevents premature completion of the next exercise

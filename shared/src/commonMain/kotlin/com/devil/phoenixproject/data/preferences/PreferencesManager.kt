@@ -104,7 +104,7 @@ interface PreferencesManager {
     val preferencesFlow: StateFlow<UserPreferences>
 
     suspend fun setWeightUnit(unit: WeightUnit)
-    suspend fun setAutoplayEnabled(enabled: Boolean)
+    // Issue #167: setAutoplayEnabled removed - autoplay now derived from summaryCountdownSeconds
     suspend fun setStopAtTop(enabled: Boolean)
     suspend fun setEnableVideoPlayback(enabled: Boolean)
     suspend fun setBeepsEnabled(enabled: Boolean)
@@ -144,7 +144,7 @@ class SettingsPreferencesManager(
     companion object {
         // Preference keys
         private const val KEY_WEIGHT_UNIT = "weight_unit"
-        private const val KEY_AUTOPLAY_ENABLED = "autoplay_enabled"
+        // Issue #167: KEY_AUTOPLAY_ENABLED removed - autoplay now derived from summaryCountdownSeconds
         private const val KEY_STOP_AT_TOP = "stop_at_top"
         private const val KEY_VIDEO_PLAYBACK = "video_playback"
         private const val KEY_BEEPS_ENABLED = "beeps_enabled"
@@ -167,7 +167,7 @@ class SettingsPreferencesManager(
             weightUnit = settings.getStringOrNull(KEY_WEIGHT_UNIT)?.let {
                 WeightUnit.entries.find { unit -> unit.name == it }
             } ?: WeightUnit.LB,
-            autoplayEnabled = settings.getBoolean(KEY_AUTOPLAY_ENABLED, true),
+            // Issue #167: autoplayEnabled removed - now derived from summaryCountdownSeconds
             stopAtTop = settings.getBoolean(KEY_STOP_AT_TOP, false),
             enableVideoPlayback = settings.getBoolean(KEY_VIDEO_PLAYBACK, true),
             beepsEnabled = settings.getBoolean(KEY_BEEPS_ENABLED, true),
@@ -189,10 +189,7 @@ class SettingsPreferencesManager(
         updateAndEmit { copy(weightUnit = unit) }
     }
 
-    override suspend fun setAutoplayEnabled(enabled: Boolean) {
-        settings.putBoolean(KEY_AUTOPLAY_ENABLED, enabled)
-        updateAndEmit { copy(autoplayEnabled = enabled) }
-    }
+    // Issue #167: setAutoplayEnabled removed - autoplay now derived from summaryCountdownSeconds
 
     override suspend fun setStopAtTop(enabled: Boolean) {
         settings.putBoolean(KEY_STOP_AT_TOP, enabled)

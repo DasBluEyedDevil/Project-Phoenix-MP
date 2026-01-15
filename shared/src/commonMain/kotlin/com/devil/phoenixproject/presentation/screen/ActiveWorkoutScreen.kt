@@ -207,10 +207,14 @@ fun ActiveWorkoutScreen(
     val canGoBack = loadedRoutine != null && currentExerciseIndex > 0
     val canSkipForward = loadedRoutine != null && currentExerciseIndex < (loadedRoutine?.exercises?.size ?: 0) - 1
 
+    // Issue #167: autoplayEnabled now derived from summaryCountdownSeconds
+    // 0 (Unlimited) = autoplay OFF, != 0 (-1 or 5-30) = autoplay ON
+    val autoplayEnabled = userPreferences.summaryCountdownSeconds != 0
+
     val workoutUiState = remember(
         connectionState, workoutState, currentMetric, currentHeuristicKgMax, workoutParameters,
         repCount, repRanges, autoStopState, weightUnit, enableVideoPlayback,
-        loadedRoutine, currentExerciseIndex, currentSetIndex, userPreferences.autoplayEnabled,
+        loadedRoutine, currentExerciseIndex, currentSetIndex, autoplayEnabled,
         userPreferences.summaryCountdownSeconds, loadBaselineA, loadBaselineB, canGoBack, canSkipForward
     ) {
         WorkoutUiState(
@@ -227,7 +231,7 @@ fun ActiveWorkoutScreen(
             loadedRoutine = loadedRoutine,
             currentExerciseIndex = currentExerciseIndex,
             currentSetIndex = currentSetIndex,
-            autoplayEnabled = userPreferences.autoplayEnabled,
+            autoplayEnabled = autoplayEnabled,
             summaryCountdownSeconds = userPreferences.summaryCountdownSeconds,
             isWorkoutSetupDialogVisible = false,
             showConnectionCard = false,
@@ -285,10 +289,9 @@ fun ActiveWorkoutScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.stopWorkout()
-                        // Issue #142: Reset routineFlowState to Overview before navigating
-                        // Otherwise RoutineOverviewScreen sees SetReady state and renders blank
-                        viewModel.returnToOverview()
+                        // Use exitingWorkout=true to reset state to Idle and clear routine context
+                        // This prevents stale SetSummary state from blocking editing after exit
+                        viewModel.stopWorkout(exitingWorkout = true)
                         showExitConfirmation = false
                         navController.navigateUp()
                     }

@@ -35,10 +35,6 @@ class FakePreferencesManager : PreferencesManager {
         _preferencesFlow.value = _preferencesFlow.value.copy(weightUnit = unit)
     }
 
-    override suspend fun setAutoplayEnabled(enabled: Boolean) {
-        _preferencesFlow.value = _preferencesFlow.value.copy(autoplayEnabled = enabled)
-    }
-
     override suspend fun setStopAtTop(enabled: Boolean) {
         _preferencesFlow.value = _preferencesFlow.value.copy(stopAtTop = enabled)
     }

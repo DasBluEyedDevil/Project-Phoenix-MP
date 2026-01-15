@@ -927,7 +927,6 @@ fun MetricItem(label: String, value: String) {
 @Composable
 fun SettingsTab(
     weightUnit: WeightUnit,
-    autoplayEnabled: Boolean,
     stopAtTop: Boolean,
     enableVideoPlayback: Boolean,
     darkModeEnabled: Boolean,
@@ -937,7 +936,6 @@ fun SettingsTab(
     autoStartCountdownSeconds: Int = 5,
     selectedColorSchemeIndex: Int = 0,
     onWeightUnitChange: (WeightUnit) -> Unit,
-    onAutoplayChange: (Boolean) -> Unit,
     onStopAtTopChange: (Boolean) -> Unit,
     onEnableVideoPlaybackChange: (Boolean) -> Unit,
     onDarkModeChange: (Boolean) -> Unit,
@@ -1289,66 +1287,43 @@ fun SettingsTab(
             }
                 Spacer(modifier = Modifier.height(Spacing.small))
 
-                // Autoplay toggle
+                // Issue #167: Summary Countdown now controls autoplay behavior
+                // - Off (-1): Skip summary, auto-advance immediately
+                // - Unlimited (0): Show summary, wait for manual tap (like old autoplay OFF)
+                // - 5-30s: Show summary, auto-advance after countdown (like old autoplay ON)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Autoplay Routines",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium,
+                            text = "Set Summary",
+                            style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "Automatically advance to next exercise after rest timer",
+                            text = "Off = skip summary, Unlimited = manual, 5-30s = auto-advance",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Switch(
-                        checked = autoplayEnabled,
-                        onCheckedChange = onAutoplayChange
-                    )
-                }
 
-                // Summary Countdown - only show when autoplay is enabled
-                if (autoplayEnabled) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Summary Countdown",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "Time before auto-advancing to next exercise",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    CountdownDropdown(
+                        label = "",
+                        selectedValue = summaryCountdownSeconds,
+                        options = listOf(-1, 0, 5, 10, 15, 20, 25, 30),
+                        onValueSelected = { onSummaryCountdownChange(it) },
+                        modifier = Modifier.width(120.dp),
+                        formatLabel = {
+                            when (it) {
+                                -1 -> "Off"        // Skip summary entirely
+                                0 -> "Unlimited"   // Show summary, no auto-advance
+                                else -> "${it}s"
+                            }
                         }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        CountdownDropdown(
-                            label = "",
-                            selectedValue = summaryCountdownSeconds,
-                            options = listOf(0, 5, 10, 15, 20, 25, 30),
-                            onValueSelected = { onSummaryCountdownChange(it) },
-                            modifier = Modifier.width(100.dp),
-                            formatLabel = { if (it == 0) "Off" else "${it}s" }
-                        )
-                    }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

@@ -90,7 +90,11 @@ actual fun CompactNumberPicker(
     // Inline editing state
     var isEditing by remember { mutableStateOf(false) }
     var inputText by remember { mutableStateOf("") }
+    // Issue #166 Fix: Track focus state per edit session to prevent premature commitEdit
+    // hasFocusedOnce is ONLY true after focus is gained in the CURRENT edit session
     var hasFocusedOnce by remember { mutableStateOf(false) }
+    // Guard to prevent commitEdit during initial TextField composition
+    var editSessionReady by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
     // Issue #166: Track if user is actively interacting with the wheel
@@ -128,7 +132,9 @@ actual fun CompactNumberPicker(
 
     // Issue #166 Fix: Only sync list position when external value changes from OUTSIDE
     // (not from our own scroll updates) and user is not currently interacting
-    LaunchedEffect(currentIndex, isUserInteracting) {
+    // IMPORTANT: isEditing MUST be a key to prevent race condition where effect starts
+    // with stale isEditing=false while user is tapping to edit
+    LaunchedEffect(currentIndex, isUserInteracting, isEditing) {
         if (!isUserInteracting && !isEditing) {
             // Check if this is a genuine external value change (not from scroll)
             val externalValueChanged = abs(value - lastScrollSetValue) > 0.001f
@@ -142,14 +148,30 @@ actual fun CompactNumberPicker(
     // Focus the text field when editing starts
     LaunchedEffect(isEditing) {
         if (isEditing) {
+            // Issue #166 Fix: Reset focus tracking at start of each edit session
+            // MUST set these BEFORE any delays to prevent race with onFocusChanged
             hasFocusedOnce = false
+            editSessionReady = false
             // Issue #166 Fix: Use the current scroll position value, not external value
             val currentScrollIndex = listState.firstVisibleItemIndex.coerceIn(values.indices)
             val currentScrollValue = if (values.isNotEmpty()) values[currentScrollIndex] else value
             inputText = formatValueForEdit(currentScrollValue)
-            // Small delay to ensure TextField is composed before requesting focus
-            kotlinx.coroutines.delay(100)
-            try { focusRequester.requestFocus() } catch (_: Exception) {}
+            // Issue #166 Fix: iOS needs more time after clearFocus() before focus can be requested again.
+            // Use retry loop with increasing delays to ensure keyboard appears reliably.
+            for (attempt in 1..3) {
+                kotlinx.coroutines.delay(if (attempt == 1) 150L else 100L)
+                try {
+                    focusRequester.requestFocus()
+                    // Mark session as ready AFTER successful focus request
+                    editSessionReady = true
+                    break // Success, exit retry loop
+                } catch (_: Exception) {
+                    // Focus request failed, will retry if attempts remain
+                }
+            }
+        } else {
+            // Reset when exiting edit mode
+            editSessionReady = false
         }
     }
 
@@ -282,8 +304,11 @@ actual fun CompactNumberPicker(
                                             .onFocusChanged { focusState ->
                                                 if (focusState.isFocused) {
                                                     hasFocusedOnce = true
-                                                } else if (hasFocusedOnce && isEditing) {
-                                                    // Only commit if we actually had focus before losing it
+                                                } else if (editSessionReady && hasFocusedOnce && isEditing) {
+                                                    // Issue #166 Fix: Only commit if:
+                                                    // 1. editSessionReady = focus was successfully requested (not during initial composition)
+                                                    // 2. hasFocusedOnce = we actually had focus in this session
+                                                    // 3. isEditing = we're still in edit mode
                                                     commitEdit()
                                                 }
                                             }

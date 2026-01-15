@@ -284,7 +284,6 @@ fun NavGraph(
             val discoModeActive by viewModel.discoModeActive.collectAsState()
             SettingsTab(
                 weightUnit = weightUnit,
-                autoplayEnabled = userPreferences.autoplayEnabled,
                 stopAtTop = userPreferences.stopAtTop,
                 enableVideoPlayback = userPreferences.enableVideoPlayback,
                 darkModeEnabled = themeMode == ThemeMode.DARK,
@@ -294,7 +293,6 @@ fun NavGraph(
                 autoStartCountdownSeconds = userPreferences.autoStartCountdownSeconds,
                 selectedColorSchemeIndex = userPreferences.colorScheme,
                 onWeightUnitChange = { viewModel.setWeightUnit(it) },
-                onAutoplayChange = { viewModel.setAutoplayEnabled(it) },
                 onStopAtTopChange = { viewModel.setStopAtTop(it) },
                 onEnableVideoPlaybackChange = { viewModel.setEnableVideoPlayback(it) },
                 onDarkModeChange = { enabled -> onThemeModeChange(if (enabled) ThemeMode.DARK else ThemeMode.LIGHT) },
