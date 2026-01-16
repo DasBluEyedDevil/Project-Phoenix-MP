@@ -2160,17 +2160,30 @@ class KableBleRepository : BleRepository {
                     // the state machine would be stuck forever. After timeout, arm anyway.
                     val currentTime = currentTimeMillis()
                     if (waitingForRestStartTime == null) {
+                        // Start timeout timer
                         waitingForRestStartTime = currentTime
+                        HandleState.WaitingForRest
                     } else if (currentTime - waitingForRestStartTime!! > WAITING_FOR_REST_TIMEOUT_MS) {
-                        // Issue #176: Capture elevated baseline for overhead pulley setups
-                        // Grabs will be detected via position CHANGE from this baseline
-                        log.w { "⚠️ WaitingForRest TIMEOUT (${WAITING_FOR_REST_TIMEOUT_MS}ms) - capturing baseline posA=$posA, posB=$posB for relative grab detection" }
-                        restBaselinePosA = posA
-                        restBaselinePosB = posB
+                        // Issue #176: When timeout fires, check if handles are already grabbed
+                        // If user is already holding handles (position > threshold), use virtual
+                        // baseline of 0 so grab detection triggers immediately when they move.
+                        // Otherwise, use current position as baseline for elevated rest setups.
+                        val alreadyGrabbed = posA > HANDLE_GRABBED_THRESHOLD || posB > HANDLE_GRABBED_THRESHOLD
+                        if (alreadyGrabbed) {
+                            log.w { "⚠️ WaitingForRest TIMEOUT - handles already grabbed (posA=$posA, posB=$posB > $HANDLE_GRABBED_THRESHOLD) - using virtual baseline=0 for immediate grab detection" }
+                            restBaselinePosA = 0.0
+                            restBaselinePosB = 0.0
+                        } else {
+                            log.w { "⚠️ WaitingForRest TIMEOUT (${WAITING_FOR_REST_TIMEOUT_MS}ms) - capturing baseline posA=$posA, posB=$posB for relative grab detection" }
+                            restBaselinePosA = posA
+                            restBaselinePosB = posB
+                        }
                         waitingForRestStartTime = null
-                        HandleState.Released  // Force arm after timeout
+                        HandleState.Released  // Force arm after timeout - NOW ACTUALLY RETURNED!
+                    } else {
+                        // Still waiting for timeout
+                        HandleState.WaitingForRest
                     }
-                    HandleState.WaitingForRest
                 }
             }
 

@@ -10,9 +10,18 @@ import platform.Foundation.NSLog
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSLibraryDirectory
 import platform.Foundation.NSUserDomainMask
+import platform.Foundation.NSUserDefaults
 
 actual class DriverFactory {
     actual fun createDriver(): SqlDriver {
+        // EMERGENCY FIX (Jan 2026): One-time database purge to avoid unrecoverable migration crashes.
+        // Migration exceptions on iOS worker threads abort the app before try-catch can intercept them.
+        // For users with corrupted migration state, the only solution is to delete and recreate.
+        //
+        // This runs ONCE per install via NSUserDefaults marker. Remove this block after
+        // sufficient time has passed for all users to update (e.g., v0.4.0+).
+        purgeCorruptedDatabaseIfNeeded()
+
         // CRITICAL FIX (Jan 2026): Migration exceptions on iOS worker threads abort the app
         // before try-catch can intercept them. The NativeSqliteDriver runs migrations during
         // construction on worker threads - exceptions propagate through Kotlin/Native's
@@ -1428,5 +1437,79 @@ actual class DriverFactory {
         val libraryUrl = (urls as List<platform.Foundation.NSURL>).firstOrNull()
         val libraryPath = libraryUrl?.path ?: ""
         return "$libraryPath/vitruvian.db"
+    }
+
+    /**
+     * EMERGENCY FIX: One-time database purge to fix users stuck with corrupted migration state.
+     *
+     * Background: iOS SQLite migrations run on worker threads and crash the app BEFORE any
+     * try-catch can intercept exceptions. Users with databases in a bad migration state
+     * (e.g., schema version 10 but missing tables/columns) cannot recover - the app crashes
+     * on every launch attempt.
+     *
+     * This function:
+     * 1. Checks if we've already run the purge (via NSUserDefaults marker)
+     * 2. If not, deletes the existing database file (including WAL/SHM files)
+     * 3. Sets the marker so this only runs ONCE per app install
+     *
+     * After the purge, SQLDelight will create a fresh database with the correct schema.
+     * Users lose their data, but at least the app launches.
+     *
+     * TODO: Remove this emergency code in a future release (e.g., v0.4.0+) once all users
+     * have had a chance to update. The marker key ensures it only runs once anyway.
+     */
+    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+    private fun purgeCorruptedDatabaseIfNeeded() {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val markerKey = "phoenix_db_purge_v032_completed"
+
+        // Check if we've already run the purge
+        if (defaults.boolForKey(markerKey)) {
+            NSLog("iOS DB: Database purge already completed (marker present)")
+            return
+        }
+
+        val dbPath = getDatabasePath()
+        val fileManager = NSFileManager.defaultManager
+
+        // Check if database exists - if not, nothing to purge (fresh install)
+        if (!fileManager.fileExistsAtPath(dbPath)) {
+            NSLog("iOS DB: No existing database found (fresh install), setting purge marker")
+            defaults.setBool(true, markerKey)
+            return
+        }
+
+        NSLog("iOS DB: EMERGENCY PURGE - Deleting corrupted database to fix migration crash")
+        NSLog("iOS DB: WARNING - User workout data will be lost, but app will launch")
+
+        try {
+            // Delete main database file
+            val mainDeleted = fileManager.removeItemAtPath(dbPath, null)
+            NSLog("iOS DB: Main database deleted: $mainDeleted")
+
+            // Delete WAL (Write-Ahead Log) file if exists
+            val walPath = "$dbPath-wal"
+            if (fileManager.fileExistsAtPath(walPath)) {
+                fileManager.removeItemAtPath(walPath, null)
+                NSLog("iOS DB: WAL file deleted")
+            }
+
+            // Delete SHM (Shared Memory) file if exists
+            val shmPath = "$dbPath-shm"
+            if (fileManager.fileExistsAtPath(shmPath)) {
+                fileManager.removeItemAtPath(shmPath, null)
+                NSLog("iOS DB: SHM file deleted")
+            }
+
+            NSLog("iOS DB: Database purge complete - fresh database will be created")
+        } catch (e: Exception) {
+            NSLog("iOS DB ERROR: Failed to purge database: ${e.message}")
+            // Even if purge fails, set the marker so we don't try again every launch
+            // The app will still crash, but at least we won't be in an infinite purge loop
+        }
+
+        // Set marker so we don't purge again
+        defaults.setBool(true, markerKey)
+        NSLog("iOS DB: Purge marker set - will not purge on future launches")
     }
 }

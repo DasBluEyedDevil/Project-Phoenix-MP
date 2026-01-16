@@ -1,7 +1,7 @@
-# Project Phoenix 2.0 - Context for Gemini
+# Project Phoenix - Context for Gemini
 
 ## Project Overview
-**Project Phoenix 2.0** is a Kotlin Multiplatform (KMP) application designed to control Vitruvian Trainer workout machines (V-Form Trainer and Trainer+) via Bluetooth Low Energy (BLE). This is a community-driven "rescue project" to ensure these machines remain functional.
+**Project Phoenix** is a Kotlin Multiplatform (KMP) application designed to control Vitruvian Trainer workout machines (V-Form Trainer and Trainer+) via Bluetooth Low Energy (BLE). This is a community-driven "rescue project" to ensure these machines remain functional.
 
 ## Key Technologies
 *   **Language:** Kotlin 2.0+ (2.1.20)
