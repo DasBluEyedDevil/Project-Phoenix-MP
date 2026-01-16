@@ -367,4 +367,54 @@ class RepRangesTest {
         // Even at min, not in danger zone because range is too small
         assertFalse(ranges.isInDangerZone(posA = 100f, posB = 100f, minRangeThreshold = 50f))
     }
+
+    @Test
+    fun `isInTopZone returns true when position is within 5 percent of max`() {
+        val ranges = RepRanges(
+            minPosA = 100f,
+            maxPosA = 1000f,
+            minPosB = 100f,
+            maxPosB = 1000f,
+            minRangeA = null,
+            maxRangeA = null,
+            minRangeB = null,
+            maxRangeB = null
+        )
+
+        // 5% of range (900) = 45, threshold = 955
+        assertTrue(ranges.isInTopZone(posA = 980f, posB = 500f))
+    }
+
+    @Test
+    fun `isInTopZone returns false when position is below max threshold`() {
+        val ranges = RepRanges(
+            minPosA = 100f,
+            maxPosA = 1000f,
+            minPosB = 100f,
+            maxPosB = 1000f,
+            minRangeA = null,
+            maxRangeA = null,
+            minRangeB = null,
+            maxRangeB = null
+        )
+
+        assertFalse(ranges.isInTopZone(posA = 900f, posB = 900f))
+    }
+
+    @Test
+    fun `isInTopZone returns false when range is too small`() {
+        val ranges = RepRanges(
+            minPosA = 100f,
+            maxPosA = 120f, // Range = 20, less than threshold
+            minPosB = 100f,
+            maxPosB = 120f,
+            minRangeA = null,
+            maxRangeA = null,
+            minRangeB = null,
+            maxRangeB = null
+        )
+
+        // Even at max, not in top zone because range is too small
+        assertFalse(ranges.isInTopZone(posA = 120f, posB = 120f, minRangeThreshold = 50f))
+    }
 }

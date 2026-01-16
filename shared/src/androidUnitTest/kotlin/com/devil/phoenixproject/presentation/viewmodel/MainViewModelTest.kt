@@ -20,6 +20,7 @@ import com.devil.phoenixproject.testutil.FakePreferencesManager
 import com.devil.phoenixproject.testutil.FakeTrainingCycleRepository
 import com.devil.phoenixproject.testutil.FakeWorkoutRepository
 import com.devil.phoenixproject.testutil.TestCoroutineRule
+import com.devil.phoenixproject.data.repository.RepNotification
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -119,6 +120,81 @@ class MainViewModelTest {
 
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `rep target auto-stop waits until stop position is reached`() = runTest {
+        fakeBleRepository.simulateConnect("Vee_Test123")
+
+        viewModel.updateWorkoutParameters(
+            viewModel.workoutParameters.value.copy(
+                programMode = ProgramMode.OldSchool,
+                warmupReps = 0,
+                reps = 1,
+                stopAtTop = false
+            )
+        )
+
+        viewModel.startWorkout(skipCountdown = true)
+        advanceUntilIdle()
+        assertIs<WorkoutState.Active>(viewModel.workoutState.value)
+
+        // Establish baseline counters
+        fakeBleRepository.emitMetric(
+            WorkoutMetric(loadA = 0f, loadB = 0f, positionA = 100f, positionB = 100f)
+        )
+        fakeBleRepository.emitRepNotification(
+            RepNotification(
+                topCounter = 0,
+                completeCounter = 0,
+                repsRomCount = 0,
+                repsSetCount = 0,
+                rawData = byteArrayOf(),
+                isLegacyFormat = false
+            )
+        )
+        advanceUntilIdle()
+
+        // Simulate machine reporting the target rep early at TOP
+        fakeBleRepository.emitMetric(
+            WorkoutMetric(loadA = 0f, loadB = 0f, positionA = 1000f, positionB = 1000f)
+        )
+        fakeBleRepository.emitRepNotification(
+            RepNotification(
+                topCounter = 1,
+                completeCounter = 0,
+                repsRomCount = 0,
+                repsSetCount = 1,
+                rawData = byteArrayOf(),
+                isLegacyFormat = false
+            )
+        )
+        advanceUntilIdle()
+
+        // Should NOT complete until we reach the bottom stop position
+        assertIs<WorkoutState.Active>(viewModel.workoutState.value)
+
+        // Reach bottom and emit bottom counter to populate min/max ROM
+        fakeBleRepository.emitMetric(
+            WorkoutMetric(loadA = 0f, loadB = 0f, positionA = 100f, positionB = 100f)
+        )
+        fakeBleRepository.emitRepNotification(
+            RepNotification(
+                topCounter = 1,
+                completeCounter = 1,
+                repsRomCount = 0,
+                repsSetCount = 1,
+                rawData = byteArrayOf(),
+                isLegacyFormat = false
+            )
+        )
+        // Next metric tick triggers auto-stop check using populated ROM range
+        fakeBleRepository.emitMetric(
+            WorkoutMetric(loadA = 0f, loadB = 0f, positionA = 100f, positionB = 100f)
+        )
+
+        advanceUntilIdle()
+        assertIs<WorkoutState.SetSummary>(viewModel.workoutState.value)
     }
 
     @Test

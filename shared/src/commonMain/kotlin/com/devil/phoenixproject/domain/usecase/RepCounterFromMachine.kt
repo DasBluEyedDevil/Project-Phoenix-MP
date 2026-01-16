@@ -741,4 +741,30 @@ data class RepRanges(
 
         return false
     }
+
+    /**
+     * Check if position is in "top zone" (within 5% of ROM maximum).
+     * Used to stop workouts at the contracted/top position when stopAtTop is enabled.
+     */
+    fun isInTopZone(posA: Float, posB: Float, minRangeThreshold: Float = 50f): Boolean {
+        // Check if position A is in top zone (within 5% of maximum)
+        if (minPosA != null && maxPosA != null) {
+            val range = maxPosA - minPosA
+            if (range > minRangeThreshold) {
+                val threshold = maxPosA - (range * 0.05f)
+                if (posA >= threshold) return true
+            }
+        }
+
+        // Check if position B is in top zone (within 5% of maximum)
+        if (minPosB != null && maxPosB != null) {
+            val range = maxPosB - minPosB
+            if (range > minRangeThreshold) {
+                val threshold = maxPosB - (range * 0.05f)
+                if (posB >= threshold) return true
+            }
+        }
+
+        return false
+    }
 }

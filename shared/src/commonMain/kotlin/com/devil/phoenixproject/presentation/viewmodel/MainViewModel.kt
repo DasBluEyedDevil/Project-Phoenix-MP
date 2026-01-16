@@ -575,7 +575,7 @@ class MainViewModel constructor(
         repEventsCollectionJob = viewModelScope.launch {
             bleRepository.repEvents.collect { notification ->
                 val state = _workoutState.value
-                if (state is WorkoutState.Active) {
+	        if (state is WorkoutState.Active) {
                     handleRepNotification(notification)
                 }
             }
@@ -766,11 +766,20 @@ class MainViewModel constructor(
             }
 
             // Standard Auto-Stop (rep target reached)
-            if (repCounter.shouldStopWorkout()) {
+            if (repCounter.shouldStopWorkout() && isAtStopPosition(metric, params.stopAtTop)) {
                 handleSetCompletion()
             }
         } else {
             resetAutoStopTimer()
+        }
+    }
+
+    private fun isAtStopPosition(metric: WorkoutMetric, stopAtTop: Boolean): Boolean {
+        val ranges = repCounter.getRepRanges()
+        return if (stopAtTop) {
+            ranges.isInTopZone(posA = metric.positionA, posB = metric.positionB)
+        } else {
+            ranges.isInDangerZone(posA = metric.positionA, posB = metric.positionB)
         }
     }
 
