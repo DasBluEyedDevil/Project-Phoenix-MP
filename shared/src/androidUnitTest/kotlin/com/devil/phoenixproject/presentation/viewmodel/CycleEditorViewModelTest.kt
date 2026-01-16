@@ -1,6 +1,5 @@
 package com.devil.phoenixproject.presentation.viewmodel
 
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.CycleItem
 import com.devil.phoenixproject.domain.model.Exercise
 import com.devil.phoenixproject.domain.model.ProgramMode
@@ -56,10 +55,8 @@ class CycleEditorViewModelTest {
                         name = "Bench Press",
                         muscleGroup = "Chest",
                         muscleGroups = "Chest",
-                        equipment = "BAR",
-                        defaultCableConfig = CableConfiguration.DOUBLE
+                        equipment = "BAR"
                     ),
-                    cableConfig = CableConfiguration.DOUBLE,
                     orderIndex = 0,
                     programMode = ProgramMode.OldSchool,
                     weightPerCableKg = 20f

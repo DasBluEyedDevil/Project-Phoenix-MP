@@ -60,8 +60,7 @@ class SqlDelightExerciseRepositoryTest {
                 name = "Custom Press",
                 muscleGroup = "Chest",
                 muscleGroups = "Chest",
-                equipment = "",
-                defaultCableConfig = com.devil.phoenixproject.domain.model.CableConfiguration.DOUBLE
+                equipment = ""
             )
         )
 

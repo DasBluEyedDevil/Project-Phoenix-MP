@@ -171,11 +171,8 @@ fun SingleExerciseScreen(
                         muscleGroup = selectedExercise.muscleGroups.split(",").firstOrNull()?.trim() ?: "Full Body",
                         muscleGroups = selectedExercise.muscleGroups,
                         equipment = selectedExercise.equipment.split(",").firstOrNull()?.trim() ?: "",
-                        defaultCableConfig = CableConfiguration.DOUBLE,
                         id = selectedExercise.id
                     )
-
-                    val defaultCableConfig = exercise.resolveDefaultCableConfig()
 
                     // Cancel any in-progress loading to prevent race conditions
                     loadingJob?.cancel()
@@ -183,12 +180,11 @@ fun SingleExerciseScreen(
                     // Set loading state to prevent showing dialog before defaults are loaded
                     isLoadingDefaults = true
 
-                    // Load saved defaults for this exercise+cable config asynchronously
-                    // Uses fallback to try other cable configs if the default doesn't have saved values
+                    // Load saved defaults for this exercise asynchronously
                     loadingJob = coroutineScope.launch {
                         try {
                             val savedDefaults = selectedExercise.id?.let { exerciseId ->
-                                viewModel.getSingleExerciseDefaultsWithFallback(exerciseId, defaultCableConfig.name)
+                                viewModel.getSingleExerciseDefaults(exerciseId)
                             }
 
                             val newRoutineExercise = if (savedDefaults != null) {
@@ -196,7 +192,6 @@ fun SingleExerciseScreen(
                                 RoutineExercise(
                                     id = generateUUID(),
                                     exercise = exercise,
-                                    cableConfig = savedDefaults.getCableConfiguration(),
                                     orderIndex = 0,
                                     setReps = savedDefaults.setReps,
                                     weightPerCableKg = savedDefaults.weightPerCableKg,
@@ -215,7 +210,6 @@ fun SingleExerciseScreen(
                                 RoutineExercise(
                                     id = generateUUID(),
                                     exercise = exercise,
-                                    cableConfig = defaultCableConfig,
                                     orderIndex = 0,
                                     setReps = listOf(10, 10, 10),
                                     weightPerCableKg = 20f,

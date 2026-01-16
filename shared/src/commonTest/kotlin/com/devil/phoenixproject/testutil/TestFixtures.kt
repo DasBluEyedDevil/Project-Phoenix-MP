@@ -2,7 +2,6 @@ package com.devil.phoenixproject.testutil
 
 import com.devil.phoenixproject.data.repository.RepNotification
 import com.devil.phoenixproject.data.repository.ScannedDevice
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.EccentricLoad
 import com.devil.phoenixproject.domain.model.EchoLevel
 import com.devil.phoenixproject.domain.model.Exercise
@@ -28,7 +27,6 @@ object TestFixtures {
         muscleGroup = "Chest",
         muscleGroups = "Chest,Triceps,Shoulders",
         equipment = "BAR",
-        defaultCableConfig = CableConfiguration.DOUBLE,
         id = "bench-press-001",
         isFavorite = true
     )
@@ -38,7 +36,6 @@ object TestFixtures {
         muscleGroup = "Biceps",
         muscleGroups = "Biceps",
         equipment = "SINGLE_HANDLE",
-        defaultCableConfig = CableConfiguration.EITHER,
         id = "bicep-curl-001"
     )
 
@@ -47,7 +44,6 @@ object TestFixtures {
         muscleGroup = "Legs",
         muscleGroups = "Legs,Glutes,Core",
         equipment = "BAR",
-        defaultCableConfig = CableConfiguration.DOUBLE,
         id = "squat-001"
     )
 
@@ -56,7 +52,6 @@ object TestFixtures {
         muscleGroup = "Back",
         muscleGroups = "Back,Legs,Glutes",
         equipment = "BAR",
-        defaultCableConfig = CableConfiguration.DOUBLE,
         id = "deadlift-001"
     )
 
@@ -65,7 +60,6 @@ object TestFixtures {
         muscleGroup = "Back",
         muscleGroups = "Back,Biceps",
         equipment = "SINGLE_HANDLE",
-        defaultCableConfig = CableConfiguration.SINGLE,
         id = "single-arm-row-001"
     )
 
@@ -74,7 +68,6 @@ object TestFixtures {
         muscleGroup = "Full Body",
         muscleGroups = "Full Body",
         equipment = "",
-        defaultCableConfig = CableConfiguration.DOUBLE,
         id = "custom-001",
         isCustom = true
     )

@@ -1,6 +1,5 @@
 package com.devil.phoenixproject.presentation.viewmodel
 
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.EchoLevel
 import com.devil.phoenixproject.domain.model.EccentricLoad
 import com.devil.phoenixproject.domain.model.Exercise
@@ -24,10 +23,8 @@ class ExerciseConfigViewModelTest {
                 name = "Plank",
                 muscleGroup = "Core",
                 muscleGroups = "Core",
-                equipment = "",
-                defaultCableConfig = CableConfiguration.DOUBLE
+                equipment = ""
             ),
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             setReps = listOf(10),
             weightPerCableKg = 0f
@@ -54,10 +51,8 @@ class ExerciseConfigViewModelTest {
                 name = "Bench Press",
                 muscleGroup = "Chest",
                 muscleGroups = "Chest",
-                equipment = "BAR",
-                defaultCableConfig = CableConfiguration.DOUBLE
+                equipment = "BAR"
             ),
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             setReps = listOf(10, 8),
             weightPerCableKg = 20f,

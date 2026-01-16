@@ -155,7 +155,6 @@ class TemplateConverter(
                     val routineExercise = RoutineExercise(
                         id = generateUUID(),
                         exercise = exercise,
-                        cableConfig = exercise.resolveDefaultCableConfig(),
                         orderIndex = index,
                         setReps = if (templateExercise.isPercentageBased) {
                             // For percentage-based sets (5/3/1), use target reps from percentage sets

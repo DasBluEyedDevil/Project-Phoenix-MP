@@ -369,7 +369,6 @@ private fun WorkoutTabCountdownPreview() {
                             equipment = "Vitruvian",
                             id = "bench-press"
                         ),
-                        cableConfig = CableConfiguration.DOUBLE,
                         orderIndex = 0,
                         weightPerCableKg = 30f,
                         setReps = listOf(12, 12, 12),
@@ -689,7 +688,6 @@ private fun WorkoutTabCompletedWithNextExercisePreview() {
                     equipment = "Vitruvian",
                     id = "bench-press"
                 ),
-                cableConfig = CableConfiguration.DOUBLE,
                 orderIndex = 0,
                 weightPerCableKg = 30f,
                 setReps = listOf(12, 12, 12),
@@ -704,7 +702,6 @@ private fun WorkoutTabCompletedWithNextExercisePreview() {
                     equipment = "Vitruvian",
                     id = "rows"
                 ),
-                cableConfig = CableConfiguration.DOUBLE,
                 orderIndex = 1,
                 weightPerCableKg = 25f,
                 setReps = listOf(10, 10, 10),

@@ -5,7 +5,6 @@ import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import co.touchlab.kermit.Logger
 import com.devil.phoenixproject.database.VitruvianDatabase
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.EccentricLoad
 import com.devil.phoenixproject.domain.model.EchoLevel
 import com.devil.phoenixproject.domain.model.Exercise
@@ -167,12 +166,6 @@ class SqlDelightWorkoutRepository(
                             muscleGroup = row.exerciseMuscleGroup,
                             muscleGroups = row.exerciseMuscleGroup,
                             equipment = row.exerciseEquipment,
-                            defaultCableConfig = try {
-                                CableConfiguration.valueOf(row.exerciseDefaultCableConfig)
-                            } catch (e: Exception) {
-                                Logger.w(e) { "Invalid defaultCableConfig '${row.exerciseDefaultCableConfig}' for exercise ${row.exerciseName}, using DOUBLE" }
-                                CableConfiguration.DOUBLE
-                            },
                             isFavorite = false,
                             isCustom = false
                         )
@@ -185,12 +178,6 @@ class SqlDelightWorkoutRepository(
                         muscleGroup = row.exerciseMuscleGroup,
                         muscleGroups = row.exerciseMuscleGroup,
                         equipment = row.exerciseEquipment,
-                        defaultCableConfig = try {
-                            CableConfiguration.valueOf(row.exerciseDefaultCableConfig)
-                        } catch (e: Exception) {
-                            Logger.w(e) { "Invalid defaultCableConfig '${row.exerciseDefaultCableConfig}' for exercise ${row.exerciseName}, using DOUBLE" }
-                            CableConfiguration.DOUBLE
-                        },
                         isFavorite = false,
                         isCustom = false
                     )
@@ -222,13 +209,6 @@ class SqlDelightWorkoutRepository(
                     emptyList()
                 }
 
-                val cableConfig = try {
-                    CableConfiguration.valueOf(row.cableConfig)
-                } catch (e: Exception) {
-                    Logger.w(e) { "Invalid cable config '${row.cableConfig}' for exercise ${row.exerciseName}, using DOUBLE" }
-                    CableConfiguration.DOUBLE
-                }
-
                 val eccentricLoad = mapEccentricLoadFromDb(row.eccentricLoad)
                 val echoLevel = EchoLevel.values().getOrNull(row.echoLevel.toInt()) ?: EchoLevel.HARDER
 
@@ -253,7 +233,6 @@ class SqlDelightWorkoutRepository(
                 RoutineExercise(
                     id = row.id,
                     exercise = exercise,
-                    cableConfig = cableConfig,
                     orderIndex = row.orderIndex.toInt(),
                     setReps = setReps,
                     weightPerCableKg = row.weightPerCableKg.toFloat(),
@@ -473,9 +452,9 @@ class SqlDelightWorkoutRepository(
             exerciseName = exercise.exercise.name,
             exerciseMuscleGroup = exercise.exercise.muscleGroup,
             exerciseEquipment = exercise.exercise.equipment,
-            exerciseDefaultCableConfig = exercise.exercise.defaultCableConfig.name,
+            exerciseDefaultCableConfig = "DOUBLE", // Legacy field - no longer used
             exerciseId = exercise.exercise.id,
-            cableConfig = exercise.cableConfig.name,
+            cableConfig = "DOUBLE", // Legacy field - no longer used
             orderIndex = index.toLong(),
             setReps = exercise.setReps.joinToString(",") { it?.toString() ?: "AMRAP" },
             weightPerCableKg = exercise.weightPerCableKg.toDouble(),

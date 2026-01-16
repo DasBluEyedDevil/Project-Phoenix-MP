@@ -137,14 +137,16 @@ class WorkoutRobot(
         return this
     }
 
-    suspend fun simulateRepNotification(repIndex: Int, metric: WorkoutMetric): WorkoutRobot {
+    suspend fun simulateRepNotification(repIndex: Int, metric: WorkoutMetric, warmupCount: Int = 0): WorkoutRobot {
+        // New rep counting formula: workingReps = down - repsRomCount
+        // For working reps: repsRomCount stays at warmupCount, completeCounter (down) increments
         bleRepository.emitMetric(metric)
         bleRepository.emitRepNotification(
             RepNotification(
-                topCounter = repIndex,
-                completeCounter = repIndex,
-                repsRomCount = repIndex,
-                repsSetCount = repIndex,
+                topCounter = repIndex + warmupCount,
+                completeCounter = repIndex + warmupCount,  // down counter
+                repsRomCount = warmupCount,  // warmup count from machine
+                repsSetCount = repIndex,  // legacy - ignored by new formula
                 rangeTop = 800f,
                 rangeBottom = 0f,
                 rawData = ByteArray(24),

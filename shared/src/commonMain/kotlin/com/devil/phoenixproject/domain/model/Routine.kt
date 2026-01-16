@@ -37,19 +37,13 @@ data class Routine(
 /**
  * Domain model for an exercise within a routine
  *
- * @param cableConfig User's cable configuration choice (SINGLE or DOUBLE)
- *                    Should be set based on exercise's defaultCableConfig
- *                    If exercise allows EITHER, defaults to DOUBLE
  * @param weightPerCableKg Weight in kg per cable (machine tracks each cable independently)
- *                         For SINGLE: weight on the one active cable
- *                         For DOUBLE: weight per cable (total load = 2x this value)
  * @param supersetId Reference to parent Superset container (null if not in a superset)
  * @param orderInSuperset Position within the superset (0-based)
  */
 data class RoutineExercise(
     val id: String,
     val exercise: Exercise,
-    val cableConfig: CableConfiguration,
     val orderIndex: Int,
     val setReps: List<Int?> = listOf(10, 10, 10),
     val weightPerCableKg: Float,
@@ -152,17 +146,6 @@ data class RoutineExercise(
  */
 private fun Float.roundToHalfKg(): Float {
     return (this * 2).roundToInt() / 2f
-}
-
-/**
- * Helper function to determine the appropriate cable configuration for an exercise
- * If exercise allows EITHER, defaults to DOUBLE
- */
-fun Exercise.resolveDefaultCableConfig(): CableConfiguration {
-    return when (defaultCableConfig) {
-        CableConfiguration.EITHER -> CableConfiguration.DOUBLE
-        else -> defaultCableConfig
-    }
 }
 
 // ==================== SUPERSET SUPPORT ====================

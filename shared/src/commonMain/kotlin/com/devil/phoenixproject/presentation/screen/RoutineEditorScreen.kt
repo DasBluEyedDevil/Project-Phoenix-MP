@@ -660,7 +660,6 @@ fun RoutineEditorScreen(
                 val newEx = RoutineExercise(
                     id = generateUUID(),
                     exercise = selectedExercise,
-                    cableConfig = selectedExercise.resolveDefaultCableConfig(),
                     orderIndex = state.exercises.size,
                     weightPerCableKg = 5f,
                     // If adding to a superset, set the superset reference

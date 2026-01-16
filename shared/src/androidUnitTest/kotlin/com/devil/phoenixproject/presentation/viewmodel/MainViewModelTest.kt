@@ -395,14 +395,16 @@ class MainViewModelTest {
         assertTrue(viewModel.connectionLostDuringWorkout.value)
     }
 
-    private suspend fun emitRepNotification(repIndex: Int, metric: WorkoutMetric) {
+    private suspend fun emitRepNotification(repIndex: Int, metric: WorkoutMetric, warmupCount: Int = 0) {
+        // New rep counting formula: workingReps = down - repsRomCount
+        // For working reps: repsRomCount stays at warmupCount, completeCounter (down) increments
         fakeBleRepository.emitMetric(metric)
         fakeBleRepository.emitRepNotification(
             com.devil.phoenixproject.data.repository.RepNotification(
-                topCounter = repIndex,
-                completeCounter = repIndex,
-                repsRomCount = repIndex,
-                repsSetCount = repIndex,
+                topCounter = repIndex + warmupCount,
+                completeCounter = repIndex + warmupCount,  // down counter
+                repsRomCount = warmupCount,  // warmup count from machine
+                repsSetCount = repIndex,  // legacy - ignored by new formula
                 rangeTop = 800f,
                 rangeBottom = 0f,
                 rawData = ByteArray(24),

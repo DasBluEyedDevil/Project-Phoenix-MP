@@ -16,7 +16,6 @@ import kotlinx.serialization.json.Json
 @Serializable
 data class SingleExerciseDefaults(
     val exerciseId: String,
-    val cableConfig: String,
     val setReps: List<Int?>,
     val weightPerCableKg: Float,
     val setWeightsPerCableKg: List<Float>,
@@ -29,11 +28,6 @@ data class SingleExerciseDefaults(
     val isAMRAP: Boolean,
     val perSetRestTime: Boolean
 ) {
-    fun getCableConfiguration(): com.devil.phoenixproject.domain.model.CableConfiguration {
-        return com.devil.phoenixproject.domain.model.CableConfiguration.entries.find { it.name == cableConfig }
-            ?: com.devil.phoenixproject.domain.model.CableConfiguration.DOUBLE
-    }
-
     fun getEccentricLoad(): com.devil.phoenixproject.domain.model.EccentricLoad {
         // Handle legacy 125% -> fall back to 120%
         val percentage = if (eccentricLoadPercentage == 125) 120 else eccentricLoadPercentage
@@ -117,7 +111,7 @@ interface PreferencesManager {
     suspend fun setSimulatorModeUnlocked(unlocked: Boolean)
     fun isSimulatorModeUnlocked(): Boolean
 
-    suspend fun getSingleExerciseDefaults(exerciseId: String, cableConfig: String): SingleExerciseDefaults?
+    suspend fun getSingleExerciseDefaults(exerciseId: String): SingleExerciseDefaults?
     suspend fun saveSingleExerciseDefaults(defaults: SingleExerciseDefaults)
     suspend fun clearAllSingleExerciseDefaults()
 
@@ -235,9 +229,29 @@ class SettingsPreferencesManager(
         updateAndEmit { copy(autoStartCountdownSeconds = seconds) }
     }
 
-    override suspend fun getSingleExerciseDefaults(exerciseId: String, cableConfig: String): SingleExerciseDefaults? {
-        val key = "$KEY_PREFIX_EXERCISE${exerciseId}_$cableConfig"
-        val jsonString = settings.getStringOrNull(key) ?: return null
+    override suspend fun getSingleExerciseDefaults(exerciseId: String): SingleExerciseDefaults? {
+        val key = "$KEY_PREFIX_EXERCISE$exerciseId"
+
+        // Try new key format first
+        var jsonString = settings.getStringOrNull(key)
+
+        // Migration: If not found, try legacy key formats that included cableConfig
+        if (jsonString == null) {
+            val legacyCableConfigs = listOf("DOUBLE", "SINGLE", "EITHER")
+            for (cableConfig in legacyCableConfigs) {
+                val legacyKey = "${KEY_PREFIX_EXERCISE}${exerciseId}_$cableConfig"
+                jsonString = settings.getStringOrNull(legacyKey)
+                if (jsonString != null) {
+                    // Found with legacy key - migrate to new format
+                    settings.putString(key, jsonString)
+                    settings.remove(legacyKey)
+                    break
+                }
+            }
+        }
+
+        if (jsonString == null) return null
+
         return try {
             json.decodeFromString<SingleExerciseDefaults>(jsonString)
         } catch (e: Exception) {
@@ -246,7 +260,7 @@ class SettingsPreferencesManager(
     }
 
     override suspend fun saveSingleExerciseDefaults(defaults: SingleExerciseDefaults) {
-        val key = "$KEY_PREFIX_EXERCISE${defaults.exerciseId}_${defaults.cableConfig}"
+        val key = "$KEY_PREFIX_EXERCISE${defaults.exerciseId}"
         settings.putString(key, json.encodeToString(defaults))
     }
 

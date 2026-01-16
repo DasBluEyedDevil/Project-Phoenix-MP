@@ -44,7 +44,6 @@ fun ExerciseEditBottomSheet(
     var weightPerCable by remember {
         mutableStateOf(kgToDisplay(exercise.weightPerCableKg, weightUnit))
     }
-    var selectedCableConfig by remember { mutableStateOf(exercise.cableConfig) }
     var restSeconds by remember { mutableStateOf(exercise.setRestSeconds.firstOrNull() ?: 60) }
     var selectedEccentricLoad by remember { mutableStateOf(exercise.eccentricLoad) }
     var selectedEchoLevel by remember { mutableStateOf(exercise.echoLevel) }
@@ -195,24 +194,6 @@ fun ExerciseEditBottomSheet(
                 singleLine = true
             )
 
-            // Cable Configuration
-            Text(
-                text = "Cable Configuration",
-                style = MaterialTheme.typography.titleSmall
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                CableConfiguration.entries.forEach { config ->
-                    FilterChip(
-                        selected = selectedCableConfig == config,
-                        onClick = { selectedCableConfig = config },
-                        label = { Text(config.name.lowercase().replaceFirstChar { it.uppercase() }) }
-                    )
-                }
-            }
-
             HorizontalDivider()
 
             // Rest Time
@@ -340,7 +321,6 @@ fun ExerciseEditBottomSheet(
                         val updatedExercise = exercise.copy(
                             setReps = setReps.toList(),
                             weightPerCableKg = displayToKg(weightPerCable, weightUnit),
-                            cableConfig = selectedCableConfig,
                             setRestSeconds = listOf(restSeconds),
                             eccentricLoad = selectedEccentricLoad,
                             echoLevel = selectedEchoLevel,

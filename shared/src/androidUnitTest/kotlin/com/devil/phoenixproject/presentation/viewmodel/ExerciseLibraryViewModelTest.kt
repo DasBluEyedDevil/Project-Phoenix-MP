@@ -1,6 +1,5 @@
 package com.devil.phoenixproject.presentation.viewmodel
 
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.Exercise
 import com.devil.phoenixproject.testutil.FakeExerciseRepository
 import com.devil.phoenixproject.testutil.TestCoroutineRule
@@ -32,8 +31,7 @@ class ExerciseLibraryViewModelTest {
                 name = "Bench Press",
                 muscleGroup = "Chest",
                 muscleGroups = "Chest",
-                equipment = "BAR",
-                defaultCableConfig = CableConfiguration.DOUBLE
+                equipment = "BAR"
             )
         )
         repository.addExercise(
@@ -41,8 +39,7 @@ class ExerciseLibraryViewModelTest {
                 name = "Squat",
                 muscleGroup = "Legs",
                 muscleGroups = "Legs",
-                equipment = "BAR",
-                defaultCableConfig = CableConfiguration.DOUBLE
+                equipment = "BAR"
             )
         )
 
@@ -62,8 +59,7 @@ class ExerciseLibraryViewModelTest {
                 name = "Bench Press",
                 muscleGroup = "Chest",
                 muscleGroups = "Chest",
-                equipment = "BAR",
-                defaultCableConfig = CableConfiguration.DOUBLE
+                equipment = "BAR"
             )
         )
         repository.addExercise(
@@ -71,8 +67,7 @@ class ExerciseLibraryViewModelTest {
                 name = "Squat",
                 muscleGroup = "Legs",
                 muscleGroups = "Legs",
-                equipment = "BAR",
-                defaultCableConfig = CableConfiguration.DOUBLE
+                equipment = "BAR"
             )
         )
 
@@ -91,8 +86,7 @@ class ExerciseLibraryViewModelTest {
             name = "Bench Press",
             muscleGroup = "Chest",
             muscleGroups = "Chest",
-            equipment = "BAR",
-            defaultCableConfig = CableConfiguration.DOUBLE
+            equipment = "BAR"
         )
         repository.addExercise(exercise)
         repository.addVideos(

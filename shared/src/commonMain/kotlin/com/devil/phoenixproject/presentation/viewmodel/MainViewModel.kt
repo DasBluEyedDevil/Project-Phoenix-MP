@@ -393,6 +393,13 @@ class MainViewModel constructor(
     )
     val hapticEvents: SharedFlow<HapticEvent> = _hapticEvents.asSharedFlow()
 
+    // Issue #172: User feedback events for navigation/UI messages
+    private val _userFeedbackEvents = MutableSharedFlow<String>(
+        extraBufferCapacity = 5,
+        onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
+    )
+    val userFeedbackEvents: SharedFlow<String> = _userFeedbackEvents.asSharedFlow()
+
     private val _connectionLostDuringWorkout = MutableStateFlow(false)
     val connectionLostDuringWorkout: StateFlow<Boolean> = _connectionLostDuringWorkout.asStateFlow()
 
@@ -486,7 +493,19 @@ class MainViewModel constructor(
                      }
                      RepType.WARMUP_COMPLETED -> _hapticEvents.emit(HapticEvent.REP_COMPLETED)
                      RepType.WARMUP_COMPLETE -> _hapticEvents.emit(HapticEvent.WARMUP_COMPLETE)
-                     RepType.WORKOUT_COMPLETE -> _hapticEvents.emit(HapticEvent.WORKOUT_COMPLETE)
+                     RepType.WORKOUT_COMPLETE -> {
+                         _hapticEvents.emit(HapticEvent.WORKOUT_COMPLETE)
+                         // Issue #182: Trigger set completion immediately on WORKOUT_COMPLETE event.
+                         // Previously, completion relied on a subsequent metric arriving to trigger
+                         // handleSetCompletion() via shouldStopWorkout() check in handleMonitorMetric().
+                         // If no metric arrived (machine timing issue), the workout would stay stuck.
+                         // Now we complete directly here. The setCompletionInProgress guard prevents
+                         // double-processing if handleMonitorMetric also triggers completion.
+                         if (_workoutState.value is WorkoutState.Active) {
+                             Logger.d("WORKOUT_COMPLETE event received - triggering immediate set completion")
+                             handleSetCompletion()
+                         }
+                     }
                      else -> {}
                  }
              }
@@ -626,6 +645,10 @@ class MainViewModel constructor(
                         wasConnected = true
                         // Clear any previous connection lost alert when reconnected
                         _connectionLostDuringWorkout.value = false
+                        // Issue #179: Initialize LED color scheme on connection
+                        val savedColorScheme = userPreferences.value.colorScheme
+                        bleRepository.setColorScheme(savedColorScheme)
+                        Logger.d { "Initialized LED color scheme to saved preference: $savedColorScheme" }
                     }
                     is ConnectionState.Disconnected, is ConnectionState.Error -> {
                         // Only trigger alert if we were previously connected
@@ -671,26 +694,10 @@ class MainViewModel constructor(
         val rawPosA = currentPositions?.positionA ?: 0f
         val rawPosB = currentPositions?.positionB ?: 0f
 
-        // Issue #144: Apply max(posA, posB) for single-cable exercises to handle race condition
-        // between metrics flow and rep events flow. The metrics flow applies this fix at the
-        // BLE layer, but rep events might arrive before the updated metric, causing stale
-        // position data to be used for ROM range calculation.
-        val currentExercise = getCurrentExercise()
-        val cableConfig = currentExercise?.cableConfig
-            ?: com.devil.phoenixproject.domain.model.CableConfiguration.DOUBLE
-
-        val (effectivePosA, effectivePosB) = when (cableConfig) {
-            com.devil.phoenixproject.domain.model.CableConfiguration.SINGLE,
-            com.devil.phoenixproject.domain.model.CableConfiguration.EITHER -> {
-                // Use max position for single-cable exercises (matches official app behavior)
-                val maxPos = maxOf(rawPosA, rawPosB)
-                Pair(maxPos, maxPos)
-            }
-            com.devil.phoenixproject.domain.model.CableConfiguration.DOUBLE -> {
-                // Two-cable exercises: use each channel independently
-                Pair(rawPosA, rawPosB)
-            }
-        }
+        // Use raw per-cable positions for rep range tracking to ensure danger zone
+        // checks work correctly with the UI's raw position display.
+        // Rep counter internally handles single-cable exercises by recording
+        // positions only for cables with meaningful values (> 0).
 
         // Use machine's ROM and Set counters directly (official app method)
         // Position values are in mm (Issue #197)
@@ -702,13 +709,14 @@ class MainViewModel constructor(
             repsSetCount = notification.repsSetCount,
             up = notification.topCounter,
             down = notification.completeCounter,
-            posA = effectivePosA,
-            posB = effectivePosB,
+            posA = rawPosA,
+            posB = rawPosB,
             isLegacyFormat = notification.isLegacyFormat
         )
 
         // Issue #163: Update phase tracking for animated rep counter
-        repCounter.updatePhaseFromPosition(effectivePosA, effectivePosB)
+        // Use max of both positions for direction detection (handles single-cable exercises)
+        repCounter.updatePhaseFromPosition(rawPosA, rawPosB)
 
         // Update rep count and ranges for UI
         _repCount.value = repCounter.getRepCount()
@@ -816,6 +824,18 @@ class MainViewModel constructor(
     }
 
     fun updateWorkoutParameters(params: WorkoutParameters) {
+        // Issue #170/#180: Track if user edits parameters during Idle, Resting, or SetSummary
+        // Idle: User adjusts weight BEFORE routine starts (Issue #180)
+        // Resting: User adjusts weight during rest period between sets
+        // SetSummary: User adjusts weight while viewing set summary
+        // This ensures edits made before/between sets persist through exercise transitions
+        val currentState = _workoutState.value
+        if (currentState is WorkoutState.Idle ||
+            currentState is WorkoutState.Resting ||
+            currentState is WorkoutState.SetSummary) {
+            _userAdjustedWeightDuringRest = true
+            Logger.d("updateWorkoutParameters: User edited params in ${currentState::class.simpleName} - will preserve on transition")
+        }
         _workoutParameters.value = params
     }
 
@@ -917,14 +937,6 @@ class MainViewModel constructor(
             }
             Logger.d { "Built ${command.size}-byte workout command for ${params.programMode}" }
 
-            // Task 3: Set cable configuration for handle release detection
-            // This affects whether release requires ONE cable at rest (SINGLE/EITHER)
-            // or BOTH cables at rest (DOUBLE)
-            val cableConfig = currentExercise?.cableConfig
-                ?: com.devil.phoenixproject.domain.model.CableConfiguration.DOUBLE
-            bleRepository.setCableConfiguration(cableConfig)
-            Logger.d { "Cable configuration set to: $cableConfig" }
-
             // 2. Send INIT Command (0x0A) - ensures clean state
             // Per parent repo protocol: "Sometimes sent before start to ensure clean state"
             try {
@@ -982,9 +994,9 @@ class MainViewModel constructor(
             } else {
                 repCounter.reset()
             }
-            // For timed cable exercises, skip ROM calibration (warmupTarget = 0)
+            // Timed cable exercises still need warmup (ROM calibration) since cables are used
             repCounter.configure(
-                warmupTarget = if (isTimedCableExercise) 0 else params.warmupReps,
+                warmupTarget = params.warmupReps,
                 workingTarget = params.reps,
                 isJustLift = isJustLiftMode,
                 stopAtTop = params.stopAtTop,
@@ -1647,6 +1659,10 @@ class MainViewModel constructor(
         // This matches official app behavior and prevents BLE command collisions that crash the machine
         if (_workoutState.value is WorkoutState.Active) {
             Logger.w("MainViewModel") { "Cannot jump to exercise $index while workout is Active - stop workout first" }
+            // Issue #172: Provide user feedback when navigation is blocked
+            viewModelScope.launch {
+                _userFeedbackEvents.emit("Stop the current set first")
+            }
             return
         }
 
@@ -1667,10 +1683,24 @@ class MainViewModel constructor(
         bodyweightTimerJob?.cancel()
         resetAutoStopState()
 
-        // Navigate and auto-start (Active state is blocked above, so this is safe)
-        navigateToExerciseInternal(routine, index)
-        // Auto-start the next exercise with countdown (Issue #93 fix)
-        startWorkout(skipCountdown = false)
+        // Issue #172: Async navigation with proper BLE cleanup to ensure machine is in BASELINE mode
+        // This matches official app behavior which requires explicit stop before mode transitions
+        viewModelScope.launch {
+            try {
+                // Send stop command to ensure machine is in BASELINE mode before mode transition
+                // This prevents BLE protocol conflicts when switching between workout modes (Echo <-> Old School)
+                bleRepository.stopWorkout()
+                delay(150)  // Brief settling time for machine to process stop command
+                Logger.d("MainViewModel") { "BLE stop sent before navigation to exercise $index" }
+            } catch (e: Exception) {
+                Logger.w(e) { "Stop command before navigation failed (non-fatal): ${e.message}" }
+                // Continue anyway - the stop may have succeeded partially
+            }
+
+            navigateToExerciseInternal(routine, index)
+            // Auto-start the next exercise with countdown (Issue #93 fix)
+            startWorkout(skipCountdown = false)
+        }
     }
 
     /**
@@ -2620,47 +2650,20 @@ class MainViewModel constructor(
     }
 
     /**
-     * Get saved Single Exercise defaults for a specific exercise and cable configuration.
+     * Get saved Single Exercise defaults for a specific exercise.
      * Returns null if no defaults have been saved yet.
      */
-    suspend fun getSingleExerciseDefaults(exerciseId: String, cableConfig: String): com.devil.phoenixproject.data.preferences.SingleExerciseDefaults? {
-        return preferencesManager.getSingleExerciseDefaults(exerciseId, cableConfig)
+    suspend fun getSingleExerciseDefaults(exerciseId: String): com.devil.phoenixproject.data.preferences.SingleExerciseDefaults? {
+        return preferencesManager.getSingleExerciseDefaults(exerciseId)
     }
 
     /**
-     * Get saved Single Exercise defaults for an exercise, trying the preferred cable config first,
-     * then falling back to other cable configs if not found.
-     * This handles cases where user changed cable config in a previous session.
-     */
-    suspend fun getSingleExerciseDefaultsWithFallback(
-        exerciseId: String,
-        preferredCableConfig: String
-    ): com.devil.phoenixproject.data.preferences.SingleExerciseDefaults? {
-        // Try preferred config first
-        preferencesManager.getSingleExerciseDefaults(exerciseId, preferredCableConfig)?.let {
-            return it
-        }
-
-        // Try other cable configs as fallback
-        val allConfigs = listOf("DOUBLE", "SINGLE", "EITHER")
-        for (config in allConfigs) {
-            if (config != preferredCableConfig) {
-                preferencesManager.getSingleExerciseDefaults(exerciseId, config)?.let {
-                    return it
-                }
-            }
-        }
-
-        return null
-    }
-
-    /**
-     * Save Single Exercise defaults for a specific exercise and cable configuration.
+     * Save Single Exercise defaults for a specific exercise.
      */
     fun saveSingleExerciseDefaults(defaults: com.devil.phoenixproject.data.preferences.SingleExerciseDefaults) {
         viewModelScope.launch {
             preferencesManager.saveSingleExerciseDefaults(defaults)
-            Logger.d("saveSingleExerciseDefaults: exerciseId=${defaults.exerciseId}, cableConfig=${defaults.cableConfig}")
+            Logger.d("saveSingleExerciseDefaults: exerciseId=${defaults.exerciseId}")
         }
     }
 
@@ -2715,10 +2718,13 @@ class MainViewModel constructor(
 
         Logger.d("MainViewModel: Adjusting weight to $clampedWeight kg (sendToMachine=$sendToMachine)")
 
-        // Issue #108: Track if user adjusts weight during rest period
-        if (_workoutState.value is WorkoutState.Resting) {
+        // Issue #108/#180: Track if user adjusts weight during Idle, Resting, or SetSummary
+        val currentState = _workoutState.value
+        if (currentState is WorkoutState.Idle ||
+            currentState is WorkoutState.Resting ||
+            currentState is WorkoutState.SetSummary) {
             _userAdjustedWeightDuringRest = true
-            Logger.d("MainViewModel: User adjusted weight during rest - will preserve on next set")
+            Logger.d("MainViewModel: User adjusted weight in ${currentState::class.simpleName} - will preserve on next set")
         }
 
         // Update workout parameters
@@ -3687,7 +3693,6 @@ class MainViewModel constructor(
 
             val defaults = com.devil.phoenixproject.data.preferences.SingleExerciseDefaults(
                 exerciseId = exerciseId,
-                cableConfig = currentExercise.cableConfig.name,
                 setReps = setReps,
                 weightPerCableKg = currentExercise.weightPerCableKg.coerceAtLeast(0f),
                 setWeightsPerCableKg = normalizedSetWeights,
@@ -3701,7 +3706,7 @@ class MainViewModel constructor(
                 perSetRestTime = currentExercise.perSetRestTime
             )
             preferencesManager.saveSingleExerciseDefaults(defaults)
-            Logger.d { "Saved Single Exercise defaults for ${currentExercise.exercise.name} (${currentExercise.cableConfig})" }
+            Logger.d { "Saved Single Exercise defaults for ${currentExercise.exercise.name}" }
         } catch (e: IllegalArgumentException) {
             Logger.e(e) { "Failed to save Single Exercise defaults - validation error" }
         } catch (e: Exception) {
@@ -3798,6 +3803,29 @@ class MainViewModel constructor(
                 if (nextSupersetIndex != null) routine?.exercises?.getOrNull(nextSupersetIndex) else null
             } else {
                 null
+            }
+
+            // Issue #170: Update workoutParameters with NEXT exercise settings when transitioning
+            // This ensures the rest screen shows the correct mode, weight, reps for the upcoming exercise
+            // instead of the just-completed exercise's parameters
+            if (nextExercise != null) {
+                val nextSetIdx = if (isInSupersetTransition) _currentSetIndex.value else 0
+                val nextSetReps = nextExercise.setReps.getOrNull(nextSetIdx)
+                val nextSetWeight = nextExercise.setWeightsPerCableKg.getOrNull(nextSetIdx)
+                    ?: nextExercise.weightPerCableKg
+
+                _workoutParameters.value = _workoutParameters.value.copy(
+                    weightPerCableKg = nextSetWeight,
+                    reps = nextSetReps ?: 0,
+                    programMode = nextExercise.programMode,
+                    echoLevel = nextExercise.echoLevel,
+                    eccentricLoad = nextExercise.eccentricLoad,
+                    progressionRegressionKg = nextExercise.progressionKg,
+                    selectedExerciseId = nextExercise.exercise.id,
+                    isAMRAP = nextSetReps == null,
+                    stallDetectionEnabled = nextExercise.stallDetectionEnabled
+                )
+                Logger.d { "startRestTimer: Updated params for next exercise: ${nextExercise.exercise.name}, mode=${nextExercise.programMode}" }
             }
 
             // Calculate display values for the rest timer
@@ -3918,18 +3946,24 @@ class MainViewModel constructor(
         if (_currentSetIndex.value < currentExercise.setReps.size - 1) {
             _currentSetIndex.value++
             val targetReps = currentExercise.setReps[_currentSetIndex.value]
+            val currentParams = _workoutParameters.value
 
-            // Issue #108: Preserve user-adjusted weight, otherwise use preset
+            // Issue #108/#170: Preserve user-adjusted params, otherwise use preset
             val setWeight = if (_userAdjustedWeightDuringRest) {
-                _workoutParameters.value.weightPerCableKg
+                currentParams.weightPerCableKg
             } else {
                 currentExercise.setWeightsPerCableKg.getOrNull(_currentSetIndex.value)
                     ?: currentExercise.weightPerCableKg
             }
+            val setReps = if (_userAdjustedWeightDuringRest) {
+                currentParams.reps
+            } else {
+                targetReps ?: 0
+            }
             _userAdjustedWeightDuringRest = false // Reset flag after use
 
-            _workoutParameters.value = _workoutParameters.value.copy(
-                reps = targetReps ?: 0,
+            _workoutParameters.value = currentParams.copy(
+                reps = setReps,
                 weightPerCableKg = setWeight,
                 isAMRAP = targetReps == null,
                 stallDetectionEnabled = currentExercise.stallDetectionEnabled,
@@ -4008,23 +4042,44 @@ class MainViewModel constructor(
             _currentExerciseIndex.value = nextExIdx
             _currentSetIndex.value = nextSetIdx
 
-            // Issue #108: Handle user-adjusted weight during rest
-            // Preserve user's weight adjustment only if staying on same exercise and same set progression
+            // Issue #108/#170: Handle user-adjusted parameters during rest
+            // With Issue #170 fix, workoutParameters are updated to NEXT exercise's values when entering rest.
+            // If user edited during rest, preserve their edits (weight, reps, echoLevel, eccentricLoad).
+            // Always update non-editable fields (mode, exerciseId, etc.) from routine.
             val nextSetReps = nextExercise.setReps.getOrNull(nextSetIdx)
-            val nextSetWeight = if (!isChangingExercise && _userAdjustedWeightDuringRest) {
-                _workoutParameters.value.weightPerCableKg
+            val currentParams = _workoutParameters.value
+
+            val nextSetWeight = if (_userAdjustedWeightDuringRest) {
+                // User edited during rest - preserve their weight choice
+                currentParams.weightPerCableKg
             } else {
                 nextExercise.setWeightsPerCableKg.getOrNull(nextSetIdx)
                     ?: nextExercise.weightPerCableKg
             }
+            val nextReps = if (_userAdjustedWeightDuringRest) {
+                // User edited during rest - preserve their reps choice
+                currentParams.reps
+            } else {
+                nextSetReps ?: 0
+            }
+            val nextEchoLevel = if (_userAdjustedWeightDuringRest) {
+                currentParams.echoLevel
+            } else {
+                nextExercise.echoLevel
+            }
+            val nextEccentricLoad = if (_userAdjustedWeightDuringRest) {
+                currentParams.eccentricLoad
+            } else {
+                nextExercise.eccentricLoad
+            }
             _userAdjustedWeightDuringRest = false // Reset flag after use
 
-            _workoutParameters.value = _workoutParameters.value.copy(
+            _workoutParameters.value = currentParams.copy(
                 weightPerCableKg = nextSetWeight,
-                reps = nextSetReps ?: 0,
+                reps = nextReps,
                 programMode = nextExercise.programMode,
-                echoLevel = nextExercise.echoLevel,
-                eccentricLoad = nextExercise.eccentricLoad,
+                echoLevel = nextEchoLevel,
+                eccentricLoad = nextEccentricLoad,
                 progressionRegressionKg = nextExercise.progressionKg,
                 selectedExerciseId = nextExercise.exercise.id,
                 isAMRAP = nextSetReps == null,

@@ -1,18 +1,6 @@
 package com.devil.phoenixproject.domain.model
 
 /**
- * Cable configuration for Vitruvian exercises
- * - SINGLE: One cable only (unilateral - e.g., one-arm row)
- * - DOUBLE: Both cables required (bilateral - e.g., bench press)
- * - EITHER: User can choose single or double (e.g., bicep curls)
- */
-enum class CableConfiguration {
-    SINGLE,
-    DOUBLE,
-    EITHER
-}
-
-/**
  * Exercise model - represents any exercise that can be performed on the Vitruvian Trainer
  *
  * MIGRATION NOTE: This was converted from an enum to a data class to support the exercise library
@@ -30,7 +18,6 @@ data class Exercise(
     val muscleGroup: String,
     val muscleGroups: String = muscleGroup, // Comma-separated list of primary muscle groups (defaults to muscleGroup for backward compatibility)
     val equipment: String = "",
-    val defaultCableConfig: CableConfiguration = CableConfiguration.DOUBLE,
     val id: String? = null,  // Optional exercise library ID for loading videos/thumbnails
     val isFavorite: Boolean = false, // Whether exercise is marked as favorite
     val isCustom: Boolean = false, // Whether exercise was created by user
@@ -42,22 +29,6 @@ data class Exercise(
      */
     val displayName: String
         get() = name
-
-    /**
-     * Resolve the default cable configuration based on equipment.
-     * If equipment suggests single cable use (e.g., single handle), defaults to SINGLE.
-     */
-    fun resolveDefaultCableConfig(): CableConfiguration {
-        // Check if equipment suggests single cable
-        val singleCableEquipment = listOf("SINGLE_HANDLE", "ANKLE_STRAP", "STRAPS")
-        val equipmentList = equipment.uppercase().split(",").map { it.trim() }
-
-        return if (equipmentList.any { it in singleCableEquipment }) {
-            CableConfiguration.SINGLE
-        } else {
-            defaultCableConfig
-        }
-    }
 }
 
 /**

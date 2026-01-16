@@ -6,7 +6,6 @@ import com.devil.phoenixproject.data.repository.HandleState
 import com.devil.phoenixproject.data.repository.ReconnectionRequest
 import com.devil.phoenixproject.data.repository.RepNotification
 import com.devil.phoenixproject.data.repository.ScannedDevice
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.ConnectionState
 import com.devil.phoenixproject.domain.model.HeuristicPhaseStatistics
 import com.devil.phoenixproject.domain.model.HeuristicStatistics
@@ -64,7 +63,6 @@ class SimulatorBleRepository(
     private var simulationJob: Job? = null
     private var handleDetectionJob: Job? = null
     private var handleDetectionEnabled = false
-    private var cableConfiguration = CableConfiguration.DOUBLE
 
     // Rep tracking
     private var totalTopCounter = 0
@@ -301,11 +299,6 @@ class SimulatorBleRepository(
             log.i { "Handle state: Grabbed (simulated)" }
             _handleDetection.value = HandleDetection(leftDetected = true, rightDetected = true)
         }
-    }
-
-    override fun setCableConfiguration(config: CableConfiguration) {
-        log.d { "Cable configuration set: $config" }
-        cableConfiguration = config
     }
 
     override fun resetHandleState() {

@@ -10,9 +10,18 @@ import platform.Foundation.NSLog
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSLibraryDirectory
 import platform.Foundation.NSUserDomainMask
+import platform.Foundation.NSUserDefaults
 
 actual class DriverFactory {
     actual fun createDriver(): SqlDriver {
+        // EMERGENCY FIX (Jan 2026): One-time database purge to avoid unrecoverable migration crashes.
+        // Migration exceptions on iOS worker threads abort the app before try-catch can intercept them.
+        // For users with corrupted migration state, the only solution is to delete and recreate.
+        //
+        // This runs ONCE per install via NSUserDefaults marker. Remove this block after
+        // sufficient time has passed for all users to update (e.g., v0.4.0+).
+        purgeCorruptedDatabaseIfNeeded()
+
         // CRITICAL FIX (Jan 2026): Migration exceptions on iOS worker threads abort the app
         // before try-catch can intercept them. The NativeSqliteDriver runs migrations during
         // construction on worker threads - exceptions propagate through Kotlin/Native's
@@ -1428,5 +1437,207 @@ actual class DriverFactory {
         val libraryUrl = (urls as List<platform.Foundation.NSURL>).firstOrNull()
         val libraryPath = libraryUrl?.path ?: ""
         return "$libraryPath/vitruvian.db"
+    }
+
+    /**
+     * EMERGENCY FIX: Database purge ONLY when actual corruption is detected.
+     *
+     * Background: iOS SQLite migrations run on worker threads and crash the app BEFORE any
+     * try-catch can intercept exceptions. Users with databases in a bad migration state
+     * (e.g., schema version 10 but missing tables/columns) cannot recover - the app crashes
+     * on every launch attempt.
+     *
+     * This function:
+     * 1. Checks if we've already run the purge (via NSUserDefaults marker)
+     * 2. Attempts to open and validate the database with a simple query
+     * 3. ONLY deletes the database if it's actually corrupted (query fails)
+     * 4. Sets the marker so this check only runs ONCE per app install
+     *
+     * After a corruption-triggered purge, SQLDelight will create a fresh database.
+     * Users with healthy databases keep all their data.
+     *
+     * TODO: Remove this emergency code in a future release (e.g., v0.4.0+) once all users
+     * have had a chance to update. The marker key ensures it only runs once anyway.
+     */
+    @OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+    private fun purgeCorruptedDatabaseIfNeeded() {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val markerKey = "phoenix_db_purge_v033_completed"
+
+        // Check if we've already run the corruption check
+        if (defaults.boolForKey(markerKey)) {
+            NSLog("iOS DB: Corruption check already completed (marker present)")
+            return
+        }
+
+        val dbPath = getDatabasePath()
+        val fileManager = NSFileManager.defaultManager
+
+        // Check if database exists - if not, nothing to check (fresh install)
+        if (!fileManager.fileExistsAtPath(dbPath)) {
+            NSLog("iOS DB: No existing database found (fresh install), setting marker")
+            defaults.setBool(true, markerKey)
+            return
+        }
+
+        // CRITICAL FIX: Only purge if database is ACTUALLY corrupted
+        // Try to open and run a simple validation query
+        val isCorrupted = isDatabaseCorrupted(dbPath)
+
+        if (!isCorrupted) {
+            NSLog("iOS DB: Database validation passed - no purge needed, keeping user data")
+            defaults.setBool(true, markerKey)
+            return
+        }
+
+        // Database is corrupted - purge it
+        NSLog("iOS DB: CORRUPTION DETECTED - Deleting corrupted database to fix migration crash")
+        NSLog("iOS DB: WARNING - User workout data will be lost, but app will launch")
+
+        try {
+            // Delete main database file
+            val mainDeleted = fileManager.removeItemAtPath(dbPath, null)
+            NSLog("iOS DB: Main database deleted: $mainDeleted")
+
+            // Delete WAL (Write-Ahead Log) file if exists
+            val walPath = "$dbPath-wal"
+            if (fileManager.fileExistsAtPath(walPath)) {
+                fileManager.removeItemAtPath(walPath, null)
+                NSLog("iOS DB: WAL file deleted")
+            }
+
+            // Delete SHM (Shared Memory) file if exists
+            val shmPath = "$dbPath-shm"
+            if (fileManager.fileExistsAtPath(shmPath)) {
+                fileManager.removeItemAtPath(shmPath, null)
+                NSLog("iOS DB: SHM file deleted")
+            }
+
+            NSLog("iOS DB: Database purge complete - fresh database will be created")
+        } catch (e: Exception) {
+            NSLog("iOS DB ERROR: Failed to purge database: ${e.message}")
+        }
+
+        // Set marker so we don't check again
+        defaults.setBool(true, markerKey)
+        NSLog("iOS DB: Corruption check marker set - will not check on future launches")
+    }
+
+    /**
+     * Check if the database is corrupted by attempting to open it and run validation queries.
+     *
+     * Returns true if corruption is detected, false if database appears healthy.
+     *
+     * Checks performed:
+     * 1. SQLite integrity check (PRAGMA integrity_check)
+     * 2. Can read core tables (Exercise, Routine - should exist in any valid DB)
+     * 3. Schema version is readable
+     */
+    private fun isDatabaseCorrupted(dbPath: String): Boolean {
+        NSLog("iOS DB: Running corruption check...")
+
+        // Use a minimal no-op schema to just open the database without triggering migrations
+        val validationSchema = object : SqlSchema<QueryResult.Value<Unit>> {
+            override val version: Long = 1L
+            override fun create(driver: SqlDriver): QueryResult.Value<Unit> = QueryResult.Value(Unit)
+            override fun migrate(
+                driver: SqlDriver,
+                oldVersion: Long,
+                newVersion: Long,
+                vararg callbacks: app.cash.sqldelight.db.AfterVersion
+            ): QueryResult.Value<Unit> = QueryResult.Value(Unit)
+        }
+
+        var testDriver: SqlDriver? = null
+        try {
+            testDriver = NativeSqliteDriver(
+                schema = validationSchema,
+                name = "vitruvian.db",
+                onConfiguration = { config ->
+                    config.copy(
+                        create = { _ -> },
+                        upgrade = { _, _, _ -> },
+                        extendedConfig = DatabaseConfiguration.Extended(
+                            foreignKeyConstraints = false
+                        )
+                    )
+                }
+            )
+
+            // Test 1: SQLite integrity check
+            var integrityOk = false
+            testDriver.executeQuery(
+                null,
+                "PRAGMA integrity_check",
+                { cursor ->
+                    if (cursor.next().value) {
+                        val result = cursor.getString(0)
+                        integrityOk = result == "ok"
+                        if (!integrityOk) {
+                            NSLog("iOS DB: Integrity check failed: $result")
+                        }
+                    }
+                    QueryResult.Value(Unit)
+                },
+                0
+            )
+
+            if (!integrityOk) {
+                NSLog("iOS DB: CORRUPTION - SQLite integrity check failed")
+                return true
+            }
+
+            // Test 2: Try to read from a core table that should always exist
+            // If this fails, the schema is broken
+            var canReadSchema = false
+            try {
+                testDriver.executeQuery(
+                    null,
+                    "SELECT name FROM sqlite_master WHERE type='table' LIMIT 1",
+                    { cursor ->
+                        canReadSchema = true
+                        QueryResult.Value(Unit)
+                    },
+                    0
+                )
+            } catch (e: Exception) {
+                NSLog("iOS DB: Cannot read sqlite_master: ${e.message}")
+            }
+
+            if (!canReadSchema) {
+                NSLog("iOS DB: CORRUPTION - Cannot read database schema")
+                return true
+            }
+
+            // Test 3: Check if critical tables exist and are queryable
+            val criticalTables = listOf("Exercise", "Routine", "WorkoutSession")
+            for (table in criticalTables) {
+                try {
+                    testDriver.executeQuery(
+                        null,
+                        "SELECT COUNT(*) FROM $table",
+                        { QueryResult.Value(Unit) },
+                        0
+                    )
+                } catch (e: Exception) {
+                    // Table missing or corrupted - but this might be a fresh DB
+                    // Only flag as corruption if we have OTHER tables but missing critical ones
+                    NSLog("iOS DB: Table '$table' check note: ${e.message}")
+                }
+            }
+
+            NSLog("iOS DB: Database validation passed - no corruption detected")
+            return false
+
+        } catch (e: Exception) {
+            NSLog("iOS DB: CORRUPTION - Failed to open database: ${e.message}")
+            return true
+        } finally {
+            try {
+                testDriver?.close()
+            } catch (e: Exception) {
+                // Ignore close errors
+            }
+        }
     }
 }

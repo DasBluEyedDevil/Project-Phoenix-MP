@@ -10,7 +10,6 @@ import com.devil.phoenixproject.domain.model.ProgramMode
 import com.devil.phoenixproject.domain.model.RoutineTemplate
 import com.devil.phoenixproject.domain.model.TemplateExercise
 import com.devil.phoenixproject.domain.model.FiveThreeOneWeeks
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.testutil.FakeExerciseRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -29,7 +28,6 @@ class TemplateConverterTest {
                     muscleGroup = "Chest",
                     muscleGroups = "Chest",
                     equipment = "BAR",
-                    defaultCableConfig = CableConfiguration.DOUBLE,
                     oneRepMaxKg = 120f
                 )
             )
@@ -74,7 +72,6 @@ class TemplateConverterTest {
                     muscleGroup = "Legs",
                     muscleGroups = "Legs",
                     equipment = "BAR",
-                    defaultCableConfig = CableConfiguration.DOUBLE,
                     oneRepMaxKg = 140f
                 )
             )

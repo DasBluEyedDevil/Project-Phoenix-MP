@@ -1,6 +1,5 @@
 package com.devil.phoenixproject.domain.usecase
 
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.Exercise
 import com.devil.phoenixproject.domain.model.PRType
 import com.devil.phoenixproject.domain.model.PersonalRecord
@@ -30,8 +29,7 @@ class ResolveRoutineWeightsUseCaseTest {
     private val testExercise = Exercise(
         id = "bench-press",
         name = "Bench Press",
-        muscleGroup = "Chest",
-        defaultCableConfig = CableConfiguration.DOUBLE
+        muscleGroup = "Chest"
     )
 
     @BeforeTest
@@ -64,7 +62,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             weightPerCableKg = 30f, // Fallback if no PR
             usePercentOfPR = true,
@@ -92,7 +89,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             weightPerCableKg = 30f, // Fallback weight
             usePercentOfPR = true,
@@ -138,7 +134,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             weightPerCableKg = 35f,
             usePercentOfPR = false, // NOT using PR percentage
@@ -182,7 +177,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             weightPerCableKg = 30f,
             usePercentOfPR = true,
@@ -222,7 +216,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             weightPerCableKg = 30f,
             usePercentOfPR = true,
@@ -259,7 +252,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             setReps = listOf(10, 8, 6),
             weightPerCableKg = 50f,
@@ -306,7 +298,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             setReps = listOf(10, 8, 6),
             weightPerCableKg = 30f,
@@ -362,7 +353,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             weightPerCableKg = 30f,
             usePercentOfPR = true,
@@ -390,7 +380,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = exerciseWithoutId,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             weightPerCableKg = 25f,
             usePercentOfPR = true,
@@ -443,7 +432,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExerciseOldSchool = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             weightPerCableKg = 30f,
             usePercentOfPR = true,
@@ -455,7 +443,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExerciseEcho = RoutineExercise(
             id = "routine-ex-2",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 1,
             weightPerCableKg = 30f,
             usePercentOfPR = true,
@@ -497,7 +484,6 @@ class ResolveRoutineWeightsUseCaseTest {
         val routineExercise = RoutineExercise(
             id = "routine-ex-1",
             exercise = testExercise,
-            cableConfig = CableConfiguration.DOUBLE,
             orderIndex = 0,
             setReps = listOf(10, 10, 10),
             weightPerCableKg = 30f, // Fallback absolute weight

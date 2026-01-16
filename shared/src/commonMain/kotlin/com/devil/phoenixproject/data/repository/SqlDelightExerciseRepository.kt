@@ -6,7 +6,6 @@ import app.cash.sqldelight.coroutines.mapToOneOrNull
 import co.touchlab.kermit.Logger
 import com.devil.phoenixproject.data.local.ExerciseImporter
 import com.devil.phoenixproject.database.VitruvianDatabase
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.Exercise
 import com.devil.phoenixproject.domain.model.currentTimeMillis
 import kotlinx.coroutines.Dispatchers
@@ -48,17 +47,13 @@ class SqlDelightExerciseRepository(
         defaultCableConfig: String,
         one_rep_max_kg: Double?
     ): Exercise {
+        // Note: defaultCableConfig is stored in DB but no longer used
         return Exercise(
             id = id,
             name = name,
             muscleGroup = muscleGroup,
             muscleGroups = muscleGroups,
             equipment = equipment,
-            defaultCableConfig = try {
-                CableConfiguration.valueOf(defaultCableConfig)
-            } catch (e: Exception) {
-                CableConfiguration.DOUBLE
-            },
             isFavorite = isFavorite == 1L,
             isCustom = isCustom == 1L,
             timesPerformed = timesPerformed.toInt(),
@@ -210,7 +205,7 @@ class SqlDelightExerciseRepository(
                     timesPerformed = 0L,
                     lastPerformed = null,
                     aliases = null,
-                    defaultCableConfig = exercise.defaultCableConfig.name,
+                    defaultCableConfig = "DOUBLE", // Legacy field - no longer used
                     one_rep_max_kg = exercise.oneRepMaxKg?.toDouble()
                 )
 
@@ -253,7 +248,7 @@ class SqlDelightExerciseRepository(
                     gripWidth = null,
                     minRepRange = null,
                     aliases = null,
-                    defaultCableConfig = exercise.defaultCableConfig.name,
+                    defaultCableConfig = "DOUBLE", // Legacy field - no longer used
                     one_rep_max_kg = exercise.oneRepMaxKg?.toDouble(),
                     id = exerciseId
                 )

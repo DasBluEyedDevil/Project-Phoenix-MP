@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.devil.phoenixproject.domain.model.CableConfiguration
 import com.devil.phoenixproject.domain.model.Exercise
 import com.devil.phoenixproject.domain.model.ExerciseCategory
 import com.devil.phoenixproject.ui.theme.Spacing
@@ -52,12 +51,8 @@ fun CreateExerciseDialog(
         )
     }
     var equipment by remember { mutableStateOf(existingExercise?.equipment ?: "") }
-    var cableConfig by remember {
-        mutableStateOf(existingExercise?.defaultCableConfig ?: CableConfiguration.DOUBLE)
-    }
 
     var showMuscleGroupDropdown by remember { mutableStateOf(false) }
-    var showCableConfigDropdown by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
 
@@ -193,71 +188,6 @@ fun CreateExerciseDialog(
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(Spacing.medium))
-
-                    // Cable Configuration Dropdown
-                    Text(
-                        "Cable Configuration",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(Spacing.extraSmall))
-
-                    Box {
-                        OutlinedTextField(
-                            value = getCableConfigDisplayName(cableConfig),
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = {
-                                Icon(
-                                    Icons.Default.KeyboardArrowDown,
-                                    "Select cable configuration",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-
-                        // Transparent clickable overlay
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .clickable { showCableConfigDropdown = true }
-                        )
-
-                        DropdownMenu(
-                            expanded = showCableConfigDropdown,
-                            onDismissRequest = { showCableConfigDropdown = false }
-                        ) {
-                            CableConfiguration.entries.forEach { config ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text(
-                                                getCableConfigDisplayName(config),
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Text(
-                                                getCableConfigDescription(config),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    },
-                                    onClick = {
-                                        cableConfig = config
-                                        showCableConfigDropdown = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
                     Spacer(modifier = Modifier.height(Spacing.large))
 
                     // Buttons
@@ -303,7 +233,6 @@ fun CreateExerciseDialog(
                                         muscleGroup = selectedMuscleGroup.displayName,
                                         muscleGroups = selectedMuscleGroup.displayName,
                                         equipment = equipment.trim(),
-                                        defaultCableConfig = cableConfig,
                                         isFavorite = existingExercise?.isFavorite ?: false,
                                         isCustom = true
                                     )
@@ -355,27 +284,5 @@ fun CreateExerciseDialog(
                 }
             }
         )
-    }
-}
-
-/**
- * Get display name for cable configuration
- */
-private fun getCableConfigDisplayName(config: CableConfiguration): String {
-    return when (config) {
-        CableConfiguration.SINGLE -> "Single Cable"
-        CableConfiguration.DOUBLE -> "Double Cable"
-        CableConfiguration.EITHER -> "Either (User Choice)"
-    }
-}
-
-/**
- * Get description for cable configuration
- */
-private fun getCableConfigDescription(config: CableConfiguration): String {
-    return when (config) {
-        CableConfiguration.SINGLE -> "Unilateral - e.g., one-arm row"
-        CableConfiguration.DOUBLE -> "Bilateral - e.g., bench press"
-        CableConfiguration.EITHER -> "User can choose single or double"
     }
 }
