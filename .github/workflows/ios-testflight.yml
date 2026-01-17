@@ -206,20 +206,47 @@ jobs:
             echo "$unsigned.$signature"
           }
 
+          echo "=== Generating JWT for App Store Connect API ==="
           JWT=$(generate_jwt)
+          if [ -z "$JWT" ]; then
+            echo "ERROR: Failed to generate JWT"
+            exit 1
+          fi
+          echo "JWT generated successfully (length: ${#JWT})"
+
           API_BASE="https://api.appstoreconnect.apple.com/v1"
 
-          echo "=== Waiting for build to process (this may take several minutes) ==="
-
-          # Get App ID
-          APP_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
+          echo "=== Fetching App ID for bundle: $BUNDLE_ID ==="
+          APP_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -H "Authorization: Bearer $JWT" \
             "$API_BASE/apps?filter[bundleId]=$BUNDLE_ID")
-          APP_ID=$(echo "$APP_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data'][0]['id'])")
+          HTTP_CODE=$(echo "$APP_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          APP_RESPONSE=$(echo "$APP_RESPONSE" | grep -v "HTTP_CODE:")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "ERROR: API call failed with HTTP $HTTP_CODE"
+            echo "Response: $APP_RESPONSE"
+            exit 1
+          fi
+
+          APP_ID=$(echo "$APP_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data'][0]['id'])" 2>&1) || {
+            echo "ERROR: Failed to parse App ID from response"
+            echo "Response: $APP_RESPONSE"
+            exit 1
+          }
           echo "App ID: $APP_ID"
 
           # Get beta group ID
-          GROUPS_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
+          echo "=== Fetching beta groups ==="
+          GROUPS_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -H "Authorization: Bearer $JWT" \
             "$API_BASE/apps/$APP_ID/betaGroups")
+          HTTP_CODE=$(echo "$GROUPS_RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          GROUPS_RESPONSE=$(echo "$GROUPS_RESPONSE" | grep -v "HTTP_CODE:")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "ERROR: Beta groups API call failed with HTTP $HTTP_CODE"
+            echo "Response: $GROUPS_RESPONSE"
+            exit 1
+          fi
           GROUP_ID=$(echo "$GROUPS_RESPONSE" | python3 -c "
           import sys,json
           data = json.load(sys.stdin)
@@ -239,8 +266,10 @@ jobs:
           fi
 
           # Wait for build to finish processing (check every 30 seconds, max 20 minutes)
+          echo "=== Waiting for build to process (this may take several minutes) ==="
           BUILD_ID=""
           BUILD_VERSION="${{ steps.build_number.outputs.build_number }}"
+          echo "Looking for build version: $BUILD_VERSION"
 
           for i in {1..40}; do
             # Refresh JWT if needed (they expire after 20 min)
