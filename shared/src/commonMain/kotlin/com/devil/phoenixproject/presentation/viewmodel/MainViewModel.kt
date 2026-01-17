@@ -3936,6 +3936,7 @@ class MainViewModel constructor(
 
     /**
      * Calculate the name of the next exercise/set for display during rest.
+     * Uses getNextStep() for superset-aware navigation (Issue #193).
      */
     private fun calculateNextExerciseName(
         isSingleExercise: Boolean,
@@ -3946,14 +3947,22 @@ class MainViewModel constructor(
             return currentExercise?.exercise?.name ?: "Next Set"
         }
 
-        // Check if more sets in current exercise
-        if (_currentSetIndex.value < (currentExercise.setReps.size - 1)) {
-            return "${currentExercise.exercise.name} - Set ${_currentSetIndex.value + 2}"
+        if (routine == null) return "Next Set"
+
+        // Use getNextStep for superset-aware navigation (fixes Issue #193)
+        val nextStep = getNextStep(routine, _currentExerciseIndex.value, _currentSetIndex.value)
+        if (nextStep == null) {
+            return "Routine Complete"
         }
 
-        // Moving to next exercise
-        val nextExercise = routine?.exercises?.getOrNull(_currentExerciseIndex.value + 1)
-        return nextExercise?.exercise?.name ?: "Routine Complete"
+        val (nextExIndex, nextSetIndex) = nextStep
+        val nextExercise = routine.exercises.getOrNull(nextExIndex)
+
+        return if (nextExercise != null) {
+            "${nextExercise.exercise.name} - Set ${nextSetIndex + 1}"
+        } else {
+            "Routine Complete"
+        }
     }
 
     /**
