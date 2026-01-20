@@ -295,6 +295,11 @@ class KableBleRepository : BleRepository {
     // EMA velocity initialization flag (Task 10)
     private var isFirstVelocitySample = true
 
+    // Track if previous sample was filtered (velocity edge case fix)
+    // When a sample is filtered due to position jump, the next valid sample should
+    // reset velocity calculation to avoid using the filtered position as reference
+    @Volatile private var lastSampleWasFiltered = false
+
     // Handle detection state tracking
     private var minPositionSeen = Double.MAX_VALUE
     private var maxPositionSeen = Double.MIN_VALUE
@@ -1311,6 +1316,7 @@ class KableBleRepository : BleRepository {
 
         // Reset velocity initialization flag (Task 10)
         isFirstVelocitySample = true
+        lastSampleWasFiltered = false  // Clear filter tracking for fresh session
 
         if (forAutoStart) {
             // AUTO-START MODE: Initialize handle state machine
@@ -1909,6 +1915,7 @@ class KableBleRepository : BleRepository {
             lastPositionB = posB
 
             if (!validateSample(posA, loadA, posB, loadB, previousPosA, previousPosB)) {
+                lastSampleWasFiltered = true  // Mark for velocity reset on next valid sample
                 return  // Skip invalid sample, but position tracking is updated for next sample
             }
 
@@ -1959,7 +1966,16 @@ class KableBleRepository : BleRepository {
             // This prevents false stall detection during controlled tempo movements
             // and reduces sensitivity to BLE position jitter
             // Task 10: Initialize EMA with first raw sample to prevent cold start lag
-            if (isFirstVelocitySample) {
+            // Velocity edge case fix: If previous sample was filtered due to position jump,
+            // the raw velocity calculation used a bad reference position. Skip this sample's
+            // velocity update to avoid propagating the error through the EMA.
+            if (lastSampleWasFiltered) {
+                // Don't update smoothed velocity - keep previous value
+                // The raw velocity is calculated against the filtered position which is wrong
+                // Next sample will have correct reference since lastPositionA/B were updated
+                lastSampleWasFiltered = false
+                log.d { "Velocity update skipped - previous sample was filtered" }
+            } else if (isFirstVelocitySample) {
                 smoothedVelocityA = rawVelocityA
                 smoothedVelocityB = rawVelocityB
                 isFirstVelocitySample = false
