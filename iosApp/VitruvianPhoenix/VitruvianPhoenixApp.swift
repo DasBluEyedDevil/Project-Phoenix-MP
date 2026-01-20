@@ -12,7 +12,9 @@ struct VitruvianPhoenixApp: App {
         KoinKt.runMigrations()
 
         // Initialize RevenueCat for subscriptions
-        RevenueCatInitializer.shared.initialize()
+        // TODO: Uncomment when RevenueCat API keys are configured for production
+        // Premium features are disabled until subscription system is ready
+        // RevenueCatInitializer.shared.initialize()
     }
 
     var body: some Scene {

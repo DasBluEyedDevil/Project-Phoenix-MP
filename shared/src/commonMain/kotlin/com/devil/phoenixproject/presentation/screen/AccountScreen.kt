@@ -59,10 +59,17 @@ fun AccountScreen(
     modifier: Modifier = Modifier
 ) {
     val authState by authRepository.authState.collectAsState()
-    val hasProAccess by subscriptionManager.hasProAccess.collectAsState()
-    val customerInfo by subscriptionManager.customerInfo.collectAsState()
+    // TODO: Uncomment when subscription system is ready
+    // val hasProAccess by subscriptionManager.hasProAccess.collectAsState()
+    // val customerInfo by subscriptionManager.customerInfo.collectAsState()
     val scope = rememberCoroutineScope()
     var isSigningOut by remember { mutableStateOf(false) }
+
+    // Suppress unused parameter warnings for disabled features
+    @Suppress("UNUSED_PARAMETER", "UNUSED_VARIABLE")
+    val _unused1 = onUpgradeClick
+    @Suppress("UNUSED_PARAMETER", "UNUSED_VARIABLE")
+    val _unused2 = subscriptionManager
 
     Scaffold(
         topBar = {
@@ -124,35 +131,36 @@ fun AccountScreen(
                 }
             }
 
+            // TODO: Uncomment when subscription system is ready for public release
             // Subscription status card
-            SubscriptionStatusCard(
-                hasProAccess = hasProAccess,
-                expirationDate = customerInfo?.entitlements?.active?.get("pro_access")?.expirationDateMillis,
-                onUpgradeClick = onUpgradeClick
-            )
+            // SubscriptionStatusCard(
+            //     hasProAccess = hasProAccess,
+            //     expirationDate = customerInfo?.entitlements?.active?.get("pro_access")?.expirationDateMillis,
+            //     onUpgradeClick = onUpgradeClick
+            // )
 
             // Manage subscription
-            if (hasProAccess) {
-                Card(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "Manage Subscription",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = "To cancel or modify your subscription, visit your device's app store settings.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+            // if (hasProAccess) {
+            //     Card(
+            //         modifier = Modifier.fillMaxWidth()
+            //     ) {
+            //         Column(
+            //             modifier = Modifier.padding(16.dp),
+            //             verticalArrangement = Arrangement.spacedBy(8.dp)
+            //         ) {
+            //             Text(
+            //                 text = "Manage Subscription",
+            //                 style = MaterialTheme.typography.titleMedium,
+            //                 fontWeight = FontWeight.SemiBold
+            //             )
+            //             Text(
+            //                 text = "To cancel or modify your subscription, visit your device's app store settings.",
+            //                 style = MaterialTheme.typography.bodyMedium,
+            //                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            //             )
+            //         }
+            //     }
+            // }
         }
     }
 }
@@ -254,7 +262,7 @@ private fun NotAuthenticatedCard(
             )
 
             Text(
-                text = "Create an account to access premium features and sync your workouts across devices.",
+                text = "Create an account to sync your workouts across devices.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -31,7 +31,8 @@ class VitruvianApp : Application(), SingletonImageLoader.Factory {
         )
 
         // Set application context for RevenueCat before Koin init
-        RevenueCatInitializer.setApplication(this)
+        // TODO: Uncomment when RevenueCat is re-enabled
+        // RevenueCatInitializer.setApplication(this)
 
         initKoin {
             androidLogger()
@@ -42,13 +43,15 @@ class VitruvianApp : Application(), SingletonImageLoader.Factory {
         migrationManager.checkAndRunMigrations()
 
         // Initialize RevenueCat after Koin is set up
-        try {
-            RevenueCatInitializer.initialize()
-            subscriptionManager.setupDelegate()
-            Logger.d("VitruvianApp") { "RevenueCat initialized" }
-        } catch (e: Exception) {
-            Logger.e("VitruvianApp") { "Failed to initialize RevenueCat: ${e.message}" }
-        }
+        // TODO: Uncomment when RevenueCat API keys are configured for production
+        // Premium features are disabled until subscription system is ready
+        // try {
+        //     RevenueCatInitializer.initialize()
+        //     subscriptionManager.setupDelegate()
+        //     Logger.d("VitruvianApp") { "RevenueCat initialized" }
+        // } catch (e: Exception) {
+        //     Logger.e("VitruvianApp") { "Failed to initialize RevenueCat: ${e.message}" }
+        // }
 
         Logger.d("VitruvianApp") { "Application initialized" }
     }
