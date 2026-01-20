@@ -348,7 +348,7 @@ fun ActiveWorkoutScreen(
         )
     }
 
-    // PR Celebration Dialog
+    // PR Celebration Dialog - shows first if both PR and badges earned
     prCelebrationEvent?.let { event ->
         PRCelebrationDialog(
             show = true,
@@ -360,8 +360,9 @@ fun ActiveWorkoutScreen(
         )
     }
 
-    // Batched Badge Celebration Dialog
-    if (earnedBadges.isNotEmpty()) {
+    // Batched Badge Celebration Dialog - only shows when PR dialog is not showing (queued)
+    // This prevents both dialogs from stacking and multiple sounds playing at once
+    if (earnedBadges.isNotEmpty() && prCelebrationEvent == null) {
         val scope = rememberCoroutineScope()
         BatchedBadgeCelebrationDialog(
             badges = earnedBadges,
@@ -371,7 +372,7 @@ fun ActiveWorkoutScreen(
                     gamificationRepository.markBadgesCelebrated(badgeIds)
                 }
             },
-            onSoundTrigger = {}  // Empty - sound is now handled by ViewModel
+            onSoundTrigger = {}  // Sound handled by ViewModel - skipped if PR already played
         )
     }
 }

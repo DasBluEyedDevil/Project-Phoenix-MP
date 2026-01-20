@@ -506,7 +506,9 @@ class MainViewModel constructor(
                      RepType.WARMUP_COMPLETED -> _hapticEvents.emit(HapticEvent.REP_COMPLETED)
                      RepType.WARMUP_COMPLETE -> _hapticEvents.emit(HapticEvent.WARMUP_COMPLETE)
                      RepType.WORKOUT_COMPLETE -> {
-                         _hapticEvents.emit(HapticEvent.WORKOUT_COMPLETE)
+                         // Note: WORKOUT_COMPLETE sound removed - WORKOUT_END in handleSetCompletion
+                         // provides sufficient feedback, and celebration sounds (PR/badge) may also play.
+                         // Playing both was causing multiple sounds to fire at once (sound stacking bug).
                          // Issue #182: Trigger set completion immediately on WORKOUT_COMPLETE event.
                          // Previously, completion relied on a subsequent metric arriving to trigger
                          // handleSetCompletion() via shouldStopWorkout() check in handleMonitorMetric().
@@ -3092,32 +3094,23 @@ class MainViewModel constructor(
             resetStallTimer()
         }
 
-        // ===== 2. POSITION-BASED DETECTION (requires ROM) =====
+        // ===== 2. POSITION-BASED DETECTION =====
         // Issue #198: Original fallback for "handles at rest" when no meaningful range established
-        // Issue #209: Now requires ROM for ALL exercises (not just Just Lift/AMRAP).
-        //             Stall detection only makes sense after user has established their ROM.
-        //             If user hasn't started exercising (ROM < 50mm), don't trigger auto-stop.
+        // Issue #209: Don't auto-stop during active warmup (user moving but no ROM yet)
+        // Issue #209 FIX: Still allow auto-stop if handles completely at rest (user gave up/dropped cables)
+        //             The key distinction:
+        //             - Warming up: position > 2.5mm, user moving, ROM not yet established → WAIT
+        //             - Handles at rest: position < 2.5mm, user dropped cables → CAN AUTO-STOP
         val maxPosition = maxOf(metric.positionA, metric.positionB)
         val handlesCompletelyAtRest = maxPosition < HANDLE_REST_THRESHOLD  // Both cables < 2.5mm
 
-        // If no meaningful range established, reset timer and return
-        // Issue #209: Don't auto-stop before warmup/ROM reps are complete
-        if (!hasMeaningfulRange) {
-            // Check grace period for diagnostic logging
-            val inGraceForPositionCheck = isInAmrapStartupGrace(hasMeaningfulRange)
-
-            if (handlesCompletelyAtRest) {
-                // Issue #209: Handles at rest but no ROM - just wait, don't trigger auto-stop
-                Logger.v("AutoStop: Handles at rest but no ROM yet - waiting for warmup (grace=$inGraceForPositionCheck)")
-            }
-            // Reset timer and return - can't auto-stop without ROM
-            resetAutoStopTimer()
-            return
-        }
-
-        // ROM is established - now we can do position-based detection
-        if (handlesCompletelyAtRest) {
-            // Handles at rest with meaningful range established - start/continue timer
+        // Handle the "handles at rest" case - this should auto-stop even without ROM
+        // Issue #198: User dropped cables entirely, even before establishing ROM
+        // Issue #209: BUT respect AMRAP startup grace period - don't auto-stop during first few seconds
+        val inGraceForPositionBased = isInAmrapStartupGrace(hasMeaningfulRange)
+        if (handlesCompletelyAtRest && !inGraceForPositionBased) {
+            // Handles at rest (< 2.5mm) - start/continue timer regardless of ROM
+            // This catches the case where user gives up before completing any reps
             val startTime = autoStopStartTime ?: run {
                 autoStopStartTime = currentTimeMillis()
                 currentTimeMillis()
@@ -3142,6 +3135,10 @@ class MainViewModel constructor(
                 requestAutoStop()
             }
             return
+        } else if (handlesCompletelyAtRest && inGraceForPositionBased) {
+            // Issue #209: Handles at rest during AMRAP startup grace - wait, don't auto-stop yet
+            Logger.v("AutoStop: Handles at rest but in AMRAP grace period - waiting")
+            resetAutoStopTimer()
         } else {
             // User is moving or not at rest - reset position-based timer
             resetAutoStopTimer()
@@ -3572,6 +3569,9 @@ class MainViewModel constructor(
 
         Logger.d("Saved workout session: $sessionId with ${metricsSnapshot.size} metrics")
 
+        // Track if a celebration sound will play (to avoid sound stacking)
+        var hasCelebrationSound = false
+
         // Check for personal record (skip for Just Lift and Echo modes)
         // Uses mode-specific PR lookup to track PRs separately per workout mode (#111)
         params.selectedExerciseId?.let { exerciseId ->
@@ -3593,6 +3593,7 @@ class MainViewModel constructor(
                     // Only celebrate if an actual PR was broken
                     result.onSuccess { brokenPRs ->
                         if (brokenPRs.isNotEmpty()) {
+                            hasCelebrationSound = true // PR dialog will play sound via callback
                             val exercise = exerciseRepository.getExerciseById(exerciseId)
                             val prTypeDescription = when {
                                 brokenPRs.contains(PRType.MAX_WEIGHT) && brokenPRs.contains(PRType.MAX_VOLUME) -> "Weight & Volume"
@@ -3625,8 +3626,14 @@ class MainViewModel constructor(
             gamificationRepository.updateStats()
             val newBadges = gamificationRepository.checkAndAwardBadges()
             if (newBadges.isNotEmpty()) {
-                // Emit single badge sound BEFORE badge list (batched celebration)
-                _hapticEvents.emit(HapticEvent.BADGE_EARNED)
+                // Only emit badge sound if no other celebration sound is playing (avoid sound stacking)
+                // PR celebration dialog plays its own sound via callback, so skip badge sound when PR earned
+                if (!hasCelebrationSound) {
+                    _hapticEvents.emit(HapticEvent.BADGE_EARNED)
+                    Logger.d("Badge sound emitted (no PR celebration)")
+                } else {
+                    Logger.d("Badge sound skipped (PR celebration will play)")
+                }
                 _badgeEarnedEvents.emit(newBadges)
                 Logger.d("New badges earned: ${newBadges.map { it.name }}")
             }
