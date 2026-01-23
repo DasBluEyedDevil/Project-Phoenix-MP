@@ -91,11 +91,17 @@ actual class DriverFactory {
         }
 
         // LAYER 1: Use no-op schema - SQLDelight NEVER runs migrations
+        // CRITICAL: Must override create/upgrade callbacks to empty lambdas
+        // Even though noOpSchema has empty implementations, NativeSqliteDriver's internal
+        // DatabaseConfiguration callbacks may not properly use our noOpSchema due to
+        // Kotlin/Native object capture issues. Explicitly overriding ensures no migrations run.
         val driver = NativeSqliteDriver(
             schema = noOpSchema,
             name = "vitruvian.db",
             onConfiguration = { config ->
                 config.copy(
+                    create = { _ -> },  // Override to prevent schema.create() from being called
+                    upgrade = { _, _, _ -> },  // Override to prevent schema.migrate() from being called
                     extendedConfig = DatabaseConfiguration.Extended(
                         foreignKeyConstraints = false  // Disable during schema setup
                     )
