@@ -4,7 +4,7 @@ on:
   workflow_dispatch:  # Manual trigger only
 
 permissions:
-  contents: read
+  contents: write  # Needed to push testflight/* tags for release notes tracking
 
 concurrency:
   group: ios-testflight
@@ -354,6 +354,132 @@ jobs:
 
           echo "Build ID: $BUILD_ID"
 
+          # Set "What to Test" notes (required for external TestFlight groups)
+          echo "=== Setting 'What to Test' notes for external review ==="
+
+          # First, check if a localization already exists for this build
+          LOCALIZATIONS_RESPONSE=$(curl -s -H "Authorization: Bearer $JWT" \
+            "$API_BASE/builds/$BUILD_ID/betaBuildLocalizations")
+
+          EXISTING_LOCALIZATION_ID=$(echo "$LOCALIZATIONS_RESPONSE" | python3 -c "
+          import sys,json
+          data = json.load(sys.stdin)
+          for loc in data.get('data', []):
+              if loc['attributes'].get('locale') == 'en-US':
+                  print(loc['id'])
+                  break
+          " 2>/dev/null || echo "")
+
+          # Generate what-to-test notes from commits since last TestFlight build
+          echo "Generating release notes from git history..."
+
+          # Find the most recent testflight tag
+          LAST_TF_TAG=$(git tag -l 'testflight/*' --sort=-version:refname | head -1)
+
+          if [ -n "$LAST_TF_TAG" ]; then
+            echo "Last TestFlight tag: $LAST_TF_TAG"
+            # Get commits since last TestFlight build
+            COMMIT_LOG=$(git log --pretty=format:"• %s" "$LAST_TF_TAG"..HEAD --no-merges | head -20)
+          else
+            echo "No previous TestFlight tag found, using last 15 commits"
+            # No prior tag - get last 15 commits
+            COMMIT_LOG=$(git log --pretty=format:"• %s" -15 --no-merges)
+          fi
+
+          # Build the what-to-test message
+          if [ -n "$COMMIT_LOG" ]; then
+            WHATS_NEW="Changes in this build:
+
+          $COMMIT_LOG
+
+          Please test these changes and report any issues via TestFlight feedback."
+          else
+            WHATS_NEW="Maintenance build. Please test general app stability and report any issues via TestFlight feedback."
+          fi
+
+          echo "Generated release notes:"
+          echo "$WHATS_NEW"
+
+          # Escape for JSON
+          WHATS_NEW_JSON=$(echo "$WHATS_NEW" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().strip()))")
+
+          if [ -n "$EXISTING_LOCALIZATION_ID" ]; then
+            # Update existing localization
+            echo "Updating existing localization: $EXISTING_LOCALIZATION_ID"
+            LOCALIZATION_RESPONSE=$(curl -s -w "\n%{http_code}" -X PATCH \
+              -H "Authorization: Bearer $JWT" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "data": {
+                  "type": "betaBuildLocalizations",
+                  "id": "'"$EXISTING_LOCALIZATION_ID"'",
+                  "attributes": {
+                    "whatsNew": '"$WHATS_NEW_JSON"'
+                  }
+                }
+              }' \
+              "$API_BASE/betaBuildLocalizations/$EXISTING_LOCALIZATION_ID")
+          else
+            # Create new localization
+            echo "Creating new localization for en-US"
+            LOCALIZATION_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -H "Authorization: Bearer $JWT" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "data": {
+                  "type": "betaBuildLocalizations",
+                  "attributes": {
+                    "locale": "en-US",
+                    "whatsNew": '"$WHATS_NEW_JSON"'
+                  },
+                  "relationships": {
+                    "build": {
+                      "data": {
+                        "type": "builds",
+                        "id": "'"$BUILD_ID"'"
+                      }
+                    }
+                  }
+                }
+              }' \
+              "$API_BASE/betaBuildLocalizations")
+          fi
+
+          LOC_HTTP_CODE=$(echo "$LOCALIZATION_RESPONSE" | tail -1)
+          LOC_BODY=$(echo "$LOCALIZATION_RESPONSE" | sed '$d')
+
+          if [ "$LOC_HTTP_CODE" = "200" ] || [ "$LOC_HTTP_CODE" = "201" ]; then
+            echo "SUCCESS: 'What to Test' notes set successfully"
+          else
+            echo "WARNING: Failed to set 'What to Test' notes (HTTP $LOC_HTTP_CODE)"
+            echo "$LOC_BODY"
+            # Continue anyway - this is non-blocking for internal groups
+          fi
+
+          # Set export compliance (required for external TestFlight)
+          echo "=== Setting export compliance information ==="
+          COMPLIANCE_RESPONSE=$(curl -s -w "\n%{http_code}" -X PATCH \
+            -H "Authorization: Bearer $JWT" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "data": {
+                "type": "builds",
+                "id": "'"$BUILD_ID"'",
+                "attributes": {
+                  "usesNonExemptEncryption": false
+                }
+              }
+            }' \
+            "$API_BASE/builds/$BUILD_ID")
+
+          COMP_HTTP_CODE=$(echo "$COMPLIANCE_RESPONSE" | tail -1)
+          if [ "$COMP_HTTP_CODE" = "200" ]; then
+            echo "SUCCESS: Export compliance set (usesNonExemptEncryption: false)"
+          else
+            echo "WARNING: Failed to set export compliance (HTTP $COMP_HTTP_CODE)"
+            echo "$(echo "$COMPLIANCE_RESPONSE" | sed '$d')"
+          fi
+
           # Add build to beta group
           echo "=== Adding build to test group '$TESTFLIGHT_GROUP_NAME' ==="
           ADD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
@@ -372,6 +498,21 @@ jobs:
             echo "$RESPONSE_BODY"
             # Don't fail - build was uploaded successfully
           fi
+
+      - name: Tag build for release notes tracking
+        run: |
+          BUILD_VERSION="${{ steps.build_number.outputs.build_number }}"
+          TAG_NAME="testflight/$BUILD_VERSION"
+
+          # Configure git for tagging
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          # Create and push tag
+          git tag -a "$TAG_NAME" -m "TestFlight build $BUILD_VERSION"
+          git push origin "$TAG_NAME" || echo "Warning: Could not push tag (may already exist)"
+
+          echo "Tagged commit as $TAG_NAME for future release notes"
 
       - name: Clean up keychain
         if: always()
