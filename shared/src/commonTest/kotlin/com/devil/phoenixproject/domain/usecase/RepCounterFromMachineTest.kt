@@ -398,6 +398,46 @@ class RepCounterFromMachineTest {
         assertTrue(capturedEvents.any { it.type == RepType.WORKOUT_COMPLETE })
     }
 
+    @Test
+    fun `safety net triggers workout completion when repsSetCount reaches target`() {
+        // Issue #210: When down counter lags but repsSetCount reaches target,
+        // the safety net should trigger WORKOUT_COMPLETE, not just WORKING_COMPLETED
+        repCounter.configure(warmupTarget = 3, workingTarget = 5, isJustLift = false, stopAtTop = false)
+
+        // Establish baseline
+        repCounter.process(repsRomCount = 0, repsSetCount = 0, up = 0, down = 0)
+
+        // Simulate: Down counter is at 7 (showing 4 working reps: 7 - 3 = 4)
+        // but repsSetCount shows 5 (final rep detected)
+        // This should trigger safety net AND completion
+        repCounter.process(repsRomCount = 3, repsSetCount = 5, up = 8, down = 7)
+
+        val count = repCounter.getRepCount()
+        assertEquals(3, count.warmupReps)
+        assertEquals(5, count.workingReps)  // Safety net syncs to repsSetCount
+        assertTrue(repCounter.shouldStopWorkout(), "Safety net should trigger completion when target reached")
+        assertTrue(capturedEvents.any { it.type == RepType.WORKOUT_COMPLETE }, "WORKOUT_COMPLETE event should fire")
+    }
+
+    @Test
+    fun `safety net does not trigger completion when target not reached`() {
+        // Issue #210: Safety net should NOT trigger completion if synced count is still below target
+        repCounter.configure(warmupTarget = 3, workingTarget = 10, isJustLift = false, stopAtTop = false)
+
+        // Establish baseline
+        repCounter.process(repsRomCount = 0, repsSetCount = 0, up = 0, down = 0)
+
+        // Simulate: Down counter is at 5 (showing 2 working reps: 5 - 3 = 2)
+        // repsSetCount shows 3 (safety net syncs to 3, still below target of 10)
+        repCounter.process(repsRomCount = 3, repsSetCount = 3, up = 6, down = 5)
+
+        val count = repCounter.getRepCount()
+        assertEquals(3, count.warmupReps)
+        assertEquals(3, count.workingReps)  // Safety net syncs to repsSetCount
+        assertFalse(repCounter.shouldStopWorkout(), "Should NOT stop - target not yet reached")
+        assertFalse(capturedEvents.any { it.type == RepType.WORKOUT_COMPLETE }, "WORKOUT_COMPLETE should NOT fire")
+    }
+
     // ========== Position Range Tests ==========
 
     @Test

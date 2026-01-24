@@ -516,6 +516,12 @@ class RepCounterFromMachine {
         if (repsSetCount > workingReps && warmupReps >= warmupTarget) {
             logDebug("⚠️ Safety net: repsSetCount=$repsSetCount > workingReps=$workingReps, syncing")
             workingReps = repsSetCount
+
+            // Clear pending state when rep is confirmed via safety net
+            hasPendingRep = false
+            activePhase = RepPhase.IDLE
+            phaseProgress = 0f
+
             onRepEvent?.invoke(
                 RepEvent(
                     type = RepType.WORKING_COMPLETED,
@@ -523,6 +529,22 @@ class RepCounterFromMachine {
                     workingCount = workingReps
                 )
             )
+
+            // Issue #210: CRITICAL - Check if safety net sync means target is now reached
+            // Previously this check was missing, causing sets to never complete when the
+            // final rep was detected via repsSetCount rather than the down counter.
+            if (!stopAtTop && !isJustLift && !isAMRAP && workingTarget > 0 && workingReps >= workingTarget) {
+                logDebug("⚠️ Safety net: shouldStop set to TRUE (target reached via repsSetCount)")
+                logDebug("  workingTarget=$workingTarget, workingReps=$workingReps")
+                shouldStop = true
+                onRepEvent?.invoke(
+                    RepEvent(
+                        type = RepType.WORKOUT_COMPLETE,
+                        warmupCount = warmupReps,
+                        workingCount = workingReps
+                    )
+                )
+            }
         }
     }
 
