@@ -1535,7 +1535,11 @@ class KableBleRepository : BleRepository {
                     log.d { "Command hex: $commandHex" }
                 }
 
+                // Issue #222: Log mutex state before acquiring for debugging
+                log.d { "BLE mutex locked: ${bleOperationMutex.isLocked}, acquiring..." }
+
                 bleOperationMutex.withLock {
+                    log.d { "BLE mutex acquired, sending command" }
                     p.write(txCharacteristic, command, WriteType.WithResponse)
                 }
                 log.i { "✅ Command sent via NUS TX: ${command.size} bytes" }
