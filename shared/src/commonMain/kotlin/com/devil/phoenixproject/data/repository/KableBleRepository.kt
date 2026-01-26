@@ -1787,6 +1787,42 @@ class KableBleRepository : BleRepository {
     }
 
     /**
+     * Stop monitor polling only, keeping diagnostic polling and heartbeat active.
+     * Issue #222: Used during bodyweight exercises to prevent BLE link degradation
+     * while not emitting workout metrics that would confuse the UI.
+     */
+    override fun stopMonitorPollingOnly() {
+        log.d { "Stopping monitor polling only - diagnostic polling + heartbeat continue" }
+        monitorPollingJob?.cancel()
+        monitorPollingJob = null
+        // Keep diagnostic, heuristic, and heartbeat running
+    }
+
+    /**
+     * Restart diagnostic polling and heartbeat only (not monitor polling).
+     * Issue #222 v10: Use after bodyweight set completion to maintain BLE link during rest.
+     */
+    override fun restartDiagnosticPolling() {
+        val p = peripheral
+        if (p == null) {
+            log.w { "Cannot restart diagnostic polling - peripheral is null" }
+            return
+        }
+
+        log.d { "Restarting diagnostic polling + heartbeat (Issue #222 v10)" }
+
+        // Restart diagnostic polling if not already running
+        if (diagnosticPollingJob?.isActive != true) {
+            startDiagnosticPolling(p)
+        }
+
+        // Restart heartbeat if not already running
+        if (heartbeatJob?.isActive != true) {
+            startHeartbeat()
+        }
+    }
+
+    /**
      * Clean up any existing connection before creating a new one.
      * Matches parent repo behavior to prevent "dangling GATT connections"
      * which cause issues on Android 16/Pixel 7.
