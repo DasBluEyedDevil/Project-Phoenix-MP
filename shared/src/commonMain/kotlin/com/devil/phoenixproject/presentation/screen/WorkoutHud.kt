@@ -30,7 +30,7 @@ import com.devil.phoenixproject.presentation.components.StableRepProgress
 import com.devil.phoenixproject.presentation.util.ResponsiveDimensions
 import com.devil.phoenixproject.presentation.util.LocalWindowSizeClass
 import com.devil.phoenixproject.presentation.util.WindowWidthSizeClass
-import kotlinx.coroutines.delay
+import kotlin.math.abs
 
 /**
  * Workout Heads-Up Display (HUD)
@@ -172,61 +172,43 @@ fun WorkoutHud(
             }
 
             // PERIPHERAL VISION BARS (Pinned to edges, overlaying the pager)
-            // Only show bars for cables that have built meaningful range of motion
-            // Issue #194: Add 6-second delay before hiding inactive cables to prevent flickering
+            // Detect activity quickly (movement/load), then latch per-cable for the set to avoid flicker.
+            val activePositionThresholdMm = 50f   // Match handle detection threshold
+            val activeVelocityThresholdMms = 20.0 // Match auto-start velocity threshold
+            val activeRangeThresholdMm = 20f      // Lower than ROM threshold for early visibility
+            val activeLoadDeltaKg = 1.0f          // Above baseline to treat as engaged
 
-            // IMPORTANT: Hoist state OUTSIDE the conditional to prevent reset when metric is briefly null
-            // Issue #210: Show bars immediately when cable is being used, not just after 50mm range
-            // Cable is "active" if:
-            // 1. Current position > rest threshold (150mm) - cable is currently extended, OR
-            // 2. Range > 50mm - cable has been used (maintains visibility during eccentric)
-            val handleRestThreshold = 150f  // Position above which cable is considered "in use"
+            val cableAHasRange = repRanges?.isCableAActive(activeRangeThresholdMm) == true
+            val cableBHasRange = repRanges?.isCableBActive(activeRangeThresholdMm) == true
 
-            val isCableACurrentlyActive = metric != null && !isCurrentExerciseBodyweight &&
-                (metric.positionA > handleRestThreshold || (repRanges?.isCableAActive() ?: false))
-            val isCableBCurrentlyActive = metric != null && !isCurrentExerciseBodyweight &&
-                (metric.positionB > handleRestThreshold || (repRanges?.isCableBActive() ?: false))
+            val isCableACurrentlyActive = metric?.let { metric ->
+                !isCurrentExerciseBodyweight && (
+                    abs(metric.positionA) > activePositionThresholdMm ||
+                        abs(metric.velocityA) > activeVelocityThresholdMms ||
+                        cableAHasRange ||
+                        (loadBaselineA > 0f && metric.loadA > loadBaselineA + activeLoadDeltaKg)
+                    )
+            } ?: false
 
-            // Track if cable has ever been active (latching - once true, stays true for this workout)
+            val isCableBCurrentlyActive = metric?.let { metric ->
+                !isCurrentExerciseBodyweight && (
+                    abs(metric.positionB) > activePositionThresholdMm ||
+                        abs(metric.velocityB) > activeVelocityThresholdMms ||
+                        cableBHasRange ||
+                        (loadBaselineB > 0f && metric.loadB > loadBaselineB + activeLoadDeltaKg)
+                    )
+            } ?: false
+
+            // Track if cable has ever been active (latching - once true, stays true for this set)
             var cableAEverActive by remember { mutableStateOf(false) }
             var cableBEverActive by remember { mutableStateOf(false) }
             if (isCableACurrentlyActive) cableAEverActive = true
             if (isCableBCurrentlyActive) cableBEverActive = true
 
-            // Issue #194: Delayed visibility - cables stay visible for 6 seconds after becoming inactive
-            // This prevents flickering when users hit stopping points during reps
-            val hideDelayMs = 6000L
+            val showCableA = cableAEverActive || isCableACurrentlyActive
+            val showCableB = cableBEverActive || isCableBCurrentlyActive
 
-            // Cable A visibility with delay
-            // Key: isCableACurrentlyActive - effect restarts whenever activity changes
-            var showCableA by remember { mutableStateOf(false) }
-            LaunchedEffect(isCableACurrentlyActive) {
-                if (isCableACurrentlyActive) {
-                    // Immediately show when active
-                    showCableA = true
-                } else if (cableAEverActive) {
-                    // Cable was previously active - delay before hiding
-                    // If cable becomes active during delay, this effect restarts and takes the if-branch
-                    delay(hideDelayMs)
-                    showCableA = false
-                }
-                // If cableAEverActive is false, leave showCableA unchanged (stays false)
-            }
-
-            // Cable B visibility with delay
-            var showCableB by remember { mutableStateOf(false) }
-            LaunchedEffect(isCableBCurrentlyActive) {
-                if (isCableBCurrentlyActive) {
-                    // Immediately show when active
-                    showCableB = true
-                } else if (cableBEverActive) {
-                    // Cable was previously active - delay before hiding
-                    delay(hideDelayMs)
-                    showCableB = false
-                }
-            }
-
-            // Left Bar - only show if cable A is visible (with delay) AND we have metric data
+            // Left Bar - show only when cable A is active/latched and metric data is available
             if (showCableA && metric != null && !isCurrentExerciseBodyweight) {
                 // Calculate danger zone status
                 val isDangerA = repRanges?.isInDangerZone(metric.positionA, metric.positionB) ?: false
@@ -249,7 +231,7 @@ fun WorkoutHud(
                 )
             }
 
-            // Right Bar - only show if cable B is visible (with delay) AND we have metric data
+            // Right Bar - show only when cable B is active/latched and metric data is available
             if (showCableB && metric != null && !isCurrentExerciseBodyweight) {
                 // Calculate danger zone status
                 val isDangerB = repRanges?.isInDangerZone(metric.positionA, metric.positionB) ?: false

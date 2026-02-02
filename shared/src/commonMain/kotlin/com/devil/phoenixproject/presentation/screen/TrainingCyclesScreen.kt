@@ -127,6 +127,29 @@ fun TrainingCyclesScreen(
         cycleProgress = progressMap
     }
 
+    // Repair unassigned workout days (routine deleted/recreated) by matching day name to routine name.
+    // Only applies to non-rest days with a missing routineId and a non-generic name.
+    LaunchedEffect(cycles, routines) {
+        if (routines.isEmpty()) return@LaunchedEffect
+        cycles.forEach { cycle ->
+            cycle.days
+                .filter { day ->
+                    !day.isRestDay &&
+                        day.routineId == null &&
+                        !day.name.isNullOrBlank() &&
+                        !day.name!!.trim().matches(Regex("^Day\\s+\\d+$", RegexOption.IGNORE_CASE))
+                }
+                .forEach { day ->
+                    val matches = routines.filter { it.name.equals(day.name, ignoreCase = true) }
+                    if (matches.size == 1) {
+                        val matchedRoutine = matches.first()
+                        Logger.w { "Repairing cycle day ${day.id}: linking routine '${matchedRoutine.name}' (${matchedRoutine.id})" }
+                        cycleRepository.updateCycleDay(day.copy(routineId = matchedRoutine.id))
+                    }
+                }
+        }
+    }
+
     // Set title
     LaunchedEffect(Unit) {
         viewModel.updateTopBarTitle("Training Cycles")
@@ -198,6 +221,9 @@ fun TrainingCyclesScreen(
                                 scope.launch {
                                     cycleRepository.advanceToNextDay(activeCycle!!.id)
                                 }
+                            },
+                            onEditCycle = {
+                                navController.navigate(NavigationRoutes.CycleEditor.createRoute(activeCycle!!.id))
                             }
                         )
                     }
@@ -559,7 +585,8 @@ private fun ActiveCycleCard(
     selectedDayNumber: Int?,
     onDaySelected: (Int) -> Unit,
     onStartWorkout: (routineId: String?, cycleId: String, dayNumber: Int) -> Unit,
-    onAdvanceDay: () -> Unit
+    onAdvanceDay: () -> Unit,
+    onEditCycle: () -> Unit
 ) {
     val currentDay = progress?.currentDayNumber ?: 1
     // Use selected day for preview, or default to current day
@@ -570,6 +597,9 @@ private fun ActiveCycleCard(
     val routine = displayedCycleDay?.routineId?.let { routineId ->
         routines.find { it.id == routineId }
     }
+    val isRestDay = displayedCycleDay?.isRestDay == true
+    val hasRoutine = displayedCycleDay?.routineId != null
+    val isUnassignedWorkout = displayedCycleDay != null && !isRestDay && !hasRoutine
 
     // Create a default progress if none exists
     val effectiveProgress = progress ?: CycleProgress.create(
@@ -635,7 +665,7 @@ private fun ActiveCycleCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            if (displayedCycleDay?.isRestDay == true) {
+            if (isRestDay) {
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -664,6 +694,22 @@ private fun ActiveCycleCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            } else if (isUnassignedWorkout) {
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "No routine assigned",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             Spacer(Modifier.height(16.dp))
@@ -683,7 +729,17 @@ private fun ActiveCycleCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (displayedCycleDay?.isRestDay == true) {
+                if (displayedCycleDay == null) {
+                    OutlinedButton(
+                        onClick = onEditCycle,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Edit Cycle")
+                    }
+                } else if (isRestDay) {
                     if (isViewingCurrentDay) {
                         OutlinedButton(
                             onClick = onAdvanceDay,
@@ -708,15 +764,26 @@ private fun ActiveCycleCard(
                     }
                 } else {
                     if (isViewingCurrentDay) {
-                        Button(
-                            onClick = { onStartWorkout(displayedCycleDay?.routineId, cycle.id, displayedDayNumber) },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            enabled = displayedCycleDay?.routineId != null
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Start Workout")
+                        if (hasRoutine) {
+                            Button(
+                                onClick = { onStartWorkout(displayedCycleDay?.routineId, cycle.id, displayedDayNumber) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.PlayArrow, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Start Workout")
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = onEditCycle,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Assign Routine")
+                            }
                         }
                     } else {
                         // Viewing a different day - show "Go to today" button
