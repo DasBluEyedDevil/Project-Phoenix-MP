@@ -13,6 +13,7 @@ import com.devil.phoenixproject.presentation.components.ConnectionErrorDialog
 import com.devil.phoenixproject.presentation.components.ExercisePickerContent
 import com.devil.phoenixproject.presentation.navigation.NavigationRoutes
 import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
+import com.devil.phoenixproject.presentation.manager.DefaultWorkoutSessionManager
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -259,7 +260,7 @@ fun SingleExerciseScreen(
                         onSave = { configuredExercise ->
                             Logger.d { "SingleExercise: Start button clicked for ${configuredExercise.exercise.name}" }
                             val tempRoutine = Routine(
-                                id = "${MainViewModel.TEMP_SINGLE_EXERCISE_PREFIX}${generateUUID()}",
+                                id = "${DefaultWorkoutSessionManager.TEMP_SINGLE_EXERCISE_PREFIX}${generateUUID()}",
                                 name = "Single Exercise: ${configuredExercise.exercise.name}",
                                 exercises = listOf(configuredExercise)
                             )
