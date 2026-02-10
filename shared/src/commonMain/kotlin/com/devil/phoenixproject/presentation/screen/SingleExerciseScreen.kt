@@ -1,8 +1,6 @@
 package com.devil.phoenixproject.presentation.screen
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,10 +11,12 @@ import com.devil.phoenixproject.data.repository.ExerciseRepository
 import com.devil.phoenixproject.domain.model.*
 import com.devil.phoenixproject.presentation.components.ConnectionErrorDialog
 import com.devil.phoenixproject.presentation.components.CreateExerciseDialog
+import com.devil.phoenixproject.presentation.components.CustomExerciseSaveAction
 import com.devil.phoenixproject.presentation.components.ExercisePickerContent
+import com.devil.phoenixproject.presentation.components.resolveCustomExerciseDeleteTarget
+import com.devil.phoenixproject.presentation.components.resolveCustomExerciseSaveAction
 import com.devil.phoenixproject.presentation.navigation.NavigationRoutes
 import com.devil.phoenixproject.presentation.viewmodel.MainViewModel
-import com.devil.phoenixproject.presentation.viewmodel.TopBarAction
 import com.devil.phoenixproject.presentation.manager.DefaultWorkoutSessionManager
 import com.devil.phoenixproject.ui.theme.ThemeMode
 import co.touchlab.kermit.Logger
@@ -112,15 +112,7 @@ fun SingleExerciseScreen(
     // Set global title
     LaunchedEffect(Unit) {
         viewModel.updateTopBarTitle("Single Exercise")
-        viewModel.setTopBarActions(
-            listOf(
-                TopBarAction(
-                    icon = Icons.Default.Add,
-                    description = "Create Exercise",
-                    onClick = { showCreateDialog = true }
-                )
-            )
-        )
+        viewModel.clearTopBarActions()
     }
 
     DisposableEffect(Unit) {
@@ -133,23 +125,33 @@ fun SingleExerciseScreen(
         CreateExerciseDialog(
             existingExercise = exerciseToEdit,
             onSave = { exercise ->
-                coroutineScope.launch {
-                    if (exerciseToEdit != null) {
-                        exerciseRepository.updateCustomExercise(exercise)
-                    } else {
-                        exerciseRepository.createCustomExercise(exercise)
-                    }
-                }
+                val editExerciseId = exerciseToEdit?.id
                 showCreateDialog = false
                 exerciseToEdit = null
+                val action = resolveCustomExerciseSaveAction(
+                    draftExercise = exercise,
+                    editingExerciseId = editExerciseId
+                )
+                coroutineScope.launch {
+                    when (action) {
+                        is CustomExerciseSaveAction.Create -> {
+                            exerciseRepository.createCustomExercise(action.exercise)
+                        }
+                        is CustomExerciseSaveAction.Update -> {
+                            exerciseRepository.updateCustomExercise(action.exercise)
+                        }
+                    }
+                }
             },
             onDelete = if (exerciseToEdit != null) {
                 {
-                    coroutineScope.launch {
-                        exerciseToEdit?.id?.let { exerciseRepository.deleteCustomExercise(it) }
-                    }
+                    val deleteExerciseId = exerciseToEdit?.id
                     showCreateDialog = false
                     exerciseToEdit = null
+                    val targetId = resolveCustomExerciseDeleteTarget(deleteExerciseId)
+                    coroutineScope.launch {
+                        targetId?.let { exerciseRepository.deleteCustomExercise(it) }
+                    }
                 }
             } else null,
             onDismiss = {
