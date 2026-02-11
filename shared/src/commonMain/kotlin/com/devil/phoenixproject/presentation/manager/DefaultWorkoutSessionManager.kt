@@ -567,6 +567,16 @@ class DefaultWorkoutSessionManager(
     }
 
     /**
+     * Look up the PlannedSet ID for the current routine exercise and set index.
+     * Returns null if no PlannedSet exists (e.g., Just Lift mode, or no planned sets saved).
+     */
+    private suspend fun findPlannedSetId(setIndex: Int): String? {
+        val routineExercise = getCurrentExercise() ?: return null
+        val plannedSets = completedSetRepository.getPlannedSets(routineExercise.id)
+        return plannedSets.find { it.setNumber == setIndex }?.id
+    }
+
+    /**
      * Check if the given exercise is a bodyweight exercise.
      *
      * Bodyweight = no cable accessories (HANDLES, BAR, ROPE, SHORT_BAR, BELT, STRAPS)
@@ -2722,10 +2732,11 @@ class DefaultWorkoutSessionManager(
             val setIndex = _currentSetIndex.value
             val setId = generateUUID()
             completedSetId = setId
+            val matchedPlannedSetId = findPlannedSetId(setIndex)
             val completedSet = CompletedSet(
                 id = setId,
                 sessionId = sessionId,
-                plannedSetId = null, // TODO: Wire up when PlannedSet is active
+                plannedSetId = matchedPlannedSetId,
                 setNumber = setIndex,
                 setType = if (params.isAMRAP) SetType.AMRAP else SetType.STANDARD,
                 actualReps = working,
@@ -2735,7 +2746,7 @@ class DefaultWorkoutSessionManager(
                 completedAt = currentTimeMillis()
             )
             completedSetRepository.saveCompletedSet(completedSet)
-            Logger.d("Saved CompletedSet: set #$setIndex, ${working} reps @ ${measuredPerCableKg}kg")
+            Logger.d("Saved CompletedSet: set #$setIndex, ${working} reps @ ${measuredPerCableKg}kg${if (matchedPlannedSetId != null) " (linked to PlannedSet)" else ""}")
         }
 
         // PR checking and badge awarding - delegated to GamificationManager
@@ -3354,10 +3365,11 @@ class DefaultWorkoutSessionManager(
                  val setIndex = _currentSetIndex.value
                  val setId = generateUUID()
                  completedSetId = setId
+                 val matchedPlannedSetId = findPlannedSetId(setIndex)
                  val completedSet = CompletedSet(
                      id = setId,
                      sessionId = session.id,
-                     plannedSetId = null, // TODO: Wire up when PlannedSet is active
+                     plannedSetId = matchedPlannedSetId,
                      setNumber = setIndex,
                      setType = if (params.isAMRAP) SetType.AMRAP else SetType.STANDARD,
                      actualReps = repCount.workingReps,
@@ -3367,7 +3379,7 @@ class DefaultWorkoutSessionManager(
                      completedAt = currentTimeMillis()
                  )
                  completedSetRepository.saveCompletedSet(completedSet)
-                 Logger.d("Saved CompletedSet (manual stop): set #$setIndex, ${repCount.workingReps} reps")
+                 Logger.d("Saved CompletedSet (manual stop): set #$setIndex, ${repCount.workingReps} reps${if (matchedPlannedSetId != null) " (linked to PlannedSet)" else ""}")
              }
 
              // PR checking and badge awarding (manual stop path)
