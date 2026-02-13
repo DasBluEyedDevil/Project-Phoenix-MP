@@ -61,6 +61,15 @@ class WorkoutCoordinator(
         const val AMRAP_STARTUP_GRACE_MS = 8000L
     }
 
+    // ===== BLE Error Events =====
+    // One-way error flow: DWSM/ActiveSessionEngine emits, BleConnectionManager collects.
+    // Replaces the circular lateinit var dependency between DWSM and BleConnectionManager.
+    internal val _bleErrorEvents = MutableSharedFlow<String>(
+        extraBufferCapacity = 5,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val bleErrorEvents: SharedFlow<String> = _bleErrorEvents.asSharedFlow()
+
     // ===== Haptic & Feedback Events =====
 
     val hapticEvents: SharedFlow<HapticEvent> = _hapticEvents.asSharedFlow()
