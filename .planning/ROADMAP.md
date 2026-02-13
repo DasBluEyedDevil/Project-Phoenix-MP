@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Characterization Tests** - Lock in current workout and routine behavior before any extraction
 - [x] **Phase 2: Manager Decomposition** - Split DefaultWorkoutSessionManager into WorkoutCoordinator + RoutineFlowManager + ActiveSessionEngine
-- [ ] **Phase 3: UI Composable Decomposition** - Split oversized composable files into focused, single-responsibility files
+- [x] **Phase 3: UI Composable Decomposition** - Split oversized composable files into focused, single-responsibility files
 - [ ] **Phase 4: Koin DI Cleanup** - Reorganize single commonModule into feature-scoped Koin modules
 
 ## Phase Details
@@ -67,8 +67,8 @@ Plans:
 **Plans**: 2 plans, 2 waves (sequential -- both modify WorkoutTab.kt)
 
 Plans:
-- [ ] 03-01-PLAN.md -- Extract SetSummaryCard, split HistoryAndSettingsTabs into HistoryTab + SettingsTab
-- [ ] 03-02-PLAN.md -- Extract WorkoutSetupDialog and ModeSubSelectorDialog from WorkoutTab
+- [x] 03-01-PLAN.md -- Extract SetSummaryCard, split HistoryAndSettingsTabs into HistoryTab + SettingsTab
+- [x] 03-02-PLAN.md -- Extract WorkoutSetupDialog and ModeSubSelectorDialog from WorkoutTab
 
 ### Phase 4: Koin DI Cleanup
 **Goal**: Koin dependency injection is organized into feature-scoped modules that are verified by automated tests
@@ -92,5 +92,5 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4
 |-------|----------------|--------|-----------|
 | 1. Characterization Tests | 2/2 | ✓ Complete | 2026-02-13 |
 | 2. Manager Decomposition | 4/4 | ✓ Complete | 2026-02-13 |
-| 3. UI Composable Decomposition | 0/2 | Not started | - |
+| 3. UI Composable Decomposition | 2/2 | ✓ Complete | 2026-02-13 |
 | 4. Koin DI Cleanup | 0/1 | Not started | - |
