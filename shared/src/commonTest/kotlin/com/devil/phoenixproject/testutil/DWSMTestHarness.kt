@@ -64,11 +64,12 @@ class DWSMTestHarness(val testScope: TestScope) {
         resolveWeightsUseCase = resolveWeightsUseCase,
         settingsManager = settingsManager,
         scope = dwsmScope
-    ).also {
-        it.bleConnectionManager = BleConnectionManager(
-            fakeBleRepo, settingsManager, it, dwsmScope
-        )
-    }
+    )
+
+    // BleConnectionManager receives errors via coordinator.bleErrorEvents (no circular dependency)
+    val bleConnectionManager = BleConnectionManager(
+        fakeBleRepo, settingsManager, dwsm, dwsm.coordinator.bleErrorEvents, dwsmScope
+    )
 
     /** Convenience accessor for the coordinator (shared state bus) */
     val coordinator get() = dwsm.coordinator
