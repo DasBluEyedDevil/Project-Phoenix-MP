@@ -24,17 +24,18 @@ Users can connect to their Vitruvian trainer and execute workouts with accurate 
 - ✓ Training cycles with day rotation — v0.3
 - ✓ Cloud sync infrastructure — v0.4
 - ✓ MainViewModel decomposition into 5 managers (History, Settings, BLE, Gamification, WorkoutSession) — v0.4
+- ✓ DefaultWorkoutSessionManager decomposed into WorkoutCoordinator + RoutineFlowManager + ActiveSessionEngine — v0.4.1
+- ✓ Circular dependency eliminated via bleErrorEvents SharedFlow pattern — v0.4.1
+- ✓ Koin DI split into 4 feature-scoped modules with verify() test — v0.4.1
+- ✓ HistoryAndSettingsTabs split into focused files (HistoryTab + SettingsTab) — v0.4.1
+- ✓ 38 characterization tests covering workout lifecycle and routine flow — v0.4.1
+- ✓ Testing foundation with DWSMTestHarness and WorkoutStateFixtures — v0.4.1
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] DefaultWorkoutSessionManager decomposed into focused sub-managers
-- [ ] Circular dependency between BleConnectionManager and WorkoutSessionManager eliminated
-- [ ] Koin DI wiring updated — managers injected directly, MainViewModel thinned or removed
-- [ ] Large UI composables (WorkoutTab, HistoryAndSettingsTabs) decomposed into focused screens
-- [ ] Characterization test suite covering workout lifecycle, state transitions, rep counting
-- [ ] Testing foundation enabling safe future refactoring
+(Next milestone requirements to be defined via /gsd:new-milestone)
 
 ### Out of Scope
 
@@ -48,14 +49,18 @@ Users can connect to their Vitruvian trainer and execute workouts with accurate 
 
 ## Context
 
-- App is at v0.4.0, actively used by community
-- MainViewModel went from 4,771 lines to 420-line facade via 5 manager extractions
-- DefaultWorkoutSessionManager (4,024 lines) absorbed the biggest cluster without further decomposition
-- UI monoliths remain: WorkoutTab (2,840L), HistoryAndSettingsTabs (2,750L), InsightCards (1,492L)
-- Test fakes exist for all major dependencies (BleRepository, WorkoutRepository, etc.)
-- Characterization test plan documented but tests may not be written yet
-- OpenSpec specs (00-05) drafted for future premium features — this cleanup prepares the foundation
-- Refactoring analysis docs exist in `.planning/refactoring/` (archaeologist, architect, surgeon, UI decoupler, safety inspector)
+- App is at v0.4.1, actively used by community
+- MainViewModel is a thin 420-line facade delegating to 5 specialized managers
+- DefaultWorkoutSessionManager (449 lines) orchestrates 3 sub-managers:
+  - WorkoutCoordinator (257L) — shared state bus, zero business logic
+  - RoutineFlowManager (1,091L) — routine CRUD, navigation, supersets
+  - ActiveSessionEngine (2,174L) — workout lifecycle, BLE commands, auto-stop
+- UI composables decomposed: WorkoutTab (1,495L), HistoryTab (1,060L), SettingsTab (1,704L)
+- 38 characterization tests lock in workout and routine behavior for safe refactoring
+- Koin DI: 4 feature-scoped modules (data, sync, domain, presentation) with verify() test
+- Test infrastructure: DWSMTestHarness, WorkoutStateFixtures, fakes for all repositories
+- OpenSpec specs (00-05) drafted for future premium features
+- ~19,955 lines of Kotlin in shared module
 
 ## Constraints
 
@@ -64,15 +69,20 @@ Users can connect to their Vitruvian trainer and execute workouts with accurate 
 - **BLE stability**: Do not touch KableBleRepository or BLE protocol code
 - **Incremental**: Each refactoring phase must leave the app in a buildable, working state
 
-## Current Milestone: v0.4.1 Architectural Cleanup
+## Current State
 
-**Goal:** Complete the architectural decomposition started in v0.4.0 — break up remaining monoliths (DefaultWorkoutSessionManager, UI screens), fix DI wiring, and establish a testing foundation for safe future development.
+**Version:** v0.4.1 (shipped 2026-02-13)
 
-**Target features:**
-- DefaultWorkoutSessionManager decomposition
-- DI/circular dependency resolution
-- UI monolith decomposition
-- Characterization test suite
+Architecture is clean and well-tested. Ready for feature development or premium features.
+
+## Next Milestone Goals
+
+(To be defined via /gsd:new-milestone)
+
+Candidates:
+- Premium features (data foundation, biomechanics, intelligence) from OpenSpec specs
+- iOS UI polish
+- Performance optimization for handleMonitorMetric hot path
 
 ## Key Decisions
 
@@ -81,9 +91,14 @@ Users can connect to their Vitruvian trainer and execute workouts with accurate 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Manager extraction pattern (scope injection, interface-based) | Enables testability, preserves ViewModel lifecycle | ✓ Good |
-| MainViewModel as thin facade during transition | Preserves UI API while extracting logic incrementally | — Pending |
-| Leave KableBleRepository alone | Works reliably, high risk/low reward to refactor | — Pending |
-| Characterize before refactoring | Tests lock in behavior, catch regressions during extraction | — Pending |
+| MainViewModel as thin facade during transition | Preserves UI API while extracting logic incrementally | ✓ Good — UI unchanged |
+| Leave KableBleRepository alone | Works reliably, high risk/low reward to refactor | ✓ Good — validated |
+| Characterize before refactoring | Tests lock in behavior, catch regressions during extraction | ✓ Good — 38 tests |
+| WorkoutCoordinator as zero-method state bus | Sub-managers share state without circular refs | ✓ Good — v0.4.1 |
+| Delegate pattern for sub-manager bridging | WorkoutLifecycleDelegate/WorkoutFlowDelegate avoid direct refs | ✓ Good — v0.4.1 |
+| bleErrorEvents SharedFlow for BLE→DWSM | Eliminates lateinit var circular dependency | ✓ Good — v0.4.1 |
+| Same-package visibility for UI extractions | Zero import changes needed when splitting files | ✓ Good — v0.4.1 |
+| Feature-scoped Koin modules with verify() | Catches DI wiring issues at test time | ✓ Good — v0.4.1 |
 
 ---
-*Last updated: 2026-02-12 after milestone v0.4.1 initialization*
+*Last updated: 2026-02-13 after v0.4.1 milestone completion*
