@@ -142,8 +142,7 @@ class DefaultWorkoutSessionManager(
     // ===== Coordinator: Shared state bus for all workout state =====
     val coordinator = WorkoutCoordinator(_hapticEvents)
 
-    // BleConnectionManager is set after construction (circular dependency)
-    lateinit var bleConnectionManager: BleConnectionManager
+    // Circular dependency eliminated: BLE errors now flow via coordinator.bleErrorEvents SharedFlow
 
     companion object {
         /** Prefix for temporary single exercise routines to identify them for cleanup */
@@ -2961,7 +2960,7 @@ class DefaultWorkoutSessionManager(
                 Logger.d { "Config preview: $preview ..." }
             } catch (e: Exception) {
                 Logger.e(e) { "Failed to send config command" }
-                bleConnectionManager.setConnectionError("Failed to send command: ${e.message}")
+                coordinator._bleErrorEvents.tryEmit("Failed to send command: ${e.message}")
                 return@launch
             }
 
@@ -2974,7 +2973,7 @@ class DefaultWorkoutSessionManager(
                     Logger.i { "START command sent (0x03)" }
                 } catch (e: Exception) {
                     Logger.e(e) { "Failed to send START command" }
-                    bleConnectionManager.setConnectionError("Failed to start workout: ${e.message}")
+                    coordinator._bleErrorEvents.tryEmit("Failed to start workout: ${e.message}")
                     return@launch
                 }
             }
