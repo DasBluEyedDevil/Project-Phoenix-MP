@@ -494,9 +494,10 @@ class MainViewModelTest {
     }
 
     private fun forceAutoStopTimerElapsed() {
-        val field = viewModel.workoutSessionManager::class.java.getDeclaredField("autoStopStartTime")
+        val coordinator = viewModel.workoutSessionManager.coordinator
+        val field = coordinator::class.java.getDeclaredField("autoStopStartTime")
         field.isAccessible = true
-        field.set(viewModel.workoutSessionManager, System.currentTimeMillis() - 10_000L)
+        field.set(coordinator, System.currentTimeMillis() - 10_000L)
     }
 
     private suspend fun emitRepNotification(repIndex: Int, metric: WorkoutMetric, warmupCount: Int = 0, warmupTarget: Int = 3, workingTarget: Int = 10) {

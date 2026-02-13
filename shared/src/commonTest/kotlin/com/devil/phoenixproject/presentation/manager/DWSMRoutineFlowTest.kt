@@ -45,7 +45,7 @@ class DWSMRoutineFlowTest {
         harness.dwsm.loadRoutine(routine)
         advanceUntilIdle()
 
-        val params = harness.dwsm.workoutParameters.value
+        val params = harness.dwsm.coordinator.workoutParameters.value
         assertEquals(30f, params.weightPerCableKg,
             "Weight should match first exercise's weightPerCableKg")
         assertEquals(12, params.reps,
@@ -67,7 +67,7 @@ class DWSMRoutineFlowTest {
         harness.dwsm.loadRoutine(routine)
 
         // Before advancing, loadedRoutine should still be null (async)
-        val beforeAdvance = harness.dwsm.loadedRoutine.value
+        val beforeAdvance = harness.dwsm.coordinator.loadedRoutine.value
         // Characterization: loadRoutine is async, loadedRoutine is null before coroutine runs
         assertEquals(null, beforeAdvance,
             "loadedRoutine should be null before coroutine completes")
@@ -75,7 +75,7 @@ class DWSMRoutineFlowTest {
         advanceUntilIdle()
 
         // After advancing, it should be set
-        assertNotNull(harness.dwsm.loadedRoutine.value,
+        assertNotNull(harness.dwsm.coordinator.loadedRoutine.value,
             "loadedRoutine should be set after advanceUntilIdle")
         harness.cleanup()
     }
@@ -91,7 +91,7 @@ class DWSMRoutineFlowTest {
         advanceUntilIdle()
 
         // Characterization: loadRoutineInternal explicitly resets workout state to Idle
-        assertEquals(WorkoutState.Idle, harness.dwsm.workoutState.value,
+        assertEquals(WorkoutState.Idle, harness.dwsm.coordinator.workoutState.value,
             "loadRoutine should reset workoutState to Idle")
         harness.cleanup()
     }
@@ -108,7 +108,7 @@ class DWSMRoutineFlowTest {
 
         // Characterization: loadRoutine does NOT set routineFlowState.
         // Only enterRoutineOverview does that. loadRoutine only loads parameters.
-        assertIs<RoutineFlowState.NotInRoutine>(harness.dwsm.routineFlowState.value,
+        assertIs<RoutineFlowState.NotInRoutine>(harness.dwsm.coordinator.routineFlowState.value,
             "loadRoutine should NOT change routineFlowState (stays NotInRoutine)")
         harness.cleanup()
     }
@@ -127,7 +127,7 @@ class DWSMRoutineFlowTest {
 
         harness.dwsm.enterSetReady(0, 0)
 
-        assertIs<RoutineFlowState.SetReady>(harness.dwsm.routineFlowState.value,
+        assertIs<RoutineFlowState.SetReady>(harness.dwsm.coordinator.routineFlowState.value,
             "enterSetReady should set routineFlowState to SetReady")
         harness.cleanup()
     }
@@ -147,7 +147,7 @@ class DWSMRoutineFlowTest {
 
         harness.dwsm.enterSetReady(0, 0)
 
-        val state = harness.dwsm.routineFlowState.value
+        val state = harness.dwsm.coordinator.routineFlowState.value
         assertIs<RoutineFlowState.SetReady>(state)
         assertEquals(35f, state.adjustedWeight,
             "SetReady weight should match exercise weight")
@@ -168,7 +168,7 @@ class DWSMRoutineFlowTest {
 
         harness.dwsm.enterSetReady(0, 1)
 
-        val state = harness.dwsm.routineFlowState.value
+        val state = harness.dwsm.coordinator.routineFlowState.value
         assertIs<RoutineFlowState.SetReady>(state)
         assertEquals(0, state.exerciseIndex, "exerciseIndex should be 0")
         assertEquals(1, state.setIndex, "setIndex should be 1")
@@ -190,7 +190,7 @@ class DWSMRoutineFlowTest {
 
         harness.dwsm.enterSetReady(0, 0)
 
-        val params = harness.dwsm.workoutParameters.value
+        val params = harness.dwsm.coordinator.workoutParameters.value
         assertEquals(40f, params.weightPerCableKg,
             "workoutParameters weight should match set weight")
         assertEquals(6, params.reps,
@@ -221,7 +221,7 @@ class DWSMRoutineFlowTest {
         harness.dwsm.advanceToNextExercise()
         advanceTimeBy(7000)
 
-        val params = harness.dwsm.workoutParameters.value
+        val params = harness.dwsm.coordinator.workoutParameters.value
         assertEquals(routine.exercises[1].exercise.id, params.selectedExerciseId,
             "After advance, selected exercise should be the second exercise")
         harness.cleanup()
@@ -240,7 +240,7 @@ class DWSMRoutineFlowTest {
         harness.dwsm.jumpToExercise(2)
         advanceUntilIdle()
 
-        val params = harness.dwsm.workoutParameters.value
+        val params = harness.dwsm.coordinator.workoutParameters.value
         assertEquals(routine.exercises[2].exercise.id, params.selectedExerciseId,
             "After jumpToExercise(2), selected exercise should be the third exercise")
 
@@ -264,15 +264,15 @@ class DWSMRoutineFlowTest {
         harness.fakeBleRepo.simulateConnect("Vee_Test")
         harness.dwsm.startWorkout(skipCountdown = true)
         advanceUntilIdle()
-        assertIs<WorkoutState.Active>(harness.dwsm.workoutState.value)
+        assertIs<WorkoutState.Active>(harness.dwsm.coordinator.workoutState.value)
 
-        val exerciseBefore = harness.dwsm.workoutParameters.value.selectedExerciseId
+        val exerciseBefore = harness.dwsm.coordinator.workoutParameters.value.selectedExerciseId
 
         // Characterization: jumpToExercise is blocked during Active state (Issue #125)
         harness.dwsm.jumpToExercise(2)
         advanceUntilIdle()
 
-        val exerciseAfter = harness.dwsm.workoutParameters.value.selectedExerciseId
+        val exerciseAfter = harness.dwsm.coordinator.workoutParameters.value.selectedExerciseId
         assertEquals(exerciseBefore, exerciseAfter,
             "jumpToExercise should be blocked during Active state - exercise should not change")
         harness.cleanup()
@@ -293,7 +293,7 @@ class DWSMRoutineFlowTest {
         harness.dwsm.skipCurrentExercise()
         advanceTimeBy(7000)
 
-        val params = harness.dwsm.workoutParameters.value
+        val params = harness.dwsm.coordinator.workoutParameters.value
         assertEquals(routine.exercises[1].exercise.id, params.selectedExerciseId,
             "After skip, selected exercise should be the second exercise")
         harness.cleanup()
@@ -314,7 +314,7 @@ class DWSMRoutineFlowTest {
         harness.dwsm.advanceToNextExercise()
         advanceTimeBy(7000)
         assertEquals(routine.exercises[1].exercise.id,
-            harness.dwsm.workoutParameters.value.selectedExerciseId)
+            harness.dwsm.coordinator.workoutParameters.value.selectedExerciseId)
 
         // Characterization: jumpToExercise blocks during Active state (Issue #125).
         // Must stop the auto-started workout before navigating again.
@@ -326,7 +326,7 @@ class DWSMRoutineFlowTest {
         harness.dwsm.goToPreviousExercise()
         advanceTimeBy(7000)
 
-        val params = harness.dwsm.workoutParameters.value
+        val params = harness.dwsm.coordinator.workoutParameters.value
         assertEquals(routine.exercises[0].exercise.id, params.selectedExerciseId,
             "After goToPreviousExercise, should be back to the first exercise")
         harness.cleanup()
@@ -344,7 +344,7 @@ class DWSMRoutineFlowTest {
         harness.dwsm.loadRoutine(routine)
         advanceUntilIdle()
 
-        val params = harness.dwsm.workoutParameters.value
+        val params = harness.dwsm.coordinator.workoutParameters.value
         // First exercise in superset routine is Bench Press with 25f weight
         assertEquals(25f, params.weightPerCableKg,
             "Superset routine should load first exercise weight")
@@ -366,7 +366,7 @@ class DWSMRoutineFlowTest {
         // Enter set ready for second exercise (Bicep Curl in superset)
         harness.dwsm.enterSetReady(1, 0)
 
-        val state = harness.dwsm.routineFlowState.value
+        val state = harness.dwsm.coordinator.routineFlowState.value
         assertIs<RoutineFlowState.SetReady>(state)
         assertEquals(1, state.exerciseIndex)
         assertEquals(15f, state.adjustedWeight,
@@ -392,11 +392,11 @@ class DWSMRoutineFlowTest {
         // Use exitingWorkout=false to preserve _loadedRoutine (true clears it).
         // advanceTimeBy avoids infinite re-dispatch loop from init block interaction.
         val exerciseIds = mutableListOf<String?>()
-        exerciseIds.add(harness.dwsm.workoutParameters.value.selectedExerciseId)
+        exerciseIds.add(harness.dwsm.coordinator.workoutParameters.value.selectedExerciseId)
 
         harness.dwsm.advanceToNextExercise()
         advanceTimeBy(7000)
-        exerciseIds.add(harness.dwsm.workoutParameters.value.selectedExerciseId)
+        exerciseIds.add(harness.dwsm.coordinator.workoutParameters.value.selectedExerciseId)
 
         // Stop the auto-started workout so next navigation isn't blocked
         harness.dwsm.stopWorkout(exitingWorkout = false)
@@ -404,7 +404,7 @@ class DWSMRoutineFlowTest {
 
         harness.dwsm.advanceToNextExercise()
         advanceTimeBy(7000)
-        exerciseIds.add(harness.dwsm.workoutParameters.value.selectedExerciseId)
+        exerciseIds.add(harness.dwsm.coordinator.workoutParameters.value.selectedExerciseId)
 
         assertEquals(3, exerciseIds.size, "Should have visited 3 exercises")
         assertEquals(TestFixtures.benchPress.id, exerciseIds[0])
@@ -425,7 +425,7 @@ class DWSMRoutineFlowTest {
         harness.dwsm.enterRoutineOverview(routine)
         advanceUntilIdle()
 
-        val state = harness.dwsm.routineFlowState.value
+        val state = harness.dwsm.coordinator.routineFlowState.value
         assertIs<RoutineFlowState.Overview>(state,
             "enterRoutineOverview should set routineFlowState to Overview")
         assertEquals(0, state.selectedExerciseIndex,
@@ -445,7 +445,7 @@ class DWSMRoutineFlowTest {
 
         harness.dwsm.selectExerciseInOverview(1)
 
-        val state = harness.dwsm.routineFlowState.value
+        val state = harness.dwsm.coordinator.routineFlowState.value
         assertIs<RoutineFlowState.Overview>(state)
         assertEquals(1, state.selectedExerciseIndex,
             "selectExerciseInOverview(1) should update selectedExerciseIndex to 1")
@@ -465,7 +465,7 @@ class DWSMRoutineFlowTest {
         // Characterization: out-of-bounds index is silently ignored
         harness.dwsm.selectExerciseInOverview(10)
 
-        val state = harness.dwsm.routineFlowState.value
+        val state = harness.dwsm.coordinator.routineFlowState.value
         assertIs<RoutineFlowState.Overview>(state)
         assertEquals(0, state.selectedExerciseIndex,
             "Out-of-bounds selectExerciseInOverview should be silently ignored")
@@ -482,11 +482,11 @@ class DWSMRoutineFlowTest {
         harness.dwsm.enterRoutineOverview(routine)
         advanceUntilIdle()
 
-        assertIs<RoutineFlowState.Overview>(harness.dwsm.routineFlowState.value)
+        assertIs<RoutineFlowState.Overview>(harness.dwsm.coordinator.routineFlowState.value)
 
         harness.dwsm.enterSetReady(0, 0)
 
-        assertIs<RoutineFlowState.SetReady>(harness.dwsm.routineFlowState.value,
+        assertIs<RoutineFlowState.SetReady>(harness.dwsm.coordinator.routineFlowState.value,
             "Should transition from Overview to SetReady")
         harness.cleanup()
     }
@@ -502,11 +502,11 @@ class DWSMRoutineFlowTest {
         advanceUntilIdle()
 
         harness.dwsm.enterSetReady(0, 0)
-        assertIs<RoutineFlowState.SetReady>(harness.dwsm.routineFlowState.value)
+        assertIs<RoutineFlowState.SetReady>(harness.dwsm.coordinator.routineFlowState.value)
 
         harness.dwsm.returnToOverview()
 
-        val state = harness.dwsm.routineFlowState.value
+        val state = harness.dwsm.coordinator.routineFlowState.value
         assertIs<RoutineFlowState.Overview>(state,
             "returnToOverview should transition back to Overview")
         assertEquals(0, state.selectedExerciseIndex,
@@ -526,11 +526,11 @@ class DWSMRoutineFlowTest {
 
         harness.dwsm.exitRoutineFlow()
 
-        assertIs<RoutineFlowState.NotInRoutine>(harness.dwsm.routineFlowState.value,
+        assertIs<RoutineFlowState.NotInRoutine>(harness.dwsm.coordinator.routineFlowState.value,
             "exitRoutineFlow should reset routineFlowState to NotInRoutine")
-        assertEquals(null, harness.dwsm.loadedRoutine.value,
+        assertEquals(null, harness.dwsm.coordinator.loadedRoutine.value,
             "exitRoutineFlow should clear loadedRoutine")
-        assertEquals(WorkoutState.Idle, harness.dwsm.workoutState.value,
+        assertEquals(WorkoutState.Idle, harness.dwsm.coordinator.workoutState.value,
             "exitRoutineFlow should reset workoutState to Idle")
         harness.cleanup()
     }

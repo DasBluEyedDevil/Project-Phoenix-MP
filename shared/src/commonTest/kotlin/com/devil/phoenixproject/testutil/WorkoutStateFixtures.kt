@@ -14,7 +14,7 @@ object WorkoutStateFixtures {
         harness.dwsm.startWorkout(skipCountdown = true)
         advanceUntilIdle()
         assertEquals(
-            WorkoutState.Active, harness.dwsm.workoutState.value,
+            WorkoutState.Active, harness.dwsm.coordinator.workoutState.value,
             "activeDWSM fixture: expected Active state"
         )
         return harness

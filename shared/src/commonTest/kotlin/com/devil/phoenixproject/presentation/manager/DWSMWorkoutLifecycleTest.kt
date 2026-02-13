@@ -40,7 +40,7 @@ class DWSMWorkoutLifecycleTest {
         harness.dwsm.startWorkout(skipCountdown = true)
 
         // Before advancing, state should be Initializing (set synchronously in startWorkout)
-        assertIs<WorkoutState.Initializing>(harness.dwsm.workoutState.value,
+        assertIs<WorkoutState.Initializing>(harness.dwsm.coordinator.workoutState.value,
             "State should be Initializing immediately after startWorkout call")
         harness.cleanup()
     }
@@ -53,7 +53,7 @@ class DWSMWorkoutLifecycleTest {
         harness.dwsm.startWorkout(skipCountdown = true)
         advanceUntilIdle()
 
-        assertIs<WorkoutState.Active>(harness.dwsm.workoutState.value,
+        assertIs<WorkoutState.Active>(harness.dwsm.coordinator.workoutState.value,
             "State should be Active after skipCountdown=true and coroutine completes")
         harness.cleanup()
     }
@@ -63,7 +63,7 @@ class DWSMWorkoutLifecycleTest {
         val harness = DWSMTestHarness(this)
         harness.fakeBleRepo.simulateConnect("Vee_Test")
 
-        harness.dwsm.workoutState.test {
+        harness.dwsm.coordinator.workoutState.test {
             // Initial state
             assertEquals(WorkoutState.Idle, awaitItem())
 
@@ -115,7 +115,7 @@ class DWSMWorkoutLifecycleTest {
         harness.dwsm.stopWorkout(exitingWorkout = true)
         advanceUntilIdle()
 
-        assertIs<WorkoutState.Idle>(harness.dwsm.workoutState.value,
+        assertIs<WorkoutState.Idle>(harness.dwsm.coordinator.workoutState.value,
             "stopWorkout(exitingWorkout=true) should transition to Idle")
         harness.cleanup()
     }
@@ -127,7 +127,7 @@ class DWSMWorkoutLifecycleTest {
         harness.dwsm.stopWorkout(exitingWorkout = false)
         advanceUntilIdle()
 
-        assertIs<WorkoutState.SetSummary>(harness.dwsm.workoutState.value,
+        assertIs<WorkoutState.SetSummary>(harness.dwsm.coordinator.workoutState.value,
             "stopWorkout(exitingWorkout=false) should transition to SetSummary")
         harness.cleanup()
     }
@@ -139,7 +139,7 @@ class DWSMWorkoutLifecycleTest {
         // First stop should work
         harness.dwsm.stopWorkout(exitingWorkout = false)
         advanceUntilIdle()
-        val firstState = harness.dwsm.workoutState.value
+        val firstState = harness.dwsm.coordinator.workoutState.value
         assertIs<WorkoutState.SetSummary>(firstState)
 
         // Second stop should be a no-op (guard flag set)
@@ -148,7 +148,7 @@ class DWSMWorkoutLifecycleTest {
 
         // Characterization: The second stopWorkout is silently ignored due to
         // stopWorkoutInProgress guard flag. State remains SetSummary.
-        assertIs<WorkoutState.SetSummary>(harness.dwsm.workoutState.value,
+        assertIs<WorkoutState.SetSummary>(harness.dwsm.coordinator.workoutState.value,
             "Second stopWorkout should be silently ignored (guard flag)")
         harness.cleanup()
     }
@@ -163,7 +163,7 @@ class DWSMWorkoutLifecycleTest {
         advanceUntilIdle()
 
         // Verify state transition completed (which means BLE stop was called successfully)
-        assertIs<WorkoutState.Idle>(harness.dwsm.workoutState.value)
+        assertIs<WorkoutState.Idle>(harness.dwsm.coordinator.workoutState.value)
         harness.cleanup()
     }
 
@@ -176,14 +176,14 @@ class DWSMWorkoutLifecycleTest {
         // Stop workout first to get to SetSummary
         harness.dwsm.stopWorkout(exitingWorkout = false)
         advanceUntilIdle()
-        assertIs<WorkoutState.SetSummary>(harness.dwsm.workoutState.value)
+        assertIs<WorkoutState.SetSummary>(harness.dwsm.coordinator.workoutState.value)
 
         // Now reset
         harness.dwsm.resetForNewWorkout()
 
-        assertEquals(WorkoutState.Idle, harness.dwsm.workoutState.value,
+        assertEquals(WorkoutState.Idle, harness.dwsm.coordinator.workoutState.value,
             "resetForNewWorkout should set state to Idle")
-        assertEquals(RepCount(), harness.dwsm.repCount.value,
+        assertEquals(RepCount(), harness.dwsm.coordinator.repCount.value,
             "resetForNewWorkout should reset rep count to default")
         harness.cleanup()
     }
@@ -195,7 +195,7 @@ class DWSMWorkoutLifecycleTest {
         harness.dwsm.resetForNewWorkout()
 
         // repRanges should be cleared to null
-        assertEquals(null, harness.dwsm.repRanges.value,
+        assertEquals(null, harness.dwsm.coordinator.repRanges.value,
             "resetForNewWorkout should clear repRanges to null")
         harness.cleanup()
     }
@@ -214,7 +214,7 @@ class DWSMWorkoutLifecycleTest {
         )
         harness.dwsm.updateWorkoutParameters(newParams)
 
-        val current = harness.dwsm.workoutParameters.value
+        val current = harness.dwsm.coordinator.workoutParameters.value
         assertEquals(ProgramMode.Pump, current.programMode)
         assertEquals(12, current.reps)
         assertEquals(30f, current.weightPerCableKg)
@@ -235,7 +235,7 @@ class DWSMWorkoutLifecycleTest {
         harness.dwsm.updateWorkoutParameters(params)
         advanceUntilIdle()
 
-        assertEquals(8, harness.dwsm.workoutParameters.value.reps)
+        assertEquals(8, harness.dwsm.coordinator.workoutParameters.value.reps)
         harness.cleanup()
     }
 
@@ -245,7 +245,7 @@ class DWSMWorkoutLifecycleTest {
     fun `autoStopState starts with default values`() = runTest {
         val harness = DWSMTestHarness(this)
 
-        val autoStop = harness.dwsm.autoStopState.value
+        val autoStop = harness.dwsm.coordinator.autoStopState.value
         // Characterization: AutoStopUiState default is not counting down
         assertNotNull(autoStop, "autoStopState should never be null")
         harness.cleanup()
@@ -261,7 +261,7 @@ class DWSMWorkoutLifecycleTest {
 
         // Characterization: startWorkout always calls resetAutoStopState() which
         // clears any previous auto-stop timers and resets the UI state
-        val autoStop = harness.dwsm.autoStopState.value
+        val autoStop = harness.dwsm.coordinator.autoStopState.value
         assertNotNull(autoStop, "autoStopState should be reset after startWorkout")
         harness.cleanup()
     }

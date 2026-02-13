@@ -70,6 +70,9 @@ class DWSMTestHarness(val testScope: TestScope) {
         )
     }
 
+    /** Convenience accessor for the coordinator (shared state bus) */
+    val coordinator get() = dwsm.coordinator
+
     /**
      * Cancel all DWSM coroutines to prevent UncompletedCoroutinesError.
      * Call this at the end of each test after assertions are complete.
