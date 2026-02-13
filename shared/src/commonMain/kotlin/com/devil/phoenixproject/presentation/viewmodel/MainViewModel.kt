@@ -100,12 +100,11 @@ class MainViewModel constructor(
 
     // === Phase 2a: BleConnectionManager (extracted from this class) ===
     // Must be after workoutSessionManager since it implements WorkoutStateProvider
-    val bleConnectionManager = BleConnectionManager(bleRepository, settingsManager, workoutSessionManager, viewModelScope)
-
-    init {
-        // Wire the circular dependency: workoutSessionManager needs bleConnectionManager
-        workoutSessionManager.bleConnectionManager = bleConnectionManager
-    }
+    // BLE errors flow one-way via coordinator.bleErrorEvents (no circular dependency)
+    val bleConnectionManager = BleConnectionManager(
+        bleRepository, settingsManager, workoutSessionManager,
+        workoutSessionManager.coordinator.bleErrorEvents, viewModelScope
+    )
 
     // ===== Workout State Delegation =====
 
