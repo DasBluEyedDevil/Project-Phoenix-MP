@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Characterization Tests** - Lock in current workout and routine behavior before any extraction
 - [x] **Phase 2: Manager Decomposition** - Split DefaultWorkoutSessionManager into WorkoutCoordinator + RoutineFlowManager + ActiveSessionEngine
 - [x] **Phase 3: UI Composable Decomposition** - Split oversized composable files into focused, single-responsibility files
-- [ ] **Phase 4: Koin DI Cleanup** - Reorganize single commonModule into feature-scoped Koin modules
+- [x] **Phase 4: Koin DI Cleanup** - Reorganize single commonModule into feature-scoped Koin modules
 
 ## Phase Details
 
@@ -81,8 +81,8 @@ Plans:
 **Plans**: 2 plans, 2 waves (sequential -- verify test depends on module split)
 
 Plans:
-- [ ] 04-01-PLAN.md -- Split commonModule into feature-scoped modules (dataModule, syncModule, domainModule, presentationModule) with appModule composition
-- [ ] 04-02-PLAN.md -- Add Koin Module.verify() test and delete dead androidApp AppModule.kt
+- [x] 04-01-PLAN.md -- Split commonModule into feature-scoped modules (dataModule, syncModule, domainModule, presentationModule) with appModule composition
+- [x] 04-02-PLAN.md -- Add Koin Module.verify() test and delete dead androidApp AppModule.kt
 
 ## Progress
 
@@ -94,4 +94,4 @@ Phases execute in numeric order: 1 --> 2 --> 3 --> 4
 | 1. Characterization Tests | 2/2 | ✓ Complete | 2026-02-13 |
 | 2. Manager Decomposition | 4/4 | ✓ Complete | 2026-02-13 |
 | 3. UI Composable Decomposition | 2/2 | ✓ Complete | 2026-02-13 |
-| 4. Koin DI Cleanup | 0/2 | Not started | - |
+| 4. Koin DI Cleanup | 2/2 | ✓ Complete | 2026-02-13 |
