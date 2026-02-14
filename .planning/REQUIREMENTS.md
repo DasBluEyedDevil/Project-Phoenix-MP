@@ -1,0 +1,130 @@
+# Requirements: Project Phoenix MP
+
+**Defined:** 2026-02-13
+**Core Value:** Users can connect to their Vitruvian trainer and execute workouts reliably on both platforms.
+
+## v0.4.5 Requirements
+
+Requirements for milestone v0.4.5 — Premium Features Phase 1.
+
+### Data Foundation (Spec 00 Phase A)
+
+- [ ] **DATA-01**: App stores per-rep metrics (position, velocity, load curves) in RepMetric table
+- [ ] **DATA-02**: User subscription tier (FREE/PHOENIX/ELITE) is stored and queryable
+- [ ] **DATA-03**: FeatureGate utility provides tier-based feature access checks
+- [ ] **DATA-04**: Database migration v13 creates RepMetric table with sync fields
+- [ ] **DATA-05**: iOS DriverFactory is synced with schema version 13
+
+### LED Biofeedback (Spec 02)
+
+- [ ] **LED-01**: Machine LED color changes based on velocity zone during workout
+- [ ] **LED-02**: LED transitions are throttled to max 2Hz with hysteresis to prevent flicker
+- [ ] **LED-03**: TUT/TUT Beast modes show tempo guide feedback (green = correct tempo)
+- [ ] **LED-04**: Echo mode shows load matching feedback (green = target matched)
+- [ ] **LED-05**: PR achievement triggers celebration flash sequence
+- [ ] **LED-06**: User can enable/disable LED biofeedback in settings (Phoenix+ tier)
+- [ ] **LED-07**: LED biofeedback respects rest periods (blue during rest)
+
+### Rep Quality Scoring (Spec 02)
+
+- [ ] **QUAL-01**: Each rep receives a quality score (0-100) based on 4 components
+- [ ] **QUAL-02**: ROM consistency contributes up to 30 points (deviation from set average)
+- [ ] **QUAL-03**: Velocity consistency contributes up to 25 points (deviation from set average)
+- [ ] **QUAL-04**: Eccentric control contributes up to 25 points (ecc:conc time ratio)
+- [ ] **QUAL-05**: Movement smoothness contributes up to 20 points (jerk/variance metric)
+- [ ] **QUAL-06**: Per-rep quality indicator shows on HUD during workout
+- [ ] **QUAL-07**: Set summary displays average, best, and worst rep quality
+- [ ] **QUAL-08**: Quality trend (improving/stable/declining) is tracked per set
+- [ ] **QUAL-09**: Form Master badges are awarded for quality achievements (Phoenix+ tier)
+
+### Smart Suggestions (Spec 03.2)
+
+- [ ] **SUGG-01**: App tracks weekly volume per muscle group (sets, reps, kg)
+- [ ] **SUGG-02**: Push:Pull:Legs balance analysis detects training imbalances
+- [ ] **SUGG-03**: Exercise variety prompts notify when an exercise is neglected (>14 days)
+- [ ] **SUGG-04**: Plateau detection identifies stalled exercises with breakthrough suggestions
+- [ ] **SUGG-05**: Time-of-day analysis identifies optimal training windows (Elite tier)
+- [ ] **SUGG-06**: Smart suggestions are gated to Elite tier
+
+### Premium Gating
+
+- [ ] **GATE-01**: LED biofeedback is gated to Phoenix tier and above
+- [ ] **GATE-02**: Rep quality features are gated to Phoenix tier and above
+- [ ] **GATE-03**: Smart suggestions are gated to Elite tier
+- [ ] **GATE-04**: Data capture happens for all users (gating is at UI/feature level only)
+
+## Future Requirements (v0.5.0+)
+
+### Biomechanics (Spec 01)
+
+- **BIO-01**: VBT engine computes mean concentric velocity per rep
+- **BIO-02**: Real-time velocity HUD shows speed zones
+- **BIO-03**: Force curve visualization in set summary
+- **BIO-04**: Asymmetry analysis compares cable A vs cable B
+
+### Auto-Regulation (Spec 03.3-4)
+
+- **AUTO-01**: Warmup velocity establishes exercise baseline
+- **AUTO-02**: Readiness score adjusts suggested weights
+- **AUTO-03**: In-set fatigue detection alerts when to stop
+
+### Platform Features (Spec 04)
+
+- **PLAT-01**: Strength assessment onboarding wizard
+- **PLAT-02**: Exercise auto-detection from rep patterns
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Portal sync with RepMetric data | No backend until Spec 05 complete |
+| Subscription billing (RevenueCat) | Blocked on auth migration |
+| Advanced recovery heatmap | Spec 03.5 future scope |
+| ML-based predictions | No ML infrastructure; all intelligence is statistical |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| DATA-01 | Pending | Pending |
+| DATA-02 | Pending | Pending |
+| DATA-03 | Pending | Pending |
+| DATA-04 | Pending | Pending |
+| DATA-05 | Pending | Pending |
+| LED-01 | Pending | Pending |
+| LED-02 | Pending | Pending |
+| LED-03 | Pending | Pending |
+| LED-04 | Pending | Pending |
+| LED-05 | Pending | Pending |
+| LED-06 | Pending | Pending |
+| LED-07 | Pending | Pending |
+| QUAL-01 | Pending | Pending |
+| QUAL-02 | Pending | Pending |
+| QUAL-03 | Pending | Pending |
+| QUAL-04 | Pending | Pending |
+| QUAL-05 | Pending | Pending |
+| QUAL-06 | Pending | Pending |
+| QUAL-07 | Pending | Pending |
+| QUAL-08 | Pending | Pending |
+| QUAL-09 | Pending | Pending |
+| SUGG-01 | Pending | Pending |
+| SUGG-02 | Pending | Pending |
+| SUGG-03 | Pending | Pending |
+| SUGG-04 | Pending | Pending |
+| SUGG-05 | Pending | Pending |
+| SUGG-06 | Pending | Pending |
+| GATE-01 | Pending | Pending |
+| GATE-02 | Pending | Pending |
+| GATE-03 | Pending | Pending |
+| GATE-04 | Pending | Pending |
+
+**Coverage:**
+- v0.4.5 requirements: 30 total
+- Mapped to phases: 0
+- Unmapped: 30
+
+---
+*Requirements defined: 2026-02-13*
+*Last updated: 2026-02-13 after initial definition*
