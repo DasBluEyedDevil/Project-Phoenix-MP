@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-13)
 ## Current Position
 
 Phase: 1 of 4 (Data Foundation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-13 — Roadmap created for v0.4.5 milestone
+Plan: 1 of 2 in current phase
+Status: Plan 01-01 complete, ready for 01-02
+Last activity: 2026-02-14 — Completed 01-01 (Schema, Models & Feature Gate)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 12%
 
 ## Performance Metrics
 
@@ -28,7 +28,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1-4 (v0.4.1) | 10 | - | - |
-| 1-4 (v0.4.5) | 0 | - | - |
+| 01-01 (v0.4.5) | 1 | 12min | 12min |
 
 *Updated after each plan completion*
 
@@ -42,6 +42,9 @@ Recent decisions affecting current work:
 - [v0.4.5 init]: Data Foundation must ship before LED/Quality/Suggestions (dependency)
 - [v0.4.5 init]: Data capture for all tiers, gating at UI/feature level only (GATE-04)
 - [v0.4.1]: 38 characterization tests lock in existing workout behavior
+- [01-01]: SubscriptionTier separate from SubscriptionStatus (tier = feature access, status = payment state)
+- [01-01]: RepMetricData uses FloatArray/LongArray for performance; JSON serialization deferred to Plan 02
+- [01-01]: domain/premium/ package established for subscription and gating utilities
 
 ### Pending Todos
 
@@ -53,6 +56,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-13
-Stopped at: Roadmap created, ready to plan Phase 1
+Last session: 2026-02-14
+Stopped at: Completed 01-01-PLAN.md (Schema, Models & Feature Gate)
 Resume file: None
