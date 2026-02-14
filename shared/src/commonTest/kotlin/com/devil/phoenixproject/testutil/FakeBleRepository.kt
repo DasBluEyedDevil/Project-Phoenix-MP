@@ -58,6 +58,7 @@ class FakeBleRepository : BleRepository {
     // Track commands received for verification in tests
     val commandsReceived = mutableListOf<ByteArray>()
     val workoutParameters = mutableListOf<WorkoutParameters>()
+    val colorSchemeCommands = mutableListOf<Int>()
 
     // Configurable behavior
     var scanResult: Result<Unit> = Result.success(Unit)
@@ -123,6 +124,10 @@ class FakeBleRepository : BleRepository {
         _heuristicData.value = data
     }
 
+    fun setDiscoModeActive(active: Boolean) {
+        _discoModeActive.value = active
+    }
+
     fun reset() {
         _connectionState.value = ConnectionState.Disconnected
         _scannedDevices.value = emptyList()
@@ -132,6 +137,7 @@ class FakeBleRepository : BleRepository {
         _discoModeActive.value = false
         commandsReceived.clear()
         workoutParameters.clear()
+        colorSchemeCommands.clear()
         scanResult = Result.success(Unit)
         connectResult = Result.success(Unit)
         workoutCommandResult = Result.success(Unit)
@@ -203,6 +209,7 @@ class FakeBleRepository : BleRepository {
     }
 
     override suspend fun setColorScheme(schemeIndex: Int): Result<Unit> {
+        colorSchemeCommands.add(schemeIndex)
         return Result.success(Unit)
     }
 
