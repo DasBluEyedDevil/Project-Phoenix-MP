@@ -35,15 +35,26 @@ Users can connect to their Vitruvian trainer and execute workouts with accurate 
 
 <!-- Current scope. Building toward these. -->
 
-(Next milestone requirements to be defined via /gsd:new-milestone)
+See REQUIREMENTS.md for v0.4.5 milestone requirements.
+
+## Current Milestone: v0.4.5 Premium Features Phase 1
+
+**Goal:** Ship the first premium features (LED biofeedback, rep quality scoring, smart suggestions) with proper data foundation and subscription gating.
+
+**Target features:**
+- Data Foundation (Spec 00 Phase A) — RepMetric table, SubscriptionTier enum, FeatureGate utility, migration v13
+- Real-Time Feedback (Spec 02) — LED biofeedback with velocity zones, rep quality scoring (0-100), HUD indicators
+- Smart Suggestions (Spec 03.2 extract) — Push/pull/legs balance, plateau detection, exercise variety prompts
 
 ### Out of Scope
 
 <!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
 
 - KableBleRepository decomposition — works reliably, refactoring risk outweighs benefit
-- Premium features (data foundation, biomechanics, intelligence) — deferred to post-cleanup milestone
-- New user-facing features — this milestone is purely architectural
+- Biomechanics MVP (Spec 01) — depends on velocity pipeline, Phase 2 work
+- Auto-Regulation (Spec 03.3-4) — depends on Spec 01 velocity pipeline
+- Portal sync backend (Spec 05) — Phase 3 infrastructure work
+- Portal replay features — no backend exists yet
 - iOS-specific UI work — focus is shared module and Android Compose layer
 - BLE protocol changes — no hardware interaction changes
 
@@ -77,12 +88,10 @@ Architecture is clean and well-tested. Ready for feature development or premium 
 
 ## Next Milestone Goals
 
-(To be defined via /gsd:new-milestone)
-
-Candidates:
-- Premium features (data foundation, biomechanics, intelligence) from OpenSpec specs
-- iOS UI polish
-- Performance optimization for handleMonitorMetric hot path
+After v0.4.5:
+- **v0.5.0** — Biomechanics MVP (Spec 01 Phases 1-3: VBT engine, velocity HUD, set summary)
+- **v0.5.5** — Mobile Platform Features (Spec 04: strength assessment, exercise auto-detection)
+- **v0.6.0** — Auth Migration (Spec 05a: Supabase auth, user migration)
 
 ## Key Decisions
 
@@ -101,4 +110,4 @@ Candidates:
 | Feature-scoped Koin modules with verify() | Catches DI wiring issues at test time | ✓ Good — v0.4.1 |
 
 ---
-*Last updated: 2026-02-13 after v0.4.1 milestone completion*
+*Last updated: 2026-02-13 after v0.4.5 milestone start*
