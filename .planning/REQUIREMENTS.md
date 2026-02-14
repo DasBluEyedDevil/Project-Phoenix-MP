@@ -88,37 +88,37 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 5 | Pending |
-| DATA-02 | Phase 5 | Pending |
-| DATA-03 | Phase 5 | Pending |
-| DATA-04 | Phase 5 | Pending |
-| DATA-05 | Phase 5 | Pending |
-| GATE-04 | Phase 5 | Pending |
-| LED-01 | Phase 6 | Pending |
-| LED-02 | Phase 6 | Pending |
-| LED-03 | Phase 6 | Pending |
-| LED-04 | Phase 6 | Pending |
-| LED-05 | Phase 6 | Pending |
-| LED-06 | Phase 6 | Pending |
-| LED-07 | Phase 6 | Pending |
-| GATE-01 | Phase 6 | Pending |
-| QUAL-01 | Phase 7 | Pending |
-| QUAL-02 | Phase 7 | Pending |
-| QUAL-03 | Phase 7 | Pending |
-| QUAL-04 | Phase 7 | Pending |
-| QUAL-05 | Phase 7 | Pending |
-| QUAL-06 | Phase 7 | Pending |
-| QUAL-07 | Phase 7 | Pending |
-| QUAL-08 | Phase 7 | Pending |
-| QUAL-09 | Phase 7 | Pending |
-| GATE-02 | Phase 7 | Pending |
-| SUGG-01 | Phase 8 | Pending |
-| SUGG-02 | Phase 8 | Pending |
-| SUGG-03 | Phase 8 | Pending |
-| SUGG-04 | Phase 8 | Pending |
-| SUGG-05 | Phase 8 | Pending |
-| SUGG-06 | Phase 8 | Pending |
-| GATE-03 | Phase 8 | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Pending |
+| GATE-04 | Phase 1 | Pending |
+| LED-01 | Phase 2 | Pending |
+| LED-02 | Phase 2 | Pending |
+| LED-03 | Phase 2 | Pending |
+| LED-04 | Phase 2 | Pending |
+| LED-05 | Phase 2 | Pending |
+| LED-06 | Phase 2 | Pending |
+| LED-07 | Phase 2 | Pending |
+| GATE-01 | Phase 2 | Pending |
+| QUAL-01 | Phase 3 | Pending |
+| QUAL-02 | Phase 3 | Pending |
+| QUAL-03 | Phase 3 | Pending |
+| QUAL-04 | Phase 3 | Pending |
+| QUAL-05 | Phase 3 | Pending |
+| QUAL-06 | Phase 3 | Pending |
+| QUAL-07 | Phase 3 | Pending |
+| QUAL-08 | Phase 3 | Pending |
+| QUAL-09 | Phase 3 | Pending |
+| GATE-02 | Phase 3 | Pending |
+| SUGG-01 | Phase 4 | Pending |
+| SUGG-02 | Phase 4 | Pending |
+| SUGG-03 | Phase 4 | Pending |
+| SUGG-04 | Phase 4 | Pending |
+| SUGG-05 | Phase 4 | Pending |
+| SUGG-06 | Phase 4 | Pending |
+| GATE-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v0.4.5 requirements: 31 total

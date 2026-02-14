@@ -5,11 +5,11 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Users can connect to their Vitruvian trainer and execute workouts reliably on both platforms.
-**Current focus:** Phase 5 - Data Foundation
+**Current focus:** Phase 1 - Data Foundation
 
 ## Current Position
 
-Phase: 5 of 8 (Data Foundation)
+Phase: 1 of 4 (Data Foundation)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
 Last activity: 2026-02-13 — Roadmap created for v0.4.5 milestone
@@ -28,7 +28,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1-4 (v0.4.1) | 10 | - | - |
-| 5+ (v0.4.5) | 0 | - | - |
+| 1-4 (v0.4.5) | 0 | - | - |
 
 *Updated after each plan completion*
 
@@ -54,5 +54,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-13
-Stopped at: Roadmap created, ready to plan Phase 5
+Stopped at: Roadmap created, ready to plan Phase 1
 Resume file: None

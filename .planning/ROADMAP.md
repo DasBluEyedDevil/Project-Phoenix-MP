@@ -2,11 +2,11 @@
 
 ## Milestones
 
-- v0.4.1 Architectural Cleanup (shipped 2026-02-13) -- Phases 1-4
-- v0.4.5 Premium Features Phase 1 (in progress) -- Phases 5-8
+- v0.4.1 Architectural Cleanup (shipped 2026-02-13) — Phases 1-4
+- v0.4.5 Premium Features Phase 1 (in progress) — Phases 1-4
 
 <details>
-<summary>v0.4.1 Architectural Cleanup (Phases 1-4) - SHIPPED 2026-02-13</summary>
+<summary>v0.4.1 Architectural Cleanup - SHIPPED 2026-02-13</summary>
 
 See `.planning/milestones/v0.4.1-*` for archived phase details.
 
@@ -18,16 +18,16 @@ See `.planning/milestones/v0.4.1-*` for archived phase details.
 
 ## Phases
 
-- [ ] **Phase 5: Data Foundation** - RepMetric table, subscription tier, FeatureGate, migration v13
-- [ ] **Phase 6: LED Biofeedback** - Velocity-zone LED control with mode-specific feedback
-- [ ] **Phase 7: Rep Quality Scoring** - Per-rep quality scores with HUD and set summaries
-- [ ] **Phase 8: Smart Suggestions** - Volume tracking, balance analysis, plateau detection
+- [ ] **Phase 1: Data Foundation** - RepMetric table, subscription tier, FeatureGate, migration v13
+- [ ] **Phase 2: LED Biofeedback** - Velocity-zone LED control with mode-specific feedback
+- [ ] **Phase 3: Rep Quality Scoring** - Per-rep quality scores with HUD and set summaries
+- [ ] **Phase 4: Smart Suggestions** - Volume tracking, balance analysis, plateau detection
 
 ## Phase Details
 
-### Phase 5: Data Foundation
+### Phase 1: Data Foundation
 **Goal**: App has the storage, schema, and gating infrastructure that all premium features depend on
-**Depends on**: Phase 4 (v0.4.1 architectural cleanup)
+**Depends on**: v0.4.1 (architectural cleanup complete)
 **Requirements**: DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, GATE-04
 **Success Criteria** (what must be TRUE):
   1. Per-rep metric data (position, velocity, load curves) persists to database during a workout
@@ -38,12 +38,12 @@ See `.planning/milestones/v0.4.1-*` for archived phase details.
 **Plans**: TBD
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 01-01: TBD
+- [ ] 01-02: TBD
 
-### Phase 6: LED Biofeedback
+### Phase 2: LED Biofeedback
 **Goal**: Users see real-time LED color feedback on the machine during workouts based on their performance
-**Depends on**: Phase 5 (FeatureGate and subscription tier required)
+**Depends on**: Phase 1 (FeatureGate and subscription tier required)
 **Requirements**: LED-01, LED-02, LED-03, LED-04, LED-05, LED-06, LED-07, GATE-01
 **Success Criteria** (what must be TRUE):
   1. Machine LEDs change color based on velocity zone (e.g., green for optimal, red for too slow) during a set
@@ -54,13 +54,13 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 02-01: TBD
+- [ ] 02-02: TBD
+- [ ] 02-03: TBD
 
-### Phase 7: Rep Quality Scoring
+### Phase 3: Rep Quality Scoring
 **Goal**: Users receive meaningful per-rep quality feedback during workouts and set summaries
-**Depends on**: Phase 5 (RepMetric data capture required for scoring inputs)
+**Depends on**: Phase 1 (RepMetric data capture required for scoring inputs)
 **Requirements**: QUAL-01, QUAL-02, QUAL-03, QUAL-04, QUAL-05, QUAL-06, QUAL-07, QUAL-08, QUAL-09, GATE-02
 **Success Criteria** (what must be TRUE):
   1. Each rep displays a quality score (0-100) on the workout HUD during the set
@@ -71,13 +71,13 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
-- [ ] 07-03: TBD
+- [ ] 03-01: TBD
+- [ ] 03-02: TBD
+- [ ] 03-03: TBD
 
-### Phase 8: Smart Suggestions
+### Phase 4: Smart Suggestions
 **Goal**: Users receive actionable training insights that help them train more effectively
-**Depends on**: Phase 5 (volume tracking depends on data foundation)
+**Depends on**: Phase 1 (volume tracking depends on data foundation)
 **Requirements**: SUGG-01, SUGG-02, SUGG-03, SUGG-04, SUGG-05, SUGG-06, GATE-03
 **Success Criteria** (what must be TRUE):
   1. App shows weekly volume breakdown per muscle group (sets, reps, total kg)
@@ -88,17 +88,17 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 04-01: TBD
+- [ ] 04-02: TBD
 
 ## Progress
 
-**Execution Order:** 5 -> 6 -> 7 -> 8
-(Phases 6 and 7 both depend on Phase 5 but LED ships first per priority order; Phase 8 last.)
+**Execution Order:** 1 -> 2 -> 3 -> 4
+(Phases 2 and 3 both depend on Phase 1 but LED ships first per priority order; Phase 4 last.)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 5. Data Foundation | v0.4.5 | 0/TBD | Not started | - |
-| 6. LED Biofeedback | v0.4.5 | 0/TBD | Not started | - |
-| 7. Rep Quality Scoring | v0.4.5 | 0/TBD | Not started | - |
-| 8. Smart Suggestions | v0.4.5 | 0/TBD | Not started | - |
+| 1. Data Foundation | v0.4.5 | 0/TBD | Not started | - |
+| 2. LED Biofeedback | v0.4.5 | 0/TBD | Not started | - |
+| 3. Rep Quality Scoring | v0.4.5 | 0/TBD | Not started | - |
+| 4. Smart Suggestions | v0.4.5 | 0/TBD | Not started | - |
