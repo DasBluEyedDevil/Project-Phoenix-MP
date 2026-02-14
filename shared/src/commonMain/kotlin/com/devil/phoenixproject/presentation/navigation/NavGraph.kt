@@ -321,6 +321,9 @@ fun NavGraph(
                 onDiscoModeToggle = { viewModel.toggleDiscoMode(it) },
                 onPlayDiscoSound = { viewModel.emitDiscoSound() },
                 onTestSounds = { viewModel.testSounds() },
+                // LED Biofeedback
+                ledFeedbackEnabled = userPreferences.ledFeedbackEnabled,
+                onLedFeedbackChange = { viewModel.setLedFeedbackEnabled(it) },
                 // Simulator mode Easter egg
                 simulatorModeUnlocked = viewModel.isSimulatorModeUnlocked(),
                 simulatorModeEnabled = viewModel.isSimulatorModeUnlocked(),

@@ -182,6 +182,7 @@ class MainViewModel constructor(
     fun setEnableVideoPlayback(enabled: Boolean) = settingsManager.setEnableVideoPlayback(enabled)
     fun setStallDetectionEnabled(enabled: Boolean) = settingsManager.setStallDetectionEnabled(enabled)
     fun setAudioRepCountEnabled(enabled: Boolean) = settingsManager.setAudioRepCountEnabled(enabled)
+    fun setLedFeedbackEnabled(enabled: Boolean) = settingsManager.setLedFeedbackEnabled(enabled)
     fun setSummaryCountdownSeconds(seconds: Int) = settingsManager.setSummaryCountdownSeconds(seconds)
     fun setAutoStartCountdownSeconds(seconds: Int) = settingsManager.setAutoStartCountdownSeconds(seconds)
     fun setColorScheme(schemeIndex: Int) = settingsManager.setColorScheme(schemeIndex)
