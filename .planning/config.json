@@ -5,5 +5,8 @@
     "auto_commit": true,
     "require_verification": true,
     "parallel_research": true
+  },
+  "workflow": {
+    "research": false
   }
 }
