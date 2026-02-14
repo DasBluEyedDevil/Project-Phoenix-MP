@@ -54,7 +54,7 @@ actual class DriverFactory {
 
     companion object {
         /** Current schema version - must match SQLDelight (1 + number of .sqm files) */
-        private const val CURRENT_SCHEMA_VERSION = 12L
+        private const val CURRENT_SCHEMA_VERSION = 13L
     }
 
     /**
@@ -651,6 +651,45 @@ actual class DriverFactory {
                 FOREIGN KEY (sessionId) REFERENCES WorkoutSession(id) ON DELETE CASCADE
             )
             """,
+            // ==================== Per-Rep Metrics ====================
+            """
+            CREATE TABLE IF NOT EXISTS RepMetric (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sessionId TEXT NOT NULL,
+                repNumber INTEGER NOT NULL,
+                isWarmup INTEGER NOT NULL DEFAULT 0,
+                startTimestamp INTEGER NOT NULL,
+                endTimestamp INTEGER NOT NULL,
+                durationMs INTEGER NOT NULL,
+                concentricDurationMs INTEGER NOT NULL,
+                concentricPositions TEXT NOT NULL,
+                concentricLoadsA TEXT NOT NULL,
+                concentricLoadsB TEXT NOT NULL,
+                concentricVelocities TEXT NOT NULL,
+                concentricTimestamps TEXT NOT NULL,
+                eccentricDurationMs INTEGER NOT NULL,
+                eccentricPositions TEXT NOT NULL,
+                eccentricLoadsA TEXT NOT NULL,
+                eccentricLoadsB TEXT NOT NULL,
+                eccentricVelocities TEXT NOT NULL,
+                eccentricTimestamps TEXT NOT NULL,
+                peakForceA REAL NOT NULL,
+                peakForceB REAL NOT NULL,
+                avgForceConcentricA REAL NOT NULL,
+                avgForceConcentricB REAL NOT NULL,
+                avgForceEccentricA REAL NOT NULL,
+                avgForceEccentricB REAL NOT NULL,
+                peakVelocity REAL NOT NULL,
+                avgVelocityConcentric REAL NOT NULL,
+                avgVelocityEccentric REAL NOT NULL,
+                rangeOfMotionMm REAL NOT NULL,
+                peakPowerWatts REAL NOT NULL,
+                avgPowerWatts REAL NOT NULL,
+                updatedAt INTEGER,
+                serverId TEXT,
+                FOREIGN KEY (sessionId) REFERENCES WorkoutSession(id) ON DELETE CASCADE
+            )
+            """,
             // ==================== Gamification Tables ====================
             """
             CREATE TABLE IF NOT EXISTS EarnedBadge (
@@ -915,6 +954,9 @@ actual class DriverFactory {
             "CREATE INDEX IF NOT EXISTS idx_diagnostics_timestamp ON DiagnosticsHistory(timestamp)",
             // PhaseStatistics indexes
             "CREATE INDEX IF NOT EXISTS idx_phase_stats_session ON PhaseStatistics(sessionId)",
+            // RepMetric indexes
+            "CREATE INDEX IF NOT EXISTS idx_rep_metric_session ON RepMetric(sessionId)",
+            "CREATE INDEX IF NOT EXISTS idx_rep_metric_session_rep ON RepMetric(sessionId, repNumber)",
             // Training Cycle indexes
             "CREATE INDEX IF NOT EXISTS idx_cycle_day_cycle ON CycleDay(cycle_id)",
             "CREATE INDEX IF NOT EXISTS idx_cycle_progress_cycle ON CycleProgress(cycle_id)",
