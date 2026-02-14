@@ -174,6 +174,7 @@ private val testModule = module {
             preferencesManager = get(),
             gamificationRepository = get(),
             trainingCycleRepository = get(),
+            completedSetRepository = get(),
             resolveWeightsUseCase = get()
         )
     }
