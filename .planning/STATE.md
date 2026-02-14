@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-13)
 
 **Core value:** Users can connect to their Vitruvian trainer and execute workouts reliably on both platforms.
-**Current focus:** Phase 1 - Data Foundation
+**Current focus:** Phase 2 - LED Biofeedback
 
 ## Current Position
 
-Phase: 1 of 4 (Data Foundation) -- COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase 01 complete, ready for Phase 02
-Last activity: 2026-02-14 — Completed 01-02 (Repository, DI & Tests)
+Phase: 2 of 4 (LED Biofeedback)
+Plan: 1 of 2 in current phase
+Status: Plan 02-01 complete, ready for 02-02
+Last activity: 2026-02-14 — Completed 02-01 (LED Biofeedback Core Engine)
 
-Progress: [██░░░░░░░░] 25%
+Progress: [███░░░░░░░] 37%
 
 ## Performance Metrics
 
@@ -30,6 +30,7 @@ Progress: [██░░░░░░░░] 25%
 | 1-4 (v0.4.1) | 10 | - | - |
 | 01-01 (v0.4.5) | 1 | 12min | 12min |
 | 01-02 (v0.4.5) | 1 | 6min | 6min |
+| 02-01 (v0.4.5) | 1 | 6min | 6min |
 
 *Updated after each plan completion*
 
@@ -48,6 +49,9 @@ Recent decisions affecting current work:
 - [01-01]: domain/premium/ package established for subscription and gating utilities
 - [01-02]: Manual JSON serialization (joinToString/split) for primitive arrays instead of kotlinx.serialization
 - [01-02]: Serialization helpers marked internal - repository layer implementation detail
+- [02-01]: Injectable timeProvider lambda for deterministic test control in LedFeedbackController
+- [02-01]: Reused FakeBleRepository with colorSchemeCommands tracking rather than new test double
+- [02-01]: Internal visibility on resolver methods for white-box testing of boundary conditions
 
 ### Pending Todos
 
@@ -60,5 +64,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-14
-Stopped at: Completed 01-02-PLAN.md (Repository, DI & Tests) -- Phase 01 complete
+Stopped at: Completed 02-01-PLAN.md (LED Biofeedback Core Engine)
 Resume file: None
