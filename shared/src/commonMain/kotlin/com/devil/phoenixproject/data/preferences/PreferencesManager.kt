@@ -106,6 +106,7 @@ interface PreferencesManager {
     suspend fun setStallDetectionEnabled(enabled: Boolean)
     suspend fun setDiscoModeUnlocked(unlocked: Boolean)
     suspend fun setAudioRepCountEnabled(enabled: Boolean)
+    suspend fun setLedFeedbackEnabled(enabled: Boolean)
     suspend fun setSummaryCountdownSeconds(seconds: Int)
     suspend fun setAutoStartCountdownSeconds(seconds: Int)
     suspend fun setSimulatorModeUnlocked(unlocked: Boolean)
@@ -146,6 +147,7 @@ class SettingsPreferencesManager(
         private const val KEY_STALL_DETECTION = "stall_detection_enabled"
         private const val KEY_DISCO_MODE_UNLOCKED = "disco_mode_unlocked"
         private const val KEY_AUDIO_REP_COUNT = "audio_rep_count_enabled"
+        private const val KEY_LED_FEEDBACK_ENABLED = "led_feedback_enabled"
         private const val KEY_SUMMARY_COUNTDOWN_SECONDS = "summary_countdown_seconds"
         private const val KEY_AUTOSTART_COUNTDOWN_SECONDS = "autostart_countdown_seconds"
         private const val KEY_JUST_LIFT_DEFAULTS = "just_lift_defaults"
@@ -169,6 +171,7 @@ class SettingsPreferencesManager(
             stallDetectionEnabled = settings.getBoolean(KEY_STALL_DETECTION, true),
             discoModeUnlocked = settings.getBoolean(KEY_DISCO_MODE_UNLOCKED, false),
             audioRepCountEnabled = settings.getBoolean(KEY_AUDIO_REP_COUNT, false),
+            ledFeedbackEnabled = settings.getBoolean(KEY_LED_FEEDBACK_ENABLED, false),
             summaryCountdownSeconds = settings.getInt(KEY_SUMMARY_COUNTDOWN_SECONDS, 10),
             autoStartCountdownSeconds = settings.getInt(KEY_AUTOSTART_COUNTDOWN_SECONDS, 5)
         )
@@ -217,6 +220,11 @@ class SettingsPreferencesManager(
     override suspend fun setAudioRepCountEnabled(enabled: Boolean) {
         settings.putBoolean(KEY_AUDIO_REP_COUNT, enabled)
         updateAndEmit { copy(audioRepCountEnabled = enabled) }
+    }
+
+    override suspend fun setLedFeedbackEnabled(enabled: Boolean) {
+        settings.putBoolean(KEY_LED_FEEDBACK_ENABLED, enabled)
+        updateAndEmit { copy(ledFeedbackEnabled = enabled) }
     }
 
     override suspend fun setSummaryCountdownSeconds(seconds: Int) {

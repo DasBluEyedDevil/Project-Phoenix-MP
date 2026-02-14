@@ -65,6 +65,14 @@ class SettingsManager(
         scope.launch { preferencesManager.setAudioRepCountEnabled(enabled) }
     }
 
+    val ledFeedbackEnabled: StateFlow<Boolean> = userPreferences
+        .map { it.ledFeedbackEnabled }
+        .stateIn(scope, SharingStarted.Eagerly, false)
+
+    fun setLedFeedbackEnabled(enabled: Boolean) {
+        scope.launch { preferencesManager.setLedFeedbackEnabled(enabled) }
+    }
+
     fun setSummaryCountdownSeconds(seconds: Int) {
         Logger.d("setSummaryCountdownSeconds: Setting value to $seconds")
         scope.launch { preferencesManager.setSummaryCountdownSeconds(seconds) }
